@@ -35,14 +35,20 @@
   },
   "2026-09-07|6|*413": {
    "date": "2026-09-07",
+   "dayType": "monday",
    "description": "Skolotājs: K.Tomsons\nStundas: 6.–7.\nStundu saraksts v505",
    "end": "2026-09-07T14:10:00+03:00",
    "gcal_id": "qgoermb0pf9b62efc5of0otmb8",
-   "hash": "bbe8fbbfdb41c801eb1b8b55af40d25385304c7c",
+   "groups": [],
+   "hash": "55265a117ebf9f793a475ef75f9d8e2af9dd5e66",
    "location": "206.",
    "periods": "6.–7.",
-   "start": "2026-09-07T12:30:00+03:00",
-   "summary": "Datu b?zu tehnolo?ijas"
+   "start": "2026-09-07T12:40:00+03:00",
+   "summary": "Datu b?zu tehnolo?ijas",
+   "teachers": [
+    "K.Tomsons"
+   ],
+   "version": "505"
   },
   "2026-09-07|8|*234": {
    "date": "2026-09-07",
@@ -266,14 +272,20 @@
   },
   "2026-09-11|6|*811": {
    "date": "2026-09-11",
+   "dayType": "friday",
    "description": "Skolotājs: S.Upīte\nStundas: 6.–7.\nStundu saraksts v505",
    "end": "2026-09-11T13:25:00+03:00",
    "gcal_id": "gep0ffq41nu8hei2ltlph3dtc8",
-   "hash": "6eee92b257e0053f135c6a475e7da28dcb46ceb2",
+   "groups": [],
+   "hash": "8a4a884ab740868db63f94f654e6d49800a3c749",
    "location": "202.",
    "periods": "6.–7.",
-   "start": "2026-09-11T12:30:00+03:00",
-   "summary": "Programmas koda rakst??ana(Kod?�?ana)"
+   "start": "2026-09-11T12:00:00+03:00",
+   "summary": "Programmas koda rakst??ana(Kod?�?ana)",
+   "teachers": [
+    "S.Upīte"
+   ],
+   "version": "505"
   },
   "2026-09-14|1|*113": {
    "date": "2026-09-14",
@@ -288,14 +300,20 @@
   },
   "2026-09-14|5|*399": {
    "date": "2026-09-14",
+   "dayType": "monday",
    "description": "Skolotājs: T.Misiņa\nStundas: 5.–6.\nStundu saraksts v507",
-   "end": "2026-09-14T13:10:00+03:00",
+   "end": "2026-09-14T13:20:00+03:00",
    "gcal_id": "4pq7h7e2fm6v07d01hm2ubsdqc",
-   "hash": "c6dfd907493ce336fa4544deead0ba92a9bf0775",
+   "groups": [],
+   "hash": "1881d9a35b955ecf931466348b2e25f2baa0c849",
    "location": "223.",
    "periods": "5.–6.",
    "start": "2026-09-14T11:50:00+03:00",
-   "summary": "Matem?tikas speci?l?s noda?as"
+   "summary": "Matem?tikas speci?l?s noda?as",
+   "teachers": [
+    "T.Misiņa"
+   ],
+   "version": "507"
   },
   "2026-09-14|7|*774": {
    "date": "2026-09-14",
@@ -530,14 +548,20 @@
   },
   "2026-09-18|6|*397": {
    "date": "2026-09-18",
+   "dayType": "friday",
    "description": "Skolotājs: L.Miķīte\nStundas: 6.–7.\nStundu saraksts v507",
    "end": "2026-09-18T13:25:00+03:00",
    "gcal_id": "hldotnkgpomllim172mv1o431s",
-   "hash": "c082d07e3ad15b23eb4cfdafde4eb0be98347699",
+   "groups": [],
+   "hash": "ccab080ac04f35bb45aad90944c0500bd6c3d24f",
    "location": "410.",
    "periods": "6.–7.",
-   "start": "2026-09-18T12:30:00+03:00",
-   "summary": "Valoda, kult.izpratne un izpausmes (1.l.)"
+   "start": "2026-09-18T12:00:00+03:00",
+   "summary": "Valoda, kult.izpratne un izpausmes (1.l.)",
+   "teachers": [
+    "L.Miķīte"
+   ],
+   "version": "507"
   },
   "2026-09-18|8|*401": {
    "date": "2026-09-18",
