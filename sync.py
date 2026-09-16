@@ -25,7 +25,8 @@ SESSION.mount("https://", HTTPAdapter(max_retries=Retry(total=4, backoff_factor=
 SCHOOL = os.environ.get("EDUPAGE_SCHOOL", "valteh")
 CLASS_NAME = os.environ.get("CLASS_NAME", "2.k. 28.grupa")
 TZ = ZoneInfo(os.environ.get("TIMEZONE", "Europe/Riga"))
-BASE = f"https://{SCHOOL}.edupage.org/timetable/server"
+PROXY_URL = os.environ.get("EDUPAGE_PROXY_URL", "").rstrip("/")
+BASE = (PROXY_URL if PROXY_URL else f"https://{SCHOOL}.edupage.org") + "/timetable/server"
 ROOT = Path(__file__).resolve().parent
 STATE_FILE = ROOT / "state.json"
 ICS_FILE = ROOT / "docs" / "timetable.ics"
@@ -41,7 +42,13 @@ def api(path, args):
     r = SESSION.post(
         f"{BASE}/{path}",
         json={"__args": args, "__gsh": "00000000"},
-        headers={"Content-Type": "application/json", "Origin": f"https://{SCHOOL}.edupage.org", "Referer": f"https://{SCHOOL}.edupage.org/timetable/view.php"},
+        headers={
+            "Content-Type": "application/json",
+            "Origin": f"https://{SCHOOL}.edupage.org",
+            "Referer": f"https://{SCHOOL}.edupage.org/timetable/view.php",
+            "X-Proxy-Key": os.environ.get("EDUPAGE_PROXY_KEY", ""),
+        },
+        params={"school": SCHOOL} if PROXY_URL else None,
         timeout=30,
     )
     r.raise_for_status()

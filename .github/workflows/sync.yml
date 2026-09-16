@@ -28,6 +28,8 @@ jobs:
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EDUPAGE_PROXY_URL: ${{ vars.EDUPAGE_PROXY_URL }}
+          EDUPAGE_PROXY_KEY: ${{ secrets.EDUPAGE_PROXY_KEY }}
       - name: Commit state
         run: |
           git config user.name "edupage-sync bot"
