@@ -14,12 +14,18 @@
   --ev-bg-l:92%;--ev-bg-s:55%;--ev-fg-l:32%;--ev-bar-l:52%;--ev-now-l:50%;
   --hour:5.5rem;--axis:3.25rem;--toolbar:6.75rem;
 }
-@media (prefers-color-scheme:dark){:root{
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
   --bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;
   --line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--accent:#0a84ff;--red:#ff453a;--amber:#ffd60a;
   --chrome:rgba(28,28,30,.72);--card-shadow:none;
   --ev-bg-l:20%;--ev-bg-s:30%;--ev-fg-l:78%;--ev-bar-l:58%;--ev-now-l:44%;
 }}
+:root[data-theme=dark]{
+  --bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;
+  --line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--accent:#0a84ff;--red:#ff453a;--amber:#ffd60a;
+  --chrome:rgba(28,28,30,.72);--card-shadow:none;
+  --ev-bg-l:20%;--ev-bg-s:30%;--ev-fg-l:78%;--ev-bar-l:58%;--ev-now-l:44%;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font:100%/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Inter,system-ui,sans-serif;background:var(--bg);color:var(--text)}
 body{margin:0;min-height:100vh}
@@ -109,6 +115,21 @@ h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--tex
 .change div span{display:inline-block;width:1.4em;font-weight:700}
 .add{color:#34c759}.chg{color:var(--amber)}.rem{color:var(--red)}
 footer{padding:2rem 1rem 0;color:var(--text-3);font-size:.75rem;text-align:center}
+.con{position:fixed;left:0;right:0;bottom:0;z-index:50;max-height:55vh;display:flex;flex-direction:column;background:var(--chrome);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--line);box-shadow:0 -12px 40px -20px rgba(0,0,0,.5);transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);font:.82rem/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.con.open{transform:none}
+.con-out{flex:1;overflow:auto;padding:.75rem 1rem .25rem;white-space:pre-wrap;word-break:break-word;color:var(--text)}
+.con-out .cmd{color:var(--accent)}
+.con-out .err{color:var(--red)}
+.con-out .dim{color:var(--text-2)}
+.con-sw{display:inline-block;width:.7em;height:.7em;border-radius:50%;vertical-align:-.05em;margin-right:.35em}
+.con-sug{display:flex;gap:.35rem;flex-wrap:wrap;padding:0 1rem .35rem;min-height:1.4rem}
+.con-sug span{padding:.05rem .5rem;border-radius:.4rem;background:var(--line);color:var(--text-2);cursor:pointer}
+.con-sug span.sel{background:var(--accent);color:#fff}
+.con-in{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem .75rem;border-top:1px solid var(--line)}
+.con-in b{color:var(--accent)}
+.con-in input{flex:1;background:none;border:0;outline:0;font:inherit;color:var(--text);caret-color:var(--accent)}
+.con-in kbd{color:var(--text-3);font-size:.7rem}
+@media (prefers-reduced-transparency:reduce){.con{background:var(--bg)}}
 
 @media (max-width:899px){
   :root{--hour:5.75rem}
@@ -168,6 +189,11 @@ footer{padding:2rem 1rem 0;color:var(--text-3);font-size:.75rem;text-align:cente
   <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a> · oficiālie stundu laiki · atjaunināts katru stundu</footer>
 </main>
 
+<div class="con" id="con" role="dialog" aria-label="Konsole">
+  <div class="con-out" id="con-out"></div>
+  <div class="con-sug" id="con-sug"></div>
+  <div class="con-in"><b>❯</b><input id="con-in" autocomplete="off" spellcheck="false" placeholder="help"><kbd>Tab · ↑↓ · Esc</kbd></div>
+</div>
 <script>
 const WD=["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena"];
 const WDS=["P","O","T","C","Pk"];
@@ -187,11 +213,18 @@ const isMobile=()=>matchMedia("(max-width: 899px)").matches;
 
 let data,weekStart,rangeStart=8*60,rangeEnd=17*60,bells={},hueMap={};
 
+function subjectKey(summary){return summary.replace(/\s*\(.*\)\s*$/,"")}
 function hueFor(summary){
-  const key=summary.replace(/\s*\(.*\)\s*$/,"");
+  const key=subjectKey(summary);
+  if(key in prefs.colors)return prefs.colors[key];
   if(!(key in hueMap)){let h=0;for(const c of key)h=(h*31+c.charCodeAt(0))>>>0;hueMap[key]=HUES[h%HUES.length]}
   return hueMap[key];
 }
+let prefs={colors:{},theme:"auto"};
+try{prefs={...prefs,...JSON.parse(localStorage.getItem("prefs")||"{}")}}catch(e){}
+function savePrefs(){try{localStorage.setItem("prefs",JSON.stringify(prefs))}catch(e){}}
+function applyTheme(){if(prefs.theme==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=prefs.theme}
+applyTheme();
 function pct(min){return (min-rangeStart)/(rangeEnd-rangeStart)*100}
 function parsePeriods(p){const n=p.match(/\d+/g).map(Number);return [n[0],n[n.length-1]]}
 
@@ -402,6 +435,95 @@ document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);ren
 document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);render()};
 document.getElementById("today").onclick=()=>{weekStart=monday(new Date());render();scrollToNow(false)};
 matchMedia("(max-width: 899px)").addEventListener("change",render);
+
+const COLORS={red:4,orange:28,yellow:48,lime:90,green:140,teal:172,cyan:192,blue:212,indigo:240,purple:270,pink:330,gray:0};
+const con=document.getElementById("con"),conOut=document.getElementById("con-out"),conIn=document.getElementById("con-in"),conSug=document.getElementById("con-sug");
+let history=[],histIdx=-1,sugs=[],sugIdx=0;
+try{history=JSON.parse(localStorage.getItem("con-history")||"[]")}catch(e){}
+const subjects=()=>[...new Set(data.events.map(e=>subjectKey(e.summary)))].sort();
+const q=s=>/\s/.test(s)?`"${s}"`:s;
+function tokenize(s){const out=[];const re=/"([^"]*)"?|'([^']*)'?|(\S+)/g;let m;while((m=re.exec(s)))out.push(m[1]??m[2]??m[3]);return out}
+function print(html,cls=""){const d=document.createElement("div");if(cls)d.className=cls;d.innerHTML=html;conOut.appendChild(d);conOut.scrollTop=conOut.scrollHeight}
+function sw(h){return `<span class="con-sw" style="background:hsl(${h} 70% 50%)"></span>`}
+function findSubject(name){
+  const all=subjects(),n=name.toLowerCase();
+  return all.find(s=>s.toLowerCase()===n)||all.filter(s=>s.toLowerCase().includes(n));
+}
+function parseColor(v){
+  if(v in COLORS)return COLORS[v];
+  if(/^\d{1,3}$/.test(v)&&+v<=360)return +v;
+  if(/^#?[0-9a-f]{6}$/i.test(v)){const x=parseInt(v.replace("#",""),16),r=(x>>16)/255,g=((x>>8)&255)/255,b=(x&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;if(!d)return 0;let h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;return Math.round(((h*60)+360)%360)}
+  return null;
+}
+const CMDS={
+  help:{d:"komandu saraksts",f(){for(const [k,c] of Object.entries(CMDS))print(`<b>${k}</b> ${c.u||""} <span class="dim">— ${c.d}</span>`)}},
+  ls:{d:"priekšmeti un to krāsas",f(){for(const s of subjects()){const h=hueFor(s);print(`${sw(h)}${esc(s)} <span class="dim">${h}${s in prefs.colors?" · saglabāts":""}</span>`)}}},
+  color:{u:'<priekšmets> <krāsa>',d:"maina priekšmeta krāsu (nosaukums, 0–360 vai #hex); saglabājas",f(a){
+    if(a.length<2)return print("lietojums: color &lt;priekšmets&gt; &lt;krāsa&gt;","err");
+    const h=parseColor(a[a.length-1].toLowerCase());if(h===null)return print(`nezināma krāsa: ${esc(a[a.length-1])} · ${Object.keys(COLORS).join(", ")} vai 0–360`,"err");
+    const s=findSubject(a.slice(0,-1).join(" "));
+    if(!s||(Array.isArray(s)&&!s.length))return print("priekšmets nav atrasts (skat. ls)","err");
+    if(Array.isArray(s)&&s.length>1)return print("neviennozīmīgi: "+s.map(esc).join(" | "),"err");
+    const name=Array.isArray(s)?s[0]:s;prefs.colors[name]=h;savePrefs();render();print(`${sw(h)}${esc(name)} → ${h}`);
+  }},
+  reset:{u:"[priekšmets]",d:"atiestata krāsas",f(a){if(!a.length){prefs.colors={}}else{const s=findSubject(a.join(" "));const name=Array.isArray(s)?s[0]:s;if(!name)return print("priekšmets nav atrasts","err");delete prefs.colors[name]}savePrefs();render();print("ok")}},
+  theme:{u:"dark|light|auto",d:"krāsu tēma; saglabājas",f(a){if(!["dark","light","auto"].includes(a[0]))return print("lietojums: theme dark|light|auto","err");prefs.theme=a[0];savePrefs();applyTheme();print("ok")}},
+  week:{u:"today|next|prev",d:"pārslēdz nedēļu",f(a){if(a[0]==="next")weekStart=addDays(weekStart,7);else if(a[0]==="prev")weekStart=addDays(weekStart,-7);else weekStart=monday(new Date());render();print(document.getElementById("range").textContent)}},
+  clear:{d:"notīra konsoli",f(){conOut.innerHTML=""}},
+  exit:{d:"aizver konsoli",f(){toggleCon(false)}},
+};
+function run(line){
+  print(`<span class="cmd">❯</span> ${esc(line)}`);
+  const [cmd,...args]=tokenize(line);
+  if(!cmd)return;
+  if(!CMDS[cmd])return print(`komanda nav atrasta: ${esc(cmd)} · ievadi <b>help</b>`,"err");
+  try{CMDS[cmd].f(args)}catch(e){print(String(e),"err")}
+}
+function suggestions(){
+  const v=conIn.value,toks=tokenize(v),trailing=/\s$/.test(v)||!v;
+  const cur=trailing?"":(toks[toks.length-1]||""),n=trailing?toks.length:toks.length-1;
+  let pool=[];
+  if(n===0)pool=Object.keys(CMDS);
+  else if(toks[0]==="color"||toks[0]==="reset"){
+    const last=toks[toks.length-1]||"";
+    if(toks[0]==="color"&&n>=2&&(subjects().some(s=>s.toLowerCase()===toks.slice(1,n).join(" ").toLowerCase())))pool=Object.keys(COLORS);
+    else pool=subjects().map(q);
+  }
+  else if(toks[0]==="theme")pool=["dark","light","auto"];
+  else if(toks[0]==="week")pool=["today","next","prev"];
+  const c=cur.replace(/^"/,"").toLowerCase();
+  return pool.filter(p=>p.replace(/^"/,"").toLowerCase().startsWith(c)||p.toLowerCase().includes(c)&&c.length>1).slice(0,8);
+}
+function renderSug(){
+  sugs=suggestions();sugIdx=Math.min(sugIdx,Math.max(0,sugs.length-1));
+  conSug.innerHTML=sugs.map((s,i)=>`<span class="${i===sugIdx?"sel":""}" data-i="${i}">${esc(s)}</span>`).join("");
+}
+function accept(i){
+  const s=sugs[i];if(!s)return;
+  const v=conIn.value,trailing=/\s$/.test(v)||!v;
+  const base=trailing?v:v.replace(/(^|\s)("[^"]*"?|'[^']*'?|\S+)$/,"$1");
+  conIn.value=base+s+" ";sugIdx=0;renderSug();
+}
+function toggleCon(open){
+  const o=open??!con.classList.contains("open");
+  con.classList.toggle("open",o);
+  if(o){conIn.focus();if(!conOut.children.length)print('<span class="dim">Stundu saraksta konsole · ievadi <b>help</b></span>');renderSug()}
+  else conIn.blur();
+}
+document.addEventListener("keydown",e=>{
+  const inCon=e.target===conIn;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();toggleCon();return}
+  if(!inCon&&(e.key==="`"||e.key==="'")&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();toggleCon(true);return}
+  if(e.key==="Escape"&&con.classList.contains("open")){toggleCon(false);return}
+  if(!inCon)return;
+  if(e.key==="Tab"){e.preventDefault();accept(sugIdx)}
+  else if(e.key==="Enter"){const v=conIn.value.trim();conIn.value="";sugIdx=0;if(v){history=[v,...history.filter(x=>x!==v)].slice(0,50);try{localStorage.setItem("con-history",JSON.stringify(history))}catch(x){}histIdx=-1;run(v)}renderSug()}
+  else if(e.key==="ArrowUp"){e.preventDefault();if(sugs.length>1&&conIn.value)sugIdx=(sugIdx-1+sugs.length)%sugs.length,renderSug();else if(histIdx<history.length-1){histIdx++;conIn.value=history[histIdx];renderSug()}}
+  else if(e.key==="ArrowDown"){e.preventDefault();if(sugs.length>1&&conIn.value)sugIdx=(sugIdx+1)%sugs.length,renderSug();else{histIdx=Math.max(-1,histIdx-1);conIn.value=histIdx<0?"":history[histIdx];renderSug()}}
+  else if(e.key==="ArrowRight"&&conIn.selectionStart===conIn.value.length&&sugs.length){e.preventDefault();accept(sugIdx)}
+});
+conIn.addEventListener("input",()=>{sugIdx=0;renderSug()});
+conSug.addEventListener("click",e=>{const i=e.target.dataset.i;if(i!==undefined){accept(+i);conIn.focus()}});
 new ResizeObserver(([e])=>document.documentElement.style.setProperty("--toolbar",e.target.offsetHeight+"px")).observe(document.querySelector(".toolbar"));
 load();
 </script>
