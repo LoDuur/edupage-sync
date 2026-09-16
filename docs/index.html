@@ -20,6 +20,16 @@
   --chrome:rgba(28,28,30,.72);--card-shadow:none;
   --ev-bg-l:20%;--ev-bg-s:30%;--ev-fg-l:78%;--ev-bar-l:58%;--ev-now-l:44%;
 }}
+:root[data-theme=juarch]{
+  --bg:#0a0e17;--surface:#111827;--surface-2:#1b2434;--text:#e5edf7;--text-2:#8fa3bf;--text-3:#4f6280;
+  --line:rgba(23,147,209,.22);--line-strong:rgba(23,147,209,.5);--accent:#1793d1;--red:#ff5c5c;--amber:#f5b942;
+  --chrome:rgba(10,14,23,.8);--card-shadow:0 0 0 1px rgba(23,147,209,.15);
+  --ev-bg-l:17%;--ev-bg-s:38%;--ev-fg-l:82%;--ev-bar-l:60%;--ev-now-l:42%;
+}
+:root[data-theme=juarch] html,:root[data-theme=juarch] body{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+:root[data-theme=juarch] h1::after{content:" juarch";color:var(--accent);font-size:.55em;font-weight:600;letter-spacing:0;vertical-align:.25em}
+:root[data-theme=juarch] .canvas{background-image:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent var(--hour)),linear-gradient(rgba(23,147,209,.03),transparent)}
+:root[data-theme=juarch] .con{border-top-color:var(--accent)}
 :root[data-theme=dark]{
   --bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;
   --line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--accent:#0a84ff;--red:#ff453a;--amber:#ffd60a;
@@ -224,6 +234,7 @@ let prefs={colors:{},theme:"auto"};
 try{prefs={...prefs,...JSON.parse(localStorage.getItem("prefs")||"{}")}}catch(e){}
 function savePrefs(){try{localStorage.setItem("prefs",JSON.stringify(prefs))}catch(e){}}
 function applyTheme(){if(prefs.theme==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=prefs.theme}
+const juarch=()=>!!(prefs.juarch&&prefs.juarch.installed);
 applyTheme();
 function pct(min){return (min-rangeStart)/(rangeEnd-rangeStart)*100}
 function parsePeriods(p){const n=p.match(/\d+/g).map(Number);return [n[0],n[n.length-1]]}
@@ -503,7 +514,7 @@ function animate(frames,interval,done){
 }
 function stopAnim(){if(busy){clearInterval(busy);busy=null;print('<span class="dim">^C</span>')}}
 const CMDS={
-  help:{g:"Saraksts",d:"komandu saraksts",f(){const gs={};for(const [k,c] of Object.entries(CMDS))(gs[c.g]??=[]).push(`  <b>${k}</b>${c.u?" "+esc(c.u):""} <span class="dim">— ${c.d}</span>`);for(const g of ["Saraksts","Sistēma","Jautri"])if(gs[g]){print(`<span class="dim">${g}</span>`);gs[g].forEach(l=>print(l))}print('<span class="dim">man &lt;komanda&gt; — vairāk par komandu</span>')}},
+  help:{g:"Saraksts",d:"komandu saraksts",f(){const gs={};for(const [k,c] of Object.entries(CMDS))(gs[c.g]??=[]).push(`  <b>${k}</b>${c.u?" "+esc(c.u):""} <span class="dim">— ${c.d}</span>`);for(const g of ["Saraksts","Sistēma","juarch","Jautri"])if(gs[g]){print(`<span class="dim">${g}</span>`);gs[g].forEach(l=>print(l))}print('<span class="dim">man &lt;komanda&gt; — vairāk par komandu</span>')}},
   ls:{g:"Saraksts",u:"[-l]",d:"faili: dienas, week, changes, subst, colors",f(a){const names=Object.keys(FILES);if(a[0]==="-l")for(const n of names){const iso=dayIso(n);print(`${n.padEnd(9)} <span class="dim">${iso?eventsFor(iso).length+" st.":""}</span>`)}else print(names.join("  "))}},
   cat:{g:"Saraksts",u:"<fails>",d:"parāda failu (piem. cat today, cat week)",m:"Faili: today tomorrow week mon tue wed thu fri changes subst colors",f(a){if(!a.length)return print("lietojums: cat &lt;fails&gt;","err");for(const n of a){if(!FILES[n])return print(`cat: ${esc(n)}: No such file or directory`,"err");FILES[n]().forEach(l=>print(l))}}},
   next:{g:"Saraksts",d:"kas notiek tagad un kas nākamais",f(){
@@ -524,13 +535,29 @@ const CMDS={
     const name=Array.isArray(s)?s[0]:s;prefs.colors[name]=h;savePrefs();render();print(`${sw(h)}${esc(name)} → ${h}`);
   }},
   reset:{g:"Saraksts",u:"[priekšmets]",d:"atiestata krāsas",f(a){if(!a.length){prefs.colors={}}else{const s=findSubject(a.join(" "));const name=Array.isArray(s)?s[0]:s;if(!name)return print("priekšmets nav atrasts","err");delete prefs.colors[name]}savePrefs();render();print("ok")}},
-  theme:{g:"Saraksts",u:"dark|light|auto",d:"krāsu tēma; saglabājas",f(a){if(!["dark","light","auto"].includes(a[0]))return print("lietojums: theme dark|light|auto","err");prefs.theme=a[0];savePrefs();applyTheme();print("ok")}},
+  theme:{g:"Saraksts",u:"dark|light|auto|juarch",d:"krāsu tēma; saglabājas",f(a){const opts=["dark","light","auto"].concat(juarch()?["juarch"]:[]);if(!opts.includes(a[0]))return print(`lietojums: theme ${opts.join("|")}`,"err");prefs.theme=a[0];savePrefs();applyTheme();setPrompt();print("ok")}},
   week:{g:"Saraksts",u:"today|next|prev",d:"pārslēdz nedēļu",f(a){if(a[0]==="next")weekStart=addDays(weekStart,7);else if(a[0]==="prev")weekStart=addDays(weekStart,-7);else weekStart=monday(new Date());render();print(document.getElementById("range").textContent)}},
 
-  sudo:{g:"Sistēma",u:"<komanda>",d:"izpilda komandu kā root",m:"Prasa paroli (der jebkura). sudo rm -rf / – uz savu atbildību.",f(a){if(!a.length)return print("usage: sudo &lt;command&gt;","err");pendingSudo=a;conIn.type="password";conIn.placeholder="";document.querySelector(".con-in b").textContent="[sudo] password for student:";conIn.focus()}},
-  su:{g:"Sistēma",d:"tas pats, kas sudo -i",f(){CMDS.sudo.f(["-i"])}},
-  whoami:{g:"Sistēma",d:"kas tu esi",f(){print(root?"root":esc(data.className))}},
-  hostname:{g:"Sistēma",d:"",f(){print(location.hostname||"localhost")}},
+  sudo:{g:"Sistēma",u:"<komanda>",d:"izpilda komandu kā root",m:"Prasa paroli (der jebkura). sudo rm -rf / – uz savu atbildību. Uz juarch sudo vietā ir judo.",f(a){
+    if(juarch())return print("sudo: command not found. <span class=\"dim\">On juarch we use <b>judo</b> (btw)</span>","err");
+    if(!a.length)return print("usage: sudo &lt;command&gt;","err");
+    pendingSudo=a;conIn.type="password";conIn.placeholder="";document.querySelector(".con-in b").textContent="[sudo] password for student:";conIn.focus()}},
+  judo:{g:"Sistēma",u:"<komanda>",d:"sudo, bet vēsāks (tikai uz juarch)",m:"Tas pats, kas sudo, tikai ar labāku promptu. Pieejams pēc juarchinstall.",f(a){
+    if(!juarch())return print("judo: command not found. <span class=\"dim\">Install juarch first: sudo juarchinstall</span>","err");
+    if(!a.length)return print("usage: judo &lt;command&gt;  <span class=\"dim\">🥋 with great power comes great timetable</span>","err");
+    pendingSudo=a;conIn.type="password";conIn.placeholder="";const b=document.querySelector(".con-in b");b.textContent="🥋 [judo] password for student ⟩";b.style.color="var(--accent)";conIn.focus()}},
+  su:{g:"Sistēma",d:"tas pats, kas sudo -i",f(){CMDS[sudoName()].f(["-i"])}},
+  whoami:{g:"Sistēma",d:"kas tu esi",f(){print(root?"root":esc(data.className)+(juarch()?" <span class=\"dim\">(on juarch, btw)</span>":""))}},
+  hostname:{g:"Sistēma",d:"",f(){print(juarch()?"juarch":(location.hostname||"localhost"))}},
+  juarchinstall:{g:"juarch",d:"instalē juarch (vajag root)",m:"Unikāla, uz Arch bāzēta pieredze: jauna tēma, judo sudo vietā. Palaid: sudo juarchinstall",f(){if(!requireRoot("juarchinstall"))return;return juarchInstall()}},
+  juarchupdate:{g:"juarch",d:"atjaunina juarch un stundu datus (vajag root)",m:"pacman -Syu stilā; pa īstam pārlādē data.json. Palaid: judo juarchupdate",f(){if(!requireRoot("juarchupdate"))return;return juarchUpdate()}},
+  juarch:{g:"juarch",u:"purge|status",d:"juarch pārvaldība (vajag root)",m:"juarch purge – iztīra visu OS (tēmu, krāsas, vēsturi). juarch status – versija.",f(a){
+    if(a[0]==="status"){if(!juarch())return print("juarch: not installed");const j=prefs.juarch;return print(`juarch ${j.version} · installed ${new Date(j.installedAt).toLocaleDateString("lv-LV")} · updates: ${j.updates||0} · btw`)}
+    if(a[0]!=="purge")return print("usage: juarch purge|status","err");
+    if(!requireRoot("juarch purge"))return;
+    if(!juarch())return print("juarch purge: nothing to purge — juarch is not installed","err");
+    askConfirm(":: This will purge the <b>whole OS</b> (juarch, theme, colours, history). Proceed?",()=>juarchPurge());
+  }},
   pwd:{g:"Sistēma",d:"",f(){print(`/${data.school}/${esc(data.className)}/${isoD(weekStart)}`)}},
   date:{g:"Sistēma",d:"datums un laiks (Rīga)",f(){print(new Date().toLocaleString("lv-LV",{timeZone:data.timezone,weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"}))}},
   uptime:{g:"Sistēma",d:"",f(){print(`lapa atvērta pirms ${fmtDur(Date.now()-PAGE_LOADED)} · EduPage dati atjaunināti pirms ${fmtDur(Date.now()-new Date(data.updated))}`)}},
@@ -544,13 +571,77 @@ const CMDS={
   clear:{g:"Sistēma",d:"notīra konsoli",f(){conOut.innerHTML=""}},
   exit:{g:"Sistēma",d:"aizver konsoli (vai iziet no root)",f(){if(root){root=false;setPrompt();print("logout")}else toggleCon(false)}},
 
-  neofetch:{g:"Jautri",d:"sistēmas info",f(){const evs=[0,1,2,3,4].flatMap(i=>eventsFor(isoD(addDays(weekStart,i))));const logo=["   ██╗   ██╗","   ██║   ██║","   ██║   ██║","   ╚██╗ ██╔╝","    ╚████╔╝ ","     ╚═══╝  "];const info=[`<b>${root?"root":"student"}@${location.hostname||"localhost"}</b>`,"─".repeat(24),`<b>Class</b>: ${esc(data.className)}`,`<b>Week</b>: ${document.getElementById("range").textContent}`,`<b>Lessons</b>: ${evs.length} · <b>Subjects</b>: ${subjects().length}`,`<b>Theme</b>: ${prefs.theme} · <b>Uptime</b>: ${fmtDur(Date.now()-PAGE_LOADED)}`,`<b>Versions</b>: ${data.versions.map(v=>v.num).join(", ")}`];pre(logo.map((l,i)=>`<span style="color:var(--accent)">${l}</span>   ${info[i]||""}`).concat([`             ${info.slice(6).join("")}`]))}},
+  neofetch:{g:"Jautri",d:"sistēmas info",f(){const evs=[0,1,2,3,4].flatMap(i=>eventsFor(isoD(addDays(weekStart,i))));const logo=juarch()?JUARCH_LOGO:["   ██╗   ██╗","   ██║   ██║","   ██║   ██║","   ╚██╗ ██╔╝","    ╚████╔╝ ","     ╚═══╝  "];const info=[`<b>${root?"root":"student"}@${juarch()?"juarch":(location.hostname||"localhost")}</b>`,"─".repeat(24),`<b>OS</b>: ${juarch()?`juarch ${prefs.juarch.version} (btw)`:"stundu-saraksts web"} · <b>Class</b>: ${esc(data.className)}`,`<b>Week</b>: ${document.getElementById("range").textContent}`,`<b>Lessons</b>: ${evs.length} · <b>Subjects</b>: ${subjects().length}`,`<b>Theme</b>: ${prefs.theme} · <b>Uptime</b>: ${fmtDur(Date.now()-PAGE_LOADED)}`,`<b>Versions</b>: ${data.versions.map(v=>v.num).join(", ")}`];pre(logo.map((l,i)=>`<span style="color:var(--accent)">${l}</span>   ${info[i]||""}`).concat([`             ${info.slice(6).join("")}`]))}},
   cowsay:{g:"Jautri",u:"<teksts>",d:"",f(a){pre([COW(a.join(" ")||"Mūūū")])}},
   fortune:{g:"Jautri",d:"gudrība dienai",f(){print(esc(FORTUNES[Math.floor(Math.random()*FORTUNES.length)]))}},
   sl:{g:"Jautri",d:"choo choo",f(){const w=Math.min(60,Math.floor(conOut.clientWidth/9));const frames=[];for(let off=w;off>=-56;off-=2)frames.push(TRAIN.map(l=>(" ".repeat(Math.max(0,off))+l).slice(Math.max(0,-off)).slice(0,w)).join("\n"));animate(frames,45)}},
   cmatrix:{g:"Jautri",d:"the matrix has you",f(){const w=Math.min(70,Math.floor(conOut.clientWidth/9)),h=10,chars="ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ01";const drops=Array.from({length:w},()=>Math.floor(Math.random()*h));const grid=Array.from({length:h},()=>Array(w).fill(" "));const frames=[];for(let f=0;f<60;f++){for(let x=0;x<w;x++){grid[drops[x]%h][x]=chars[Math.floor(Math.random()*chars.length)];if(Math.random()<.3)grid[(drops[x]+h-4)%h][x]=" ";drops[x]=(drops[x]+1)%h}frames.push(`<span style="color:#39ff14">${grid.map(r=>r.join("")).join("\n")}</span>`)}animate(frames,70)}},
 };
-function setPrompt(){const b=document.querySelector(".con-in b");b.textContent=root?"#":"❯";b.style.color=root?"var(--red)":""}
+function setPrompt(){const b=document.querySelector(".con-in b");b.textContent=root?(juarch()?"⚡#":"#"):(juarch()?"»":"❯");b.style.color=root?"var(--red)":(juarch()?"var(--accent)":"")}
+const sudoName=()=>juarch()?"judo":"sudo";
+function requireRoot(name){if(root)return true;print(`${name}: must be run as root (${juarch()?"judo":"sudo"} ${name})`,"err");return false}
+let cancelSeq=false,pendingConfirm=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function steps(list){
+  busy="seq";cancelSeq=false;
+  try{
+    for(const s of list){
+      if(cancelSeq){print('<span class="dim">^C</span>');return false}
+      if(typeof s==="number"){await sleep(s);continue}
+      if(typeof s==="function"){await s();continue}
+      if(s.bar!==undefined){const p=pre([""]);for(let i=0;i<=20;i++){if(cancelSeq)break;p.innerHTML=` ${s.bar.padEnd(22)} ${"█".repeat(i)}${"░".repeat(20-i)} ${(i*5).toString().padStart(3)}%`;await sleep(s.ms||35)}continue}
+      print(s);await sleep(s.startsWith(":: ")?260:120);
+    }
+    return !cancelSeq;
+  }finally{busy=null}
+}
+const JUARCH_VERSION="2026.09";
+const JUARCH_LOGO=["      ▟█▙      ","     ▟███▙     ","    ▟██▀██▙    ","   ▟██▘ ▝██▙   ","  ▟██▘   ▝██▙  "," ▟█▀       ▀█▙ "];
+async function juarchInstall(){
+  if(juarch())return print(`juarch ${prefs.juarch.version} is already installed (btw). Try: judo juarchupdate`);
+  const ok=await steps([
+    `<b>juarchinstall</b> ${JUARCH_VERSION} — <span class="dim">the unique Arch-based experience (btw)</span>`,
+    ":: Checking root privileges... <span class=\"dim\">ok</span>",
+    `:: Detecting hardware... <span class="dim">1 × student, ${subjects().length} subjects, ${data.events.length} lessons</span>`,
+    ":: Partitioning /dev/stundas...",
+    "   /boot   512M   pirmdiena",
+    "   /       100%   pārējais",
+    ":: Synchronizing package databases...",
+    {bar:"core"},{bar:"extra"},{bar:"juarch"},
+    ":: Installing packages (7): <span class=\"dim\">base juarch-theme judo starpbrīdis-daemon brīvstunda-utils kafija neofetch-juarch</span>",
+    "(1/7) installing base",300,"(2/7) installing juarch-theme",300,"(3/7) installing judo",300,"(4/7) installing starpbrīdis-daemon",200,"(5/7) installing brīvstunda-utils",200,"(6/7) installing kafija <span class=\"dim\">☕</span>",200,"(7/7) installing neofetch-juarch",
+    ":: Generating fstab... <span class=\"dim\">done</span>",
+    ":: Setting hostname: <b>juarch</b>",
+    ":: Enabling judo for student... <span class=\"dim\">done</span>",
+    ":: Applying juarch theme...",
+    ()=>{prefs.juarch={installed:true,version:JUARCH_VERSION,installedAt:new Date().toISOString(),updates:0};prefs.theme="juarch";savePrefs();applyTheme();setPrompt();render()},
+    "<b>✔ Installation complete.</b> Reboot? Nah — already live. <span class=\"dim\">sudo is gone; use <b>judo</b>. Try: judo neofetch</span>",
+  ]);
+  if(!ok)print("juarchinstall: aborted, nothing was changed","err");
+}
+async function juarchUpdate(){
+  if(!juarch())return print("juarchupdate: juarch is not installed (sudo juarchinstall)","err");
+  const before=data.updated;
+  const ok=await steps([
+    ":: Synchronizing package databases...",{bar:"core",ms:20},{bar:"extra",ms:20},{bar:"juarch",ms:20},
+    ":: Starting full system upgrade...",
+    async()=>{try{const fresh=await (await fetch("data.json?"+Date.now())).json();if(fresh.updated!==before){data=fresh;for(const [k,s] of Object.entries(data.bells||{}))bells[k]=s.map(x=>x.split("-").map(toMin));render();renderChanges();document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});print(`Packages (1) <b>stundu-saraksts</b> ${before.slice(0,16)} → ${fresh.updated.slice(0,16)}`);print(":: Processing package changes... <span class=\"dim\">done</span>")}else print(" there is nothing to do")}catch(e){print("error: failed to retrieve data.json","err")}},
+    ()=>{prefs.juarch.updates=(prefs.juarch.updates||0)+1;prefs.juarch.version=JUARCH_VERSION;savePrefs()},
+    "<span class=\"dim\">juarch is up to date (btw)</span>",
+  ]);
+}
+async function juarchPurge(){
+  const evs=[...document.querySelectorAll(".ev,.free,.brk")];
+  const ok=await steps([
+    ":: Purging the whole OS...",
+    "removing judo",120,"removing juarch-theme",120,"removing kafija <span class=\"dim\">☕ (noooo)</span>",200,"removing colours, history, preferences",
+    async()=>{for(let i=0;i<evs.length;i++){evs[i].style.transition="opacity .25s";evs[i].style.opacity="0";if(i%4===0)await sleep(60)}await sleep(400)},
+    ()=>{prefs={colors:{},theme:"auto"};savePrefs();history=[];try{localStorage.removeItem("con-history")}catch(e){}root=false;applyTheme();setPrompt();render()},
+    "<b>System purged.</b> You're back on the boring default. <span class=\"dim\">sudo works again.</span>",
+  ]);
+}
+function askConfirm(question,onYes){pendingConfirm=onYes;print(question+' <span class="dim">[y/N]</span>');conIn.placeholder="y/N";document.querySelector(".con-in b").textContent="?"}
+function finishConfirm(){const v=conIn.value.trim().toLowerCase();conIn.value="";conIn.placeholder="help";const cb=pendingConfirm;pendingConfirm=null;setPrompt();if(v==="y"||v==="yes")cb();else print("aborted")}
 function wipe(){
   const els=[...document.querySelectorAll(".ev")];
   print("rm: descending into '/'…");
@@ -558,17 +649,17 @@ function wipe(){
   setTimeout(()=>{print("<b>Nice try.</b> Stundu saraksts atjaunots no EduPage.");render()},els.length*40+600);
 }
 function finishSudo(){
-  const a=pendingSudo;pendingSudo=null;conIn.type="text";conIn.value="";setPrompt();
+  const a=pendingSudo;pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();
   if(!a)return;
   root=true;setPrompt();
-  if(a[0]==="-i"||a[0]==="su")return print("root@"+(location.hostname||"localhost")+":~# ");
-  const line=a.join(" ");print(`<span class="cmd">#</span> ${esc(line)}`);
+  if(a[0]==="-i"||a[0]==="su")return print("root@"+(juarch()?"juarch":(location.hostname||"localhost"))+":~# ");
+  const line=a.join(" ");print(`<span class="cmd">${juarch()?"⚡#":"#"}</span> ${esc(line)}`);
   const [cmd,...args]=a;
-  if(!CMDS[cmd])return print(`sudo: ${esc(cmd)}: command not found`,"err");
-  try{CMDS[cmd].f(args)}catch(e){print(String(e),"err")}
+  if(!CMDS[cmd])return print(`${sudoName()}: ${esc(cmd)}: command not found`,"err");
+  try{const r=CMDS[cmd].f(args);if(r&&r.catch)r.catch(e=>print(String(e),"err"))}catch(e){print(String(e),"err")}
 }
 function run(line){
-  print(`<span class="cmd">${root?"#":"❯"}</span> ${esc(line)}`);
+  print(`<span class="cmd">${root?(juarch()?"⚡#":"#"):(juarch()?"»":"❯")}</span> ${esc(line)}`);
   const [cmd,...args]=tokenize(line);
   if(!cmd)return;
   if(!CMDS[cmd])return print(`${esc(cmd)}: command not found · ievadi <b>help</b>`,"err");
@@ -578,16 +669,17 @@ function suggestions(){
   const v=conIn.value,toks=tokenize(v),trailing=/\s$/.test(v)||!v;
   const cur=trailing?"":(toks[toks.length-1]||""),n=trailing?toks.length:toks.length-1;
   let pool=[];
-  if(n===0)pool=Object.keys(CMDS);
+  if(n===0)pool=Object.keys(CMDS).filter(c=>juarch()?c!=="sudo":c!=="judo");
   else if(toks[0]==="color"||toks[0]==="reset"){
     const last=toks[toks.length-1]||"";
     if(toks[0]==="color"&&n>=2&&(subjects().some(s=>s.toLowerCase()===toks.slice(1,n).join(" ").toLowerCase())))pool=Object.keys(COLORS);
     else pool=subjects().map(q);
   }
-  else if(toks[0]==="theme")pool=["dark","light","auto"];
+  else if(toks[0]==="theme")pool=["dark","light","auto"].concat(juarch()?["juarch"]:[]);
   else if(toks[0]==="week")pool=["today","next","prev"];
   else if(toks[0]==="cat"||toks[0]==="rm")pool=Object.keys(FILES);
-  else if(toks[0]==="man"||(toks[0]==="sudo"&&n===1))pool=Object.keys(CMDS);
+  else if(toks[0]==="man"||((toks[0]==="sudo"||toks[0]==="judo")&&n===1))pool=Object.keys(CMDS).filter(c=>!["sudo","judo"].includes(c));
+  else if(toks[0]==="juarch")pool=["purge","status"];
   else if(toks[0]==="grep")pool=subjects().map(q);
   else if(toks[0]==="ping")pool=["edupage"];
   const c=cur.replace(/^"/,"").toLowerCase();
@@ -614,13 +706,16 @@ document.addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();toggleCon();return}
   if(!inCon&&(e.key==="`"||e.key==="'")&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();toggleCon(true);return}
   if(e.key==="Escape"&&con.classList.contains("open")){
+    if(busy==="seq"){cancelSeq=true;return}
     if(busy){stopAnim();return}
-    if(pendingSudo){pendingSudo=null;conIn.type="text";conIn.value="";setPrompt();print("sudo: aborted","err");return}
+    if(pendingConfirm){pendingConfirm=null;conIn.value="";conIn.placeholder="help";setPrompt();print("aborted");return}
+    if(pendingSudo){pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();print(`${sudoName()}: aborted`,"err");return}
     toggleCon(false);return
   }
   if(!inCon)return;
   if(busy){e.preventDefault();return}
   if(pendingSudo){if(e.key==="Enter"){e.preventDefault();finishSudo();renderSug()}else if(e.key==="Tab")e.preventDefault();return}
+  if(pendingConfirm){if(e.key==="Enter"){e.preventDefault();finishConfirm();renderSug()}else if(e.key==="Tab")e.preventDefault();return}
   if(e.key==="Tab"){e.preventDefault();accept(sugIdx)}
   else if(e.key==="Enter"){const v=conIn.value.trim();conIn.value="";sugIdx=0;if(v){history=[v,...history.filter(x=>x!==v)].slice(0,50);try{localStorage.setItem("con-history",JSON.stringify(history))}catch(x){}histIdx=-1;run(v)}renderSug()}
   else if(e.key==="ArrowUp"){e.preventDefault();if(sugs.length>1&&conIn.value)sugIdx=(sugIdx-1+sugs.length)%sugs.length,renderSug();else if(histIdx<history.length-1){histIdx++;conIn.value=history[histIdx];renderSug()}}
@@ -628,6 +723,7 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="ArrowRight"&&conIn.selectionStart===conIn.value.length&&sugs.length){e.preventDefault();accept(sugIdx)}
 });
 conIn.addEventListener("input",()=>{sugIdx=0;renderSug()});
+setPrompt();
 conSug.addEventListener("click",e=>{const i=e.target.dataset.i;if(i!==undefined){accept(+i);conIn.focus()}});
 new ResizeObserver(([e])=>document.documentElement.style.setProperty("--toolbar",e.target.offsetHeight+"px")).observe(document.querySelector(".toolbar"));
 load();
