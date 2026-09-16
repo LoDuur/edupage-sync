@@ -15,6 +15,11 @@ from urllib3.util.retry import Retry
 
 urllib3.util.connection.HAS_IPV6 = False
 SESSION = requests.Session()
+SESSION.headers.update({
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+    "Accept": "*/*",
+    "Accept-Language": "lv,en;q=0.8",
+})
 SESSION.mount("https://", HTTPAdapter(max_retries=Retry(total=4, backoff_factor=2, status_forcelist=[500, 502, 503, 504])))
 
 SCHOOL = os.environ.get("EDUPAGE_SCHOOL", "valteh")
@@ -36,7 +41,7 @@ def api(path, args):
     r = SESSION.post(
         f"{BASE}/{path}",
         json={"__args": args, "__gsh": "00000000"},
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "Origin": f"https://{SCHOOL}.edupage.org", "Referer": f"https://{SCHOOL}.edupage.org/timetable/view.php"},
         timeout=30,
     )
     r.raise_for_status()
