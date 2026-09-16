@@ -85,6 +85,7 @@ main{max-width:1280px;margin:0 auto;padding:0 0 3rem}
 .free{position:absolute;left:.3rem;right:.3rem;border-radius:.55rem;border:1.5px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.05rem;color:var(--text-3);font-size:.78rem;font-weight:600;letter-spacing:.01em}
 .free small{font-weight:500;font-size:.68rem;font-variant-numeric:tabular-nums}
 .free.past{opacity:.45}
+.brk{position:absolute;left:.3rem;right:.3rem;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:.62rem;font-weight:500;letter-spacing:.01em;pointer-events:none;white-space:nowrap;overflow:hidden}
 .subs{margin:.5rem 0 0;background:color-mix(in srgb,var(--amber) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:.7rem;padding:.5rem .65rem;font-size:.78rem;line-height:1.35}
 .subs b{display:block;color:var(--amber);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
 .subs div span{opacity:.7;font-variant-numeric:tabular-nums;margin-right:.35rem}
@@ -288,7 +289,20 @@ function render(){
         :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`;
       canvas.appendChild(el);
     }
-    for(const f of freeBlocks(evs,evs[0]?.dayType)){
+    const frees=freeBlocks(evs,evs[0]?.dayType);
+    let prevEnd=null;
+    for(const e of evs){
+      if(prevEnd!==null&&e._s>prevEnd){
+        const gap=e._s-prevEnd;
+        if(gap>=8&&!frees.some(f=>f.start<e._s&&f.end>prevEnd)){
+          const b=document.createElement("div");b.className="brk";b.dataset.s=prevEnd;b.dataset.e=e._s;
+          b.style.top=pct(prevEnd)+"%";b.style.height=(pct(e._s)-pct(prevEnd))+"%";
+          b.textContent=`Starpbrīdis · ${gap} min`;canvas.appendChild(b);
+        }
+      }
+      prevEnd=Math.max(prevEnd??0,e._e);
+    }
+    for(const f of frees){
       const el=document.createElement("div");
       el.className="free";el.dataset.s=f.start;el.dataset.e=f.end;
       el.style.top=pct(f.start)+"%";el.style.height=`calc(${pct(f.end)-pct(f.start)}% - 3px)`;

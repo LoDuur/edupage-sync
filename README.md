@@ -39,9 +39,9 @@ Messages go to one WhatsApp chat from your own account via [Green API](https://g
 4. Find the group ID: `GREEN_API_ID_INSTANCE=… GREEN_API_TOKEN=… python whatsapp.py --chats` → add the `…@g.us` value as secret `WHATSAPP_CHAT_ID`.
 5. Test: `… WHATSAPP_CHAT_ID=… python whatsapp.py --test "Tests"`.
 
-What is sent:
-- **Every school-day morning** (first run after 07:00 Riga): today's lessons with times/rooms/teachers, today's substitutions, and changes since the previous digest.
-- **Immediately**: a new weekly timetable (full week), timetable changes, and new/cancelled substitutions from EduPage's *Aizvietošana* page.
+What is sent (as a rendered image + one-line caption with the website link):
+- **Every school-day morning** (first run after 07:00 Riga): an image of today's lessons (times, rooms, teachers, breaks, substitutions).
+- **Immediately**: a new weekly timetable (week image), timetable changes (week image), and new/cancelled substitutions (day image) from EduPage's *Aizvietošana* page.
 
 `DAILY_HOUR` (default `7`) changes the digest hour. Linked-device automation is outside WhatsApp's terms; keep volume low.
 

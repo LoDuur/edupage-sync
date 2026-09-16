@@ -12,6 +12,7 @@ import requests
 
 import bells
 import messages
+import render
 import substitutions
 import whatsapp
 import urllib3.util.connection
@@ -45,6 +46,8 @@ WEEKDAY_TYPE_CHECK = bells.WEEKDAY_TYPE
 PAST_DAYS = 14
 CLASS_SHORT = ""
 DAILY_HOUR = int(os.environ.get("DAILY_HOUR", "7"))
+SITE_URL = os.environ.get("SITE_URL", "https://loduur.github.io/edupage-sync/")
+IMG_DIR = ROOT / "out"
 FUTURE_DAYS = 60
 KEEP_DAYS = 60
 
@@ -333,6 +336,23 @@ def discord_text(title, lines, color):
     requests.post(url, json={"embeds": [{"title": title, "description": "\n".join(lines[:30]), "color": color}]}, timeout=30).raise_for_status()
 
 
+def footer_text():
+    return f"{SITE_URL.replace('https://', '').rstrip('/')} · atjaunināts {datetime.now(TZ):%d.%m. %H:%M}"
+
+
+def week_days(ws, events):
+    return [((ws + timedelta(days=i)).isoformat(), [e for e in events.values() if e["date"] == (ws + timedelta(days=i)).isoformat()]) for i in range(5)]
+
+
+def send_week_image(title, ws, events, subs, caption):
+    IMG_DIR.mkdir(exist_ok=True)
+    by_date = {}
+    for r in subs.values():
+        by_date.setdefault(r["date"], []).append(r)
+    path = render.week_image(CLASS_NAME, title, week_days(ws, events), by_date, IMG_DIR / f"week-{ws}.png", footer_text())
+    return whatsapp.send_image(str(path), caption)
+
+
 def is_school_day(d):
     return d.weekday() < 5 and not bells.is_holiday(d)
 
@@ -415,17 +435,28 @@ def main():
                 old_events[key]["gcal_id"] = gid
         notify_discord(added, changed, removed, versions)
         if not new_versions:
-            whatsapp.send(messages.changes(added, changed, removed, event_line))
+            dates = sorted({ev["date"] for g in (added, changed, removed) for ev in g.values()})
+            weeks = sorted({date.fromisoformat(d) - timedelta(days=date.fromisoformat(d).weekday()) for d in dates})
+            n = len(added) + len(changed) + len(removed)
+            for ws in weeks:
+                send_week_image(f"Izmaiņas stundu sarakstā {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
+                                f"🔄 *Izmaiņas stundu sarakstā* ({n})\n{SITE_URL}")
 
     for ws, num in new_versions:
-        days = [((ws + timedelta(days=i)).isoformat(), [e for e in new_events.values() if e["date"] == (ws + timedelta(days=i)).isoformat()]) for i in range(5)]
-        whatsapp.send(messages.week(CLASS_NAME, num, ws, days))
+        send_week_image(f"Stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
+                        f"🗓 *Jauns stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}*\n{SITE_URL}")
     state["seen_versions"] = sorted({num for _, num in versions} | set(seen_versions or []))[-20:]
 
     if subs_added or subs_removed:
         text = messages.substitutions(subs_added, subs_removed)
-        whatsapp.send(text)
         discord_text(f"Aizvietošana — {CLASS_NAME}", text.split("\n")[1:], 0xE67E22)
+        IMG_DIR.mkdir(exist_ok=True)
+        for iso in sorted({r["date"] for r in subs_added + subs_removed}):
+            path = render.day_image(CLASS_NAME, iso, [e for e in new_events.values() if e["date"] == iso],
+                                    [r for r in subs_new.values() if r["date"] == iso], IMG_DIR / f"day-{iso}.png", footer_text())
+            cancelled = [r for r in subs_removed if r["date"] == iso]
+            note = f"\n_(atcelts: {', '.join(r['period'] + '. st.' for r in cancelled)})_" if cancelled else ""
+            whatsapp.send_image(str(path), f"⚠️ *Aizvietošana {messages._d(iso)}*{note}\n{SITE_URL}")
     state["substitutions"] = {k: r for k, r in subs_new.items()}
 
     if send_daily:
@@ -438,8 +469,18 @@ def main():
         if added or changed or removed:
             for mark, group in (("➕", added), ("✏️", changed), ("➖", removed)):
                 recent += [f"{mark} {event_line(group[k])}" for k in group]
-        sent = whatsapp.send(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
-                                            [r for r in subs_new.values() if r["date"] == today.isoformat()], list(dict.fromkeys(recent))[:20]))
+        recent = list(dict.fromkeys(recent))
+        today_subs = [r for r in subs_new.values() if r["date"] == today.isoformat()]
+        IMG_DIR.mkdir(exist_ok=True)
+        path = render.day_image(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
+                                today_subs, IMG_DIR / f"day-{today}.png", footer_text())
+        caption = f"📅 *{messages._d(today.isoformat())}* · {CLASS_NAME}"
+        if today_subs:
+            caption += f"\n⚠️ Aizvietošana: {len(today_subs)}"
+        if recent:
+            caption += f"\n🔄 Izmaiņas kopš pēdējās ziņas: {len(recent)}"
+        caption += f"\n{SITE_URL}"
+        sent = whatsapp.send_image(str(path), caption)
         if sent:
             state["last_daily"] = today.isoformat()
             state["last_daily_at"] = now.isoformat(timespec="seconds")

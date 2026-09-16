@@ -43,6 +43,18 @@ def _split(text):
     return chunks
 
 
+def send_image(path, caption, chat_id=None):
+    chat_id = chat_id or CHAT_ID
+    if not (ID_INSTANCE and TOKEN and chat_id):
+        print(f"WhatsApp not configured; skipping image {path}:\n" + caption)
+        return False
+    with open(path, "rb") as f:
+        r = requests.post(_url("sendFileByUpload"), data={"chatId": chat_id, "caption": caption[:1000]},
+                          files={"file": (os.path.basename(path), f, "image/png")}, timeout=60)
+    r.raise_for_status()
+    return True
+
+
 def list_chats():
     r = requests.get(_url("getChats"), timeout=60)
     r.raise_for_status()
