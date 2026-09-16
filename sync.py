@@ -9,6 +9,13 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests
+import urllib3.util.connection
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+urllib3.util.connection.HAS_IPV6 = False
+SESSION = requests.Session()
+SESSION.mount("https://", HTTPAdapter(max_retries=Retry(total=4, backoff_factor=2, status_forcelist=[500, 502, 503, 504])))
 
 SCHOOL = os.environ.get("EDUPAGE_SCHOOL", "valteh")
 CLASS_NAME = os.environ.get("CLASS_NAME", "2.k. 28.grupa")
@@ -24,7 +31,7 @@ KEEP_DAYS = 60
 
 
 def api(path, args):
-    r = requests.post(
+    r = SESSION.post(
         f"{BASE}/{path}",
         json={"__args": args, "__gsh": "00000000"},
         headers={"Content-Type": "application/json"},
