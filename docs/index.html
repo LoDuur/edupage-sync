@@ -212,7 +212,20 @@ async function load(){
   setInterval(tick,30000);
 }
 
-function eventsFor(iso){return data.events.filter(e=>e.date===iso).sort((a,b)=>a.start<b.start?-1:1)}
+function splitPeriods(evs){
+  const out=[];
+  for(const e of evs){
+    const [first,last]=parsePeriods(e.periods);
+    const table=bells[e.dayType]||bells.midweek;
+    if(last===first||!table||!table[last-1]){out.push(e);continue}
+    for(let p=first;p<=last;p++){
+      const [s,en]=table[p-1];
+      out.push({...e,periods:`${p}.`,start:e.start.slice(0,11)+fromMin(s)+e.start.slice(16),end:e.end.slice(0,11)+fromMin(en)+e.end.slice(16)});
+    }
+  }
+  return out;
+}
+function eventsFor(iso){return splitPeriods(data.events.filter(e=>e.date===iso)).sort((a,b)=>a.start<b.start?-1:1)}
 
 function freeBlocks(evs,dayType){
   const table=bells[dayType]||bells.midweek;
@@ -294,7 +307,7 @@ function render(){
     for(const e of evs){
       if(prevEnd!==null&&e._s>prevEnd){
         const gap=e._s-prevEnd;
-        if(gap>=8&&!frees.some(f=>f.start<e._s&&f.end>prevEnd)){
+        if(gap>=7&&!frees.some(f=>f.start<e._s&&f.end>prevEnd)){
           const b=document.createElement("div");b.className="brk";b.dataset.s=prevEnd;b.dataset.e=e._s;
           b.style.top=pct(prevEnd)+"%";b.style.height=(pct(e._s)-pct(prevEnd))+"%";
           b.textContent=`Starpbrīdis · ${gap} min`;canvas.appendChild(b);

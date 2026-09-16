@@ -1,9 +1,11 @@
 import colorsys
-import hashlib
+import re
 from datetime import date
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+
+import bells
 
 DAYS = ["Pirmdiena", "Otrdiena", "Trešdiena", "Ceturtdiena", "Piektdiena", "Sestdiena", "Svētdiena"]
 HUES = [212, 262, 340, 14, 32, 48, 150, 175, 192, 285]
@@ -77,12 +79,31 @@ def ellipsize(draw, text, f, max_w):
     return text + "…"
 
 
+def split_periods(events):
+    out = []
+    for e in events:
+        nums = [int(n) for n in re.findall(r"\d+", e["periods"])]
+        first, last = nums[0], nums[-1]
+        table = bells.TABLES.get(e.get("dayType") or "midweek", bells.TABLES["midweek"])
+        if last == first or not all(p in table for p in range(first, last + 1)):
+            out.append(e)
+            continue
+        for p in range(first, last + 1):
+            start, end = table[p]
+            seg = dict(e)
+            seg["periods"] = f"{p}."
+            seg["start"] = e["start"][:11] + f"{start // 60:02d}:{start % 60:02d}" + e["start"][16:]
+            seg["end"] = e["end"][:11] + f"{end // 60:02d}:{end % 60:02d}" + e["end"][16:]
+            out.append(seg)
+    return out
+
+
 def draw_column(draw, x, y, w, iso, events, subs, show_head=True):
     inner_w = w - 2 * PAD
     if show_head:
         draw.text((x + PAD, y), dname(iso), font=F_HEAD, fill=TEXT)
         y += 30 * S
-    events = sorted(events, key=lambda e: e["start"])
+    events = sorted(split_periods(events), key=lambda e: e["start"])
     if not events:
         rounded(draw, (x + PAD, y, x + w - PAD, y + 44 * S), 10, CARD)
         draw.text((x + w / 2, y + 22 * S), "Nav stundu", font=F_META, fill=TEXT3, anchor="mm")
