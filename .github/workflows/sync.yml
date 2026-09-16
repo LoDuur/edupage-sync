@@ -3,6 +3,8 @@ name: Sync EduPage timetable
 on:
   schedule:
     - cron: "0 * * * *"
+    - cron: "5 4 * * 1-5"
+    - cron: "5 5 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,9 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           EDUPAGE_PROXY_URL: ${{ vars.EDUPAGE_PROXY_URL }}
           EDUPAGE_PROXY_KEY: ${{ secrets.EDUPAGE_PROXY_KEY }}
+          GREEN_API_ID_INSTANCE: ${{ secrets.GREEN_API_ID_INSTANCE }}
+          GREEN_API_TOKEN: ${{ secrets.GREEN_API_TOKEN }}
+          WHATSAPP_CHAT_ID: ${{ secrets.WHATSAPP_CHAT_ID }}
       - name: Commit state
         run: |
           git config user.name "edupage-sync bot"

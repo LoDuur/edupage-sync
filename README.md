@@ -29,6 +29,22 @@ Add your Google account under *Settings → Apps → Calendar → Accounts* (iOS
 Alternative for any calendar app: subscribe to
 `https://raw.githubusercontent.com/<user>/edupage-sync/main/docs/timetable.ics`
 
+## WhatsApp (Green API)
+
+Messages go to one WhatsApp chat from your own account via [Green API](https://green-api.com):
+
+1. Register → *Create instance* (free **Developer** plan).
+2. Open the instance → **QR code** → phone: WhatsApp → *Linked devices* → *Link a device* → scan.
+3. Copy **idInstance** and **apiTokenInstance**; add them as repo secrets `GREEN_API_ID_INSTANCE` and `GREEN_API_TOKEN`.
+4. Find the group ID: `GREEN_API_ID_INSTANCE=… GREEN_API_TOKEN=… python whatsapp.py --chats` → add the `…@g.us` value as secret `WHATSAPP_CHAT_ID`.
+5. Test: `… WHATSAPP_CHAT_ID=… python whatsapp.py --test "Tests"`.
+
+What is sent:
+- **Every school-day morning** (first run after 07:00 Riga): today's lessons with times/rooms/teachers, today's substitutions, and changes since the previous digest.
+- **Immediately**: a new weekly timetable (full week), timetable changes, and new/cancelled substitutions from EduPage's *Aizvietošana* page.
+
+`DAILY_HOUR` (default `7`) changes the digest hour. Linked-device automation is outside WhatsApp's terms; keep volume low.
+
 ## Local run
 
 ```bash

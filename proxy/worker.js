@@ -1,4 +1,4 @@
-const ALLOWED = /^\/timetable\/server\/(ttviewer|regulartt)\.js$/;
+const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
 
 export default {
   async fetch(request, env) {

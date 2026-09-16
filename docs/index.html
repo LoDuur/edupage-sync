@@ -85,6 +85,9 @@ main{max-width:1280px;margin:0 auto;padding:0 0 3rem}
 .free{position:absolute;left:.3rem;right:.3rem;border-radius:.55rem;border:1.5px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.05rem;color:var(--text-3);font-size:.78rem;font-weight:600;letter-spacing:.01em}
 .free small{font-weight:500;font-size:.68rem;font-variant-numeric:tabular-nums}
 .free.past{opacity:.45}
+.subs{margin:.5rem 0 0;background:color-mix(in srgb,var(--amber) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:.7rem;padding:.5rem .65rem;font-size:.78rem;line-height:1.35}
+.subs b{display:block;color:var(--amber);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
+.subs div span{opacity:.7;font-variant-numeric:tabular-nums;margin-right:.35rem}
 
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none;box-shadow:0 0 0 .5px rgba(0,0,0,.05)}
 .nowline::before{content:"";position:absolute;left:-1px;top:50%;width:.7rem;height:.7rem;border-radius:50%;background:var(--red);transform:translate(0,-50%)}
@@ -264,7 +267,9 @@ function render(){
     const day=document.createElement("div");
     day.className="day"+(iso===todayIso?" today":"");day.dataset.iso=iso;day.dataset.idx=i;
     const short=evs.some(e=>e.dayType==="short");
-    day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>`;
+    const subs=(data.substitutions||[]).filter(s=>s.date===iso);
+    const subsHtml=subs.length?`<div class="subs"><b>Aizvietošana</b>${subs.map(s=>`<div><span>${esc(s.period)}.</span>${esc(s.text)}</div>`).join("")}</div>`:"";
+    day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>${subsHtml}`;
     const canvas=day.querySelector(".canvas");
     if(!evs.length)canvas.innerHTML='<div class="empty">Nav stundu</div>';
     layoutOverlaps(evs);

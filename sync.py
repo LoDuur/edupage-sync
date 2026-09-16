@@ -11,6 +11,9 @@ from zoneinfo import ZoneInfo
 import requests
 
 import bells
+import messages
+import substitutions
+import whatsapp
 import urllib3.util.connection
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -28,7 +31,7 @@ SCHOOL = os.environ.get("EDUPAGE_SCHOOL", "valteh")
 CLASS_NAME = os.environ.get("CLASS_NAME", "2.k. 28.grupa")
 TZ = ZoneInfo(os.environ.get("TIMEZONE", "Europe/Riga"))
 PROXY_URL = os.environ.get("EDUPAGE_PROXY_URL", "").rstrip("/")
-BASE = (PROXY_URL if PROXY_URL else f"https://{SCHOOL}.edupage.org") + "/timetable/server"
+BASE = PROXY_URL if PROXY_URL else f"https://{SCHOOL}.edupage.org"
 ROOT = Path(__file__).resolve().parent
 STATE_FILE = ROOT / "state.json"
 ICS_FILE = ROOT / "docs" / "timetable.ics"
@@ -40,6 +43,8 @@ BROKEN_CHARS = ("?", "\ufffd")
 DAY_NAMES = ["Pr", "Ot", "Tr", "Ce", "Pk"]
 WEEKDAY_TYPE_CHECK = bells.WEEKDAY_TYPE
 PAST_DAYS = 14
+CLASS_SHORT = ""
+DAILY_HOUR = int(os.environ.get("DAILY_HOUR", "7"))
 FUTURE_DAYS = 60
 KEEP_DAYS = 60
 
@@ -62,7 +67,7 @@ def api(path, args):
 
 
 def fetch_versions(today):
-    data = api("ttviewer.js?__func=getTTViewerData", [None, today.year])
+    data = api("timetable/server/ttviewer.js?__func=getTTViewerData", [None, today.year])
     by_week = {}
     for tt in data["regular"]["timetables"]:
         if tt.get("hidden"):
@@ -82,7 +87,7 @@ def fetch_versions(today):
 
 
 def fetch_tables(tt_num):
-    data = api("regulartt.js?__func=regularttGetData", [None, str(tt_num)])
+    data = api("timetable/server/regulartt.js?__func=regularttGetData", [None, str(tt_num)])
     return {t["id"]: {r["id"]: r for r in t["data_rows"]} for t in data["dbiAccessorRes"]["tables"]}
 
 
@@ -121,6 +126,8 @@ def build_events(tables, week_start, tt_num, overrides):
     if not classes:
         raise SystemExit(f"Class '{CLASS_NAME}' not found. Available: {[c['name'] for c in tables['classes'].values()]}")
     class_id = classes[0]["id"]
+    global CLASS_SHORT
+    CLASS_SHORT = classes[0]["short"].strip()
     periods = tables["periods"]
     events = {}
     for card in tables["cards"].values():
@@ -286,7 +293,7 @@ def write_ics(events):
     ICS_FILE.write_text("\r\n".join(lines) + "\r\n")
 
 
-def write_site_data(events, versions, added, changed, removed):
+def write_site_data(events, versions, added, changed, removed, subs=None):
     now = datetime.now(TZ).isoformat(timespec="seconds")
     changes = json.loads(CHANGES_FILE.read_text()) if CHANGES_FILE.exists() else []
     if added or changed or removed:
@@ -302,9 +309,32 @@ def write_site_data(events, versions, added, changed, removed):
         "updated": now,
         "versions": [{"weekStart": ws.isoformat(), "num": num} for ws, num in versions],
         "bells": bells.SCHEDULES,
+        "substitutions": sorted((subs or {}).values(), key=lambda r: (r["date"], r["period"])),
         "events": [{k: v for k, v in ev.items() if k not in ("hash", "gcal_id")} for _, ev in sorted(events.items(), key=lambda kv: kv[1]["start"])],
     }
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False) + "\n")
+
+
+def fetch_substitutions(today, overrides):
+    rows = []
+    for i in range(0, 8):
+        d = today + timedelta(days=i)
+        if d.weekday() >= 5 or bells.is_holiday(d):
+            continue
+        page = api("substitution/server/viewer.js?__func=getSubstViewerDayDataHtml", [None, {"date": d.isoformat(), "mode": "classes"}])
+        rows += substitutions.parse(page, CLASS_SHORT, fix_name, d.isoformat())
+    return {substitutions.key(r): r for r in rows}
+
+
+def discord_text(title, lines, color):
+    url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not url:
+        return
+    requests.post(url, json={"embeds": [{"title": title, "description": "\n".join(lines[:30]), "color": color}]}, timeout=30).raise_for_status()
+
+
+def is_school_day(d):
+    return d.weekday() < 5 and not bells.is_holiday(d)
 
 
 def notify_discord(added, changed, removed, versions):
@@ -353,9 +383,24 @@ def main():
         for key in sorted(group, key=lambda k: group[k]["start"]):
             print(mark, event_line(group[key]))
 
+    subs_new = fetch_substitutions(today, overrides)
+    subs_old = state.get("substitutions", {})
+    subs_added = [r for k, r in subs_new.items() if k not in subs_old]
+    subs_removed = [r for k, r in subs_old.items() if k not in subs_new and r["date"] >= today.isoformat()]
+    print(f"substitutions: {len(subs_new)} current, +{len(subs_added)} -{len(subs_removed)}")
+
+    seen_versions = state.get("seen_versions")
+    new_versions = [] if seen_versions is None else [(ws, num) for ws, num in versions if num not in seen_versions]
+
+    now = datetime.now(TZ)
+    send_daily = is_school_day(today) and now.hour >= DAILY_HOUR and state.get("last_daily") != today.isoformat()
+
     if args.dry_run:
         write_ics({**old_events, **new_events})
-        write_site_data({**old_events, **new_events}, versions, {}, {}, {})
+        write_site_data({**old_events, **new_events}, versions, {}, {}, {}, subs_new)
+        print("--- daily digest preview ---")
+        print(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
+                             [r for r in subs_new.values() if r["date"] == today.isoformat()], []))
         return
 
     if added or changed or removed:
@@ -369,11 +414,39 @@ def main():
             if gid:
                 old_events[key]["gcal_id"] = gid
         notify_discord(added, changed, removed, versions)
+        if not new_versions:
+            whatsapp.send(messages.changes(added, changed, removed, event_line))
+
+    for ws, num in new_versions:
+        days = [((ws + timedelta(days=i)).isoformat(), [e for e in new_events.values() if e["date"] == (ws + timedelta(days=i)).isoformat()]) for i in range(5)]
+        whatsapp.send(messages.week(CLASS_NAME, num, ws, days))
+    state["seen_versions"] = sorted({num for _, num in versions} | set(seen_versions or []))[-20:]
+
+    if subs_added or subs_removed:
+        text = messages.substitutions(subs_added, subs_removed)
+        whatsapp.send(text)
+        discord_text(f"Aizvietošana — {CLASS_NAME}", text.split("\n")[1:], 0xE67E22)
+    state["substitutions"] = {k: r for k, r in subs_new.items()}
+
+    if send_daily:
+        since = state.get("last_daily_at") or ""
+        recent = []
+        if CHANGES_FILE.exists():
+            for c in json.loads(CHANGES_FILE.read_text()):
+                if c["time"] > since:
+                    recent += [f"➕ {l}" for l in c["added"]] + [f"✏️ {l}" for l in c["changed"]] + [f"➖ {l}" for l in c["removed"]]
+        if added or changed or removed:
+            for mark, group in (("➕", added), ("✏️", changed), ("➖", removed)):
+                recent += [f"{mark} {event_line(group[k])}" for k in group]
+        whatsapp.send(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
+                                     [r for r in subs_new.values() if r["date"] == today.isoformat()], list(dict.fromkeys(recent))[:20]))
+        state["last_daily"] = today.isoformat()
+        state["last_daily_at"] = now.isoformat(timespec="seconds")
 
     cutoff = (today - timedelta(days=KEEP_DAYS)).isoformat()
     state["events"] = {k: v for k, v in old_events.items() if v["date"] >= cutoff}
     write_ics(state["events"])
-    write_site_data({**state["events"], **new_events}, versions, added, changed, removed)
+    write_site_data({**state["events"], **new_events}, versions, added, changed, removed, subs_new)
     save_state(state)
 
 
