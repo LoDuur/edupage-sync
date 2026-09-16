@@ -24,6 +24,8 @@ BASE = f"https://{SCHOOL}.edupage.org/timetable/server"
 ROOT = Path(__file__).resolve().parent
 STATE_FILE = ROOT / "state.json"
 ICS_FILE = ROOT / "docs" / "timetable.ics"
+DATA_FILE = ROOT / "docs" / "data.json"
+CHANGES_FILE = ROOT / "docs" / "changes.json"
 DAY_NAMES = ["Pr", "Ot", "Tr", "Ce", "Pk"]
 PAST_DAYS = 14
 FUTURE_DAYS = 60
@@ -122,6 +124,9 @@ def build_events(tables, week_start, tt_num):
                 "location": ", ".join(rooms),
                 "description": "\n".join(desc_parts),
                 "periods": f"{first}." if first == last else f"{first}.–{last}.",
+                "teachers": teachers,
+                "groups": group_names,
+                "version": tt_num,
             }
             ev["hash"] = hashlib.sha1("|".join([ev["summary"], ev["start"], ev["end"], ev["location"], ev["description"]]).encode()).hexdigest()
             events[f"{day.isoformat()}|{first}|{lesson['id']}"] = ev
@@ -237,6 +242,26 @@ def write_ics(events):
     ICS_FILE.write_text("\r\n".join(lines) + "\r\n")
 
 
+def write_site_data(events, versions, added, changed, removed):
+    now = datetime.now(TZ).isoformat(timespec="seconds")
+    changes = json.loads(CHANGES_FILE.read_text()) if CHANGES_FILE.exists() else []
+    if added or changed or removed:
+        entry = {"time": now, "versions": [v for _, v in versions], "added": [], "changed": [], "removed": []}
+        for name, group in (("added", added), ("changed", changed), ("removed", removed)):
+            entry[name] = [event_line(group[k]) for k in sorted(group, key=lambda k: group[k]["start"])]
+        changes.insert(0, entry)
+        CHANGES_FILE.write_text(json.dumps(changes[:50], ensure_ascii=False, indent=1) + "\n")
+    data = {
+        "school": SCHOOL,
+        "className": CLASS_NAME,
+        "timezone": str(TZ),
+        "updated": now,
+        "versions": [{"weekStart": ws.isoformat(), "num": num} for ws, num in versions],
+        "events": [{k: v for k, v in ev.items() if k not in ("hash", "gcal_id")} for _, ev in sorted(events.items(), key=lambda kv: kv[1]["start"])],
+    }
+    DATA_FILE.write_text(json.dumps(data, ensure_ascii=False) + "\n")
+
+
 def notify_discord(added, changed, removed, versions):
     url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not url:
@@ -284,6 +309,7 @@ def main():
 
     if args.dry_run:
         write_ics({**old_events, **new_events})
+        write_site_data({**old_events, **new_events}, versions, {}, {}, {})
         return
 
     if added or changed or removed:
@@ -301,6 +327,7 @@ def main():
     cutoff = (today - timedelta(days=KEEP_DAYS)).isoformat()
     state["events"] = {k: v for k, v in old_events.items() if v["date"] >= cutoff}
     write_ics(state["events"])
+    write_site_data({**state["events"], **new_events}, versions, added, changed, removed)
     save_state(state)
 
 

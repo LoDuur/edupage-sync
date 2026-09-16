@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stundu saraksts</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;--now:#fef3c7;--now-border:#f59e0b;--lunch:#f3f4f6;--add:#16a34a;--rem:#dc2626;--chg:#d97706}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--text:#e6e8eb;--muted:#9aa3af;--line:#262b35;--accent:#60a5fa;--accent-soft:#1e2a44;--now:#3b2f0c;--now-border:#f59e0b;--lunch:#1c2028}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1200px;margin:0 auto}
+h1{margin:0;font-size:22px}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+button,.btn{border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;font:inherit;cursor:pointer;text-decoration:none}
+button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+main{max-width:1200px;margin:0 auto;padding:0 16px 40px}
+.week{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:900px){.week{grid-template-columns:1fr}}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:60px}
+.day h2{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;color:var(--muted);font-weight:600}
+.day.today{border-color:var(--accent)}
+.day.today h2{color:var(--accent)}
+.lesson{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:7px 9px;margin-bottom:6px}
+.lesson.lunch{border-left-color:var(--muted);background:var(--lunch)}
+.lesson.now{background:var(--now);border-left-color:var(--now-border)}
+.lesson.past{opacity:.55}
+.time{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.name{font-weight:600;margin:2px 0}
+.meta{font-size:12px;color:var(--muted)}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+h3{margin:28px 0 10px;font-size:16px}
+.change{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.change .t{color:var(--muted);margin-bottom:4px}
+.change div span{display:inline-block;width:1.4em}
+.add{color:var(--add)}.rem{color:var(--rem)}.chg{color:var(--chg)}
+footer{color:var(--muted);font-size:12px;margin-top:30px}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Stundu saraksts</h1>
+  <div class="sub" id="updated"></div>
+  <div class="bar">
+    <button id="prev">‹</button>
+    <button id="thisweek">Šī nedēļa</button>
+    <button id="next">›</button>
+    <span id="range" class="sub"></span>
+  </div>
+</header>
+<main>
+  <div class="week" id="week"></div>
+  <h3>Pievienot kalendāram</h3>
+  <div class="bar">
+    <a class="btn" id="webcal" href="#">Apple / iPhone kalendārs</a>
+    <a class="btn" id="gcal" href="#" target="_blank" rel="noopener">Google kalendārs</a>
+    <a class="btn" href="timetable.ics" download>Lejupielādēt .ics</a>
+  </div>
+  <h3>Izmaiņas</h3>
+  <div id="changes"></div>
+  <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a>, atjaunināti katru stundu.</footer>
+</main>
+<script>
+const DAYS=["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena"];
+const pad=n=>String(n).padStart(2,"0");
+const fmtDate=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
+const isoDate=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const monday=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const hm=iso=>iso.slice(11,16);
+
+let data,weekStart;
+
+async function load(){
+  data=await (await fetch("data.json?"+Date.now())).json();
+  document.getElementById("title").textContent=data.className;
+  document.title=data.className+" · Stundu saraksts";
+  document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV");
+  const base=location.href.replace(/index\.html$/,"").replace(/#.*$/,"");
+  const ics=base+"timetable.ics";
+  document.getElementById("webcal").href=ics.replace(/^https?:/,"webcal:");
+  document.getElementById("gcal").href="https://calendar.google.com/calendar/r?cid="+encodeURIComponent(ics.replace(/^https?:/,"webcal:"));
+  document.getElementById("src").href=`https://${data.school}.edupage.org/timetable/view.php`;
+  weekStart=monday(new Date());
+  renderWeek();renderChanges();
+  setInterval(renderWeek,60000);
+}
+
+function renderWeek(){
+  const now=new Date(),todayIso=isoDate(now);
+  const end=addDays(weekStart,4);
+  document.getElementById("range").textContent=`${fmtDate(weekStart)} – ${fmtDate(end)}${addDays(end,0).getFullYear()}`;
+  const dates=new Set(data.events.map(e=>e.date));
+  document.getElementById("prev").disabled=!data.events.some(e=>e.date<isoDate(weekStart));
+  document.getElementById("next").disabled=!data.events.some(e=>e.date>isoDate(end));
+  const wrap=document.getElementById("week");wrap.innerHTML="";
+  for(let i=0;i<5;i++){
+    const d=addDays(weekStart,i),iso=isoDate(d);
+    const day=document.createElement("div");
+    day.className="day"+(iso===todayIso?" today":"");
+    day.innerHTML=`<h2><span>${DAYS[i]}</span><span>${fmtDate(d)}</span></h2>`;
+    const evs=data.events.filter(e=>e.date===iso);
+    if(!evs.length){day.innerHTML+=`<div class="empty">${dates.has(iso)?"":"Nav stundu"}</div>`}
+    for(const e of evs){
+      const s=new Date(e.start),en=new Date(e.end);
+      const cls=["lesson"];
+      if(/pusdienas/i.test(e.summary))cls.push("lunch");
+      if(now>=s&&now<en)cls.push("now");else if(now>=en)cls.push("past");
+      const meta=[e.location,(e.teachers||[]).join(", ")].filter(Boolean).join(" · ");
+      day.innerHTML+=`<div class="${cls.join(" ")}"><div class="time"><span>${hm(e.start)}–${hm(e.end)}</span><span>${e.periods} st.</span></div><div class="name">${esc(e.summary)}</div>${meta?`<div class="meta">${esc(meta)}</div>`:""}</div>`;
+    }
+    wrap.appendChild(day);
+  }
+}
+
+async function renderChanges(){
+  let changes=[];
+  try{changes=await (await fetch("changes.json?"+Date.now())).json()}catch(e){}
+  const el=document.getElementById("changes");
+  if(!changes.length){el.innerHTML='<div class="empty">Izmaiņu vēl nav.</div>';return}
+  el.innerHTML=changes.slice(0,10).map(c=>{
+    const rows=[...c.added.map(l=>`<div class="add"><span>+</span>${esc(l)}</div>`),
+                ...c.changed.map(l=>`<div class="chg"><span>~</span>${esc(l)}</div>`),
+                ...c.removed.map(l=>`<div class="rem"><span>−</span>${esc(l)}</div>`)];
+    return `<div class="change"><div class="t">${new Date(c.time).toLocaleString("lv-LV")} · versija ${c.versions.join(", ")}</div>${rows.join("")}</div>`;
+  }).join("");
+}
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek()};
+document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);renderWeek()};
+document.getElementById("thisweek").onclick=()=>{weekStart=monday(new Date());renderWeek()};
+load();
+</script>
+</body>
+</html>
