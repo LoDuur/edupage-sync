@@ -24,6 +24,7 @@ main{max-width:1200px;margin:0 auto;padding:0 16px 40px}
 .day h2{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;color:var(--muted);font-weight:600}
 .day.today{border-color:var(--accent)}
 .day.today h2{color:var(--accent)}
+.badge{display:inline-block;font-size:11px;font-weight:600;color:var(--now-border);border:1px solid var(--now-border);border-radius:6px;padding:1px 6px;margin-bottom:8px}
 .lesson{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:7px 9px;margin-bottom:6px}
 .lesson.lunch{border-left-color:var(--muted);background:var(--lunch)}
 .lesson.now{background:var(--now);border-left-color:var(--now-border)}
@@ -104,6 +105,7 @@ function renderWeek(){
     day.className="day"+(iso===todayIso?" today":"");
     day.innerHTML=`<h2><span>${DAYS[i]}</span><span>${fmtDate(d)}</span></h2>`;
     const evs=data.events.filter(e=>e.date===iso);
+    if(evs.some(e=>e.dayType==="short"))day.innerHTML+='<div class="badge">Pirmssvētku diena · 30 min stundas</div>';
     if(!evs.length){day.innerHTML+=`<div class="empty">${dates.has(iso)?"":"Nav stundu"}</div>`}
     for(const e of evs){
       const s=new Date(e.start),en=new Date(e.end);

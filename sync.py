@@ -9,6 +9,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests
+
+import bells
 import urllib3.util.connection
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -33,6 +35,7 @@ ICS_FILE = ROOT / "docs" / "timetable.ics"
 DATA_FILE = ROOT / "docs" / "data.json"
 CHANGES_FILE = ROOT / "docs" / "changes.json"
 DAY_NAMES = ["Pr", "Ot", "Tr", "Ce", "Pk"]
+WEEKDAY_TYPE_CHECK = bells.WEEKDAY_TYPE
 PAST_DAYS = 14
 FUTURE_DAYS = 60
 KEEP_DAYS = 60
@@ -94,7 +97,7 @@ def period_window(periods, period_id, day_idx):
     return start, start + duration
 
 
-def build_events(tables, week_start, tt_num):
+def build_events(tables, week_start, tt_num, overrides):
     classes = [c for c in tables["classes"].values() if c["name"].strip() == CLASS_NAME.strip()]
     if not classes:
         raise SystemExit(f"Class '{CLASS_NAME}' not found. Available: {[c['name'] for c in tables['classes'].values()]}")
@@ -116,8 +119,17 @@ def build_events(tables, week_start, tt_num):
             if bit != "1":
                 continue
             day = week_start + timedelta(days=day_idx)
-            start_min, _ = period_window(periods, str(first), day_idx)
-            _, end_min = period_window(periods, str(last), day_idx)
+            if bells.is_holiday(day):
+                continue
+            win = bells.window(day, first, last, overrides)
+            if win:
+                start_min, end_min = win
+                edupage_start, _ = period_window(periods, str(first), day_idx)
+                if bells.day_type(day, overrides) == WEEKDAY_TYPE_CHECK.get(day.weekday()) and edupage_start != start_min:
+                    print(f"WARNING: EduPage start for {day} period {first} is {edupage_start // 60:02d}:{edupage_start % 60:02d}, bells table says {start_min // 60:02d}:{start_min % 60:02d}")
+            else:
+                start_min, _ = period_window(periods, str(first), day_idx)
+                _, end_min = period_window(periods, str(last), day_idx)
             start = datetime.combine(day, datetime.min.time(), TZ) + timedelta(minutes=start_min)
             end = datetime.combine(day, datetime.min.time(), TZ) + timedelta(minutes=end_min)
             summary = subject + (f" ({', '.join(group_names)})" if group_names else "")
@@ -139,6 +151,7 @@ def build_events(tables, week_start, tt_num):
                 "teachers": teachers,
                 "groups": group_names,
                 "version": tt_num,
+                "dayType": bells.day_type(day, overrides),
             }
             ev["hash"] = hashlib.sha1("|".join([ev["summary"], ev["start"], ev["end"], ev["location"], ev["description"]]).encode()).hexdigest()
             events[f"{day.isoformat()}|{first}|{lesson['id']}"] = ev
@@ -306,9 +319,10 @@ def main():
     if not versions:
         print("No visible timetable versions in range; nothing to do.")
         return
+    overrides = bells.load_overrides()
     new_events = {}
     for week_start, tt_num in versions:
-        new_events.update(build_events(fetch_tables(tt_num), week_start, tt_num))
+        new_events.update(build_events(fetch_tables(tt_num), week_start, tt_num, overrides))
     print(f"Versions: {versions}; events: {len(new_events)}")
 
     state = load_state()

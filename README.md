@@ -38,6 +38,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 `--dry-run` fetches and prints the diff, writes `docs/timetable.ics`, but does not touch Google, Discord or `state.json`.
 
+## Lesson times
+
+Lesson times come from the school's official bell schedule (`bells.py`, typed in from [MĀCĪBU STUNDU LAIKI](https://valmierastehnikums.lv/wp-content/uploads/2024/10/MACIBU_STUNDU_LAIKI.pdf-3.pdf)): separate tables for Monday, Tuesday–Thursday, Friday and the shortened pre-holiday day (30-minute lessons). A day is treated as pre-holiday when the next day is a Latvian public holiday; lessons on public holidays are skipped. To force a schedule for a specific date, add it to `overrides.json`, e.g. `{"2026-12-18": "short"}` (values: `monday`, `midweek`, `friday`, `short`).
+
 ## Configuration
 
 Environment variables: `CLASS_NAME` (default `2.k. 28.grupa`), `EDUPAGE_SCHOOL` (default `valteh`), `TIMEZONE` (default `Europe/Riga`). Class names must match the EduPage "Klases" list exactly.
