@@ -1,5 +1,47 @@
 [
  {
+  "time": "2026-09-16T12:33:48+03:00",
+  "versions": [
+   "505",
+   "507"
+  ],
+  "added": [],
+  "changed": [
+   "Pr 07.09 1.–2. Sociālās zin. un vēsture (355.)",
+   "Pr 07.09 3.–4. Dabaszinības (221.)",
+   "Pr 07.09 6.–7. Datu bāzu tehnoloģijas (206.)",
+   "Pr 07.09 8.–9. Matemātika I (356.)",
+   "Ot 08.09 2.–3. Latviešu val. I (354.)",
+   "Ot 08.09 5.–6. Iniciatīva un uzņēmējdarb. (1.l.) (307.)",
+   "Ot 08.09 7. Literatūra (Biblioteka)",
+   "Ot 08.09 9.–10. Programmas koda rakstīšana (Kodēšana) (202.)",
+   "Tr 09.09 2. Latviešu val. I (354.)",
+   "Tr 09.09 5. Iniciatīva un uzņēmējdarb. (1.l.) (355.)",
+   "Tr 09.09 6. Sociālās zin. un vēsture (355.)",
+   "Tr 09.09 7.–8. Iniciatīva un uzņēmējdarb. (1.l.) (212.)",
+   "Ce 10.09 1. Svešval. (B1) - krievu val. (310.)",
+   "Ce 10.09 3.–4. Literatūra (MNT)",
+   "Ce 10.09 6.–7. Svešval. I (B2) - angļu val. (213.)",
+   "Ce 10.09 8.–9. Programmas izstrādes process (IT labor.)",
+   "Pk 11.09 6.–7. Programmas koda rakstīšana (Kodēšana) (202.)",
+   "Pr 14.09 5.–6. Matemātikas speciālās nodaļas (223.)",
+   "Pr 14.09 7.–8. Programmas koda rakstīšana (Kodēšana) (202.)",
+   "Ot 15.09 2.–3. Datu bāzu tehnoloģijas (206.)",
+   "Ot 15.09 7.–8. Iniciatīva un uzņēmējdarb. (1.l.) (118.)",
+   "Tr 16.09 1.–2. Programmas izstrādes process (IT labor.)",
+   "Tr 16.09 3.–4. Programmas izstrādes process (IT labor.)",
+   "Tr 16.09 7.–8. Iniciatīva un uzņēmējdarb. (1.l.) (104.)",
+   "Ce 17.09 5.–6. Latviešu val. I (354.)",
+   "Ce 17.09 8. Iniciatīva un uzņēmējdarb. (1.l.) (104.)",
+   "Ce 17.09 9.–10. Sociālās zin. un vēsture (355.)",
+   "Pk 18.09 2. Iniciatīva un uzņēmējdarb. (1.l.) (104.)",
+   "Pk 18.09 3.–4. Programmas koda rakstīšana (Kodēšana) (202.)",
+   "Pk 18.09 8.–9. Datu bāzu tehnoloģijas (206.)",
+   "Pk 18.09 10. Iniciatīva un uzņēmējdarb. (1.l.) (104.)"
+  ],
+  "removed": []
+ },
+ {
   "time": "2026-09-16T12:17:23+03:00",
   "versions": [
    "505",

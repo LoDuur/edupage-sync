@@ -2,25 +2,37 @@
  "events": {
   "2026-09-07|1|*406": {
    "date": "2026-09-07",
+   "dayType": "monday",
    "description": "Skolotājs: A.Šamšele\nStundas: 1.–2.\nStundu saraksts v505",
    "end": "2026-09-07T10:00:00+03:00",
    "gcal_id": "b2nqv213pvf2p9nh36euavoga0",
-   "hash": "e3dc32f9734d4ae5f3025caa81bb0ada04a59353",
+   "groups": [],
+   "hash": "ee76625bc49865ff10a4a82ab846b32e711d2e3d",
    "location": "355.",
    "periods": "1.–2.",
    "start": "2026-09-07T08:10:00+03:00",
-   "summary": "Soci?l?s zin. un v?sture"
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "505"
   },
   "2026-09-07|3|*707": {
    "date": "2026-09-07",
+   "dayType": "monday",
    "description": "Skolotājs: I.Posse\nStundas: 3.–4.\nStundu saraksts v505",
    "end": "2026-09-07T11:40:00+03:00",
    "gcal_id": "8aeuj8cbfs4dot76mfl2mjmfrc",
-   "hash": "5f039234f7c8c3fb5b91f5c629f69f9e1b0521ac",
+   "groups": [],
+   "hash": "0fb51ce9ad9fb8d8e416b2173942a9baf084d4e3",
    "location": "221.",
    "periods": "3.–4.",
    "start": "2026-09-07T10:10:00+03:00",
-   "summary": "Dabaszin?bas"
+   "summary": "Dabaszinības",
+   "teachers": [
+    "I.Posse"
+   ],
+   "version": "505"
   },
   "2026-09-07|5|*10": {
    "date": "2026-09-07",
@@ -40,11 +52,11 @@
    "end": "2026-09-07T14:10:00+03:00",
    "gcal_id": "qgoermb0pf9b62efc5of0otmb8",
    "groups": [],
-   "hash": "55265a117ebf9f793a475ef75f9d8e2af9dd5e66",
+   "hash": "6bf079e5759e08dfbd4099c39f6278130c42e4ad",
    "location": "206.",
    "periods": "6.–7.",
    "start": "2026-09-07T12:40:00+03:00",
-   "summary": "Datu b?zu tehnolo?ijas",
+   "summary": "Datu bāzu tehnoloģijas",
    "teachers": [
     "K.Tomsons"
    ],
@@ -52,25 +64,37 @@
   },
   "2026-09-07|8|*234": {
    "date": "2026-09-07",
+   "dayType": "monday",
    "description": "Skolotājs: E.Millere\nStundas: 8.–9.\nStundu saraksts v505",
    "end": "2026-09-07T15:50:00+03:00",
    "gcal_id": "q7v8dqid2u9sbp4fgoaskb0qk0",
-   "hash": "316559f43fb2b7a409b089bcb74205a7ed41d099",
+   "groups": [],
+   "hash": "04405886ab120dc37aa51745730adeb385c13829",
    "location": "356.",
    "periods": "8.–9.",
    "start": "2026-09-07T14:20:00+03:00",
-   "summary": "Matem?tika I"
+   "summary": "Matemātika I",
+   "teachers": [
+    "E.Millere"
+   ],
+   "version": "505"
   },
   "2026-09-08|2|*405": {
    "date": "2026-09-08",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Eiklone\nStundas: 2.–3.\nStundu saraksts v505",
    "end": "2026-09-08T10:40:00+03:00",
    "gcal_id": "4rqcti2nptt90vomt7nk7j7lm0",
-   "hash": "48e417f0c72dd6e105c1b6ccf3f4b066349576f3",
+   "groups": [],
+   "hash": "16e27d526614facf6248cfb6a7dbd6ff0d3e0cc5",
    "location": "354.",
    "periods": "2.–3.",
    "start": "2026-09-08T09:10:00+03:00",
-   "summary": "Latvie?u val. I "
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "505"
   },
   "2026-09-08|4|*10": {
    "date": "2026-09-08",
@@ -85,25 +109,37 @@
   },
   "2026-09-08|5|*986": {
    "date": "2026-09-08",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 5.–6.\nStundu saraksts v505",
    "end": "2026-09-08T13:10:00+03:00",
    "gcal_id": "a0h1ggnv9242bltluhs0692om8",
-   "hash": "256b675352a3d37c4dd6b20250708fd835decbea",
+   "groups": [],
+   "hash": "887322837c89212b2bb9cfc1977c6b135752a069",
    "location": "307.",
    "periods": "5.–6.",
    "start": "2026-09-08T11:40:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "505"
   },
   "2026-09-08|7|*899": {
    "date": "2026-09-08",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Eiklone\nStundas: 7.\nStundu saraksts v505",
    "end": "2026-09-08T14:00:00+03:00",
    "gcal_id": "qgbhgql6p3egvo3d7n8gfmhlqc",
-   "hash": "da954f1be4873f22504f23d1506edc30988b9ea8",
+   "groups": [],
+   "hash": "48bd9e4c671466b5d4697aa995d8e97040b918f6",
    "location": "Biblioteka",
    "periods": "7.",
    "start": "2026-09-08T13:20:00+03:00",
-   "summary": "Literat?ra"
+   "summary": "Literatūra",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "505"
   },
   "2026-09-08|8|*1033": {
    "date": "2026-09-08",
@@ -118,25 +154,37 @@
   },
   "2026-09-08|9|*811": {
    "date": "2026-09-08",
+   "dayType": "midweek",
    "description": "Skolotājs: S.Upīte\nStundas: 9.–10.\nStundu saraksts v505",
    "end": "2026-09-08T16:30:00+03:00",
    "gcal_id": "q52s4gcoedjfp0eb10jq2ucfao",
-   "hash": "568029fd07e8c16d8008bb3b101034c6f3901d7c",
+   "groups": [],
+   "hash": "8f4f3b81f18ca34721e15fb2c87210f554f47f5e",
    "location": "202.",
    "periods": "9.–10.",
    "start": "2026-09-08T15:00:00+03:00",
-   "summary": "Programmas koda rakst??ana(Kod?�?ana)"
+   "summary": "Programmas koda rakstīšana (Kodēšana)",
+   "teachers": [
+    "S.Upīte"
+   ],
+   "version": "505"
   },
   "2026-09-09|2|*677": {
    "date": "2026-09-09",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Eiklone\nStundas: 2.\nStundu saraksts v505",
    "end": "2026-09-09T09:50:00+03:00",
    "gcal_id": "s0ktgcer6qjrab4c58amp3ji8s",
-   "hash": "61a4d654a404d1ba6b57dac98a3f7c8922774fec",
+   "groups": [],
+   "hash": "9df4026c5af02a2adc07312897dd3e13a7f71f0d",
    "location": "354.",
    "periods": "2.",
    "start": "2026-09-09T09:10:00+03:00",
-   "summary": "Latvie?u val. I "
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "505"
   },
   "2026-09-09|4|*10": {
    "date": "2026-09-09",
@@ -151,58 +199,88 @@
   },
   "2026-09-09|5|*984": {
    "date": "2026-09-09",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 5.\nStundu saraksts v505",
    "end": "2026-09-09T12:20:00+03:00",
    "gcal_id": "0bs0mdg55el49slng1a3p5150k",
-   "hash": "bf6f4517554a94fc7ce25a988961a0ab573107de",
+   "groups": [],
+   "hash": "8816e85a614d2ec24e2a997444677e46a6f33111",
    "location": "355.",
    "periods": "5.",
    "start": "2026-09-09T11:40:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "505"
   },
   "2026-09-09|6|*407": {
    "date": "2026-09-09",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Šamšele\nStundas: 6.\nStundu saraksts v505",
    "end": "2026-09-09T13:10:00+03:00",
    "gcal_id": "gl3oqkg7e7m6c446n49a77paek",
-   "hash": "52ec5b2c6dbf8982185a957a30fb33a9f1d2e938",
+   "groups": [],
+   "hash": "5e77abf9c9e2382d8919be6899de28ddf6a60024",
    "location": "355.",
    "periods": "6.",
    "start": "2026-09-09T12:30:00+03:00",
-   "summary": "Soci?l?s zin. un v?sture"
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "505"
   },
   "2026-09-09|7|*986": {
    "date": "2026-09-09",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 7.–8.\nStundu saraksts v505",
    "end": "2026-09-09T14:50:00+03:00",
    "gcal_id": "03v4tavstfq468kmee3odjbots",
-   "hash": "c54a8fb1d2c1b56f1b0c42c84d1f7519e40bd3f9",
+   "groups": [],
+   "hash": "6f67d710bd34aa4ce7cac07f2fc44d513837b942",
    "location": "212.",
    "periods": "7.–8.",
    "start": "2026-09-09T13:20:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "505"
   },
   "2026-09-10|1|*825": {
    "date": "2026-09-10",
+   "dayType": "midweek",
    "description": "Skolotājs: O.Sorochynska\nStundas: 1.\nStundu saraksts v505",
    "end": "2026-09-10T08:50:00+03:00",
    "gcal_id": "dle0pm8922c2ngco6e52tl034s",
-   "hash": "d92e66e9b75ba85dff00adcb31b0a29738ffe61b",
+   "groups": [],
+   "hash": "90db69610e498824a368ca0963e35759225dd561",
    "location": "310.",
    "periods": "1.",
    "start": "2026-09-10T08:10:00+03:00",
-   "summary": "Sve?val.(B1)- krievu val."
+   "summary": "Svešval. (B1) - krievu val.",
+   "teachers": [
+    "O.Sorochynska"
+   ],
+   "version": "505"
   },
   "2026-09-10|3|*906": {
    "date": "2026-09-10",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Eiklone\nStundas: 3.–4.\nStundu saraksts v505",
    "end": "2026-09-10T11:30:00+03:00",
    "gcal_id": "bsoad1nd4hp8bg7jeo192tv8oc",
-   "hash": "e30bde38009ca3a02595377e18da52cdd9ad9fd7",
+   "groups": [],
+   "hash": "709e24b0413a2c806994d35b7ddab112bb293ebb",
    "location": "MNT",
    "periods": "3.–4.",
    "start": "2026-09-10T10:00:00+03:00",
-   "summary": "Literat?ra"
+   "summary": "Literatūra",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "505"
   },
   "2026-09-10|5|*56": {
    "date": "2026-09-10",
@@ -228,25 +306,37 @@
   },
   "2026-09-10|6|*114": {
    "date": "2026-09-10",
+   "dayType": "midweek",
    "description": "Skolotājs: S.Krastiņa\nStundas: 6.–7.\nStundu saraksts v505",
    "end": "2026-09-10T14:00:00+03:00",
    "gcal_id": "rcoqlfcamjg9md50o31h6sbncg",
-   "hash": "2ab44e250d096ddb0d0b45d57115bf94f7d75ea1",
+   "groups": [],
+   "hash": "25edd12d24a38212a9f842ebfd13861ac6498129",
    "location": "213.",
    "periods": "6.–7.",
    "start": "2026-09-10T12:30:00+03:00",
-   "summary": "Sve?val. I (B2) - ang?u val."
+   "summary": "Svešval. I (B2) - angļu val.",
+   "teachers": [
+    "S.Krastiņa"
+   ],
+   "version": "505"
   },
   "2026-09-10|8|*415": {
    "date": "2026-09-10",
+   "dayType": "midweek",
    "description": "Skolotājs: K.Uškāns\nStundas: 8.–9.\nStundu saraksts v505",
    "end": "2026-09-10T15:40:00+03:00",
    "gcal_id": "8sueq4sjmcj6fcumh6cleughi0",
-   "hash": "0f860878df5c3152869dbed61f0bed625e03a1b0",
+   "groups": [],
+   "hash": "ae62add5685a0885cada7adba77f666ebb9710d7",
    "location": "IT labor.",
    "periods": "8.–9.",
    "start": "2026-09-10T14:10:00+03:00",
-   "summary": "Programmas izstr?des process"
+   "summary": "Programmas izstrādes process",
+   "teachers": [
+    "K.Uškāns"
+   ],
+   "version": "505"
   },
   "2026-09-11|3|*115": {
    "date": "2026-09-11",
@@ -277,11 +367,11 @@
    "end": "2026-09-11T13:25:00+03:00",
    "gcal_id": "gep0ffq41nu8hei2ltlph3dtc8",
    "groups": [],
-   "hash": "8a4a884ab740868db63f94f654e6d49800a3c749",
+   "hash": "76b77a938aba4aeedb64234b20072788e2fd491f",
    "location": "202.",
    "periods": "6.–7.",
    "start": "2026-09-11T12:00:00+03:00",
-   "summary": "Programmas koda rakst??ana(Kod?�?ana)",
+   "summary": "Programmas koda rakstīšana (Kodēšana)",
    "teachers": [
     "S.Upīte"
    ],
@@ -305,11 +395,11 @@
    "end": "2026-09-14T13:20:00+03:00",
    "gcal_id": "4pq7h7e2fm6v07d01hm2ubsdqc",
    "groups": [],
-   "hash": "1881d9a35b955ecf931466348b2e25f2baa0c849",
+   "hash": "5dc2fca29907e7e3471ebcd62d06ca8a97db87a4",
    "location": "223.",
    "periods": "5.–6.",
    "start": "2026-09-14T11:50:00+03:00",
-   "summary": "Matem?tikas speci?l?s noda?as",
+   "summary": "Matemātikas speciālās nodaļas",
    "teachers": [
     "T.Misiņa"
    ],
@@ -317,14 +407,20 @@
   },
   "2026-09-14|7|*774": {
    "date": "2026-09-14",
+   "dayType": "monday",
    "description": "Skolotājs: S.Upīte\nStundas: 7.–8.\nStundu saraksts v507",
    "end": "2026-09-14T15:00:00+03:00",
    "gcal_id": "v8rp1k70lnq1is0vgrlbt7n8ss",
-   "hash": "e53b336647da516d4d1b409b41f9ffeab35b5f4d",
+   "groups": [],
+   "hash": "6c1d22a8618878a22a379e6fcb513925bca70090",
    "location": "202.",
    "periods": "7.–8.",
    "start": "2026-09-14T13:30:00+03:00",
-   "summary": "Programmas koda rakst??ana(Kod?�?ana)"
+   "summary": "Programmas koda rakstīšana (Kodēšana)",
+   "teachers": [
+    "S.Upīte"
+   ],
+   "version": "507"
   },
   "2026-09-14|9|*1032": {
    "date": "2026-09-14",
@@ -339,14 +435,20 @@
   },
   "2026-09-15|2|*401": {
    "date": "2026-09-15",
+   "dayType": "midweek",
    "description": "Skolotājs: K.Tomsons\nStundas: 2.–3.\nStundu saraksts v507",
    "end": "2026-09-15T10:40:00+03:00",
    "gcal_id": "c8h1462rfj0d3fjvmhcu2ks2i4",
-   "hash": "7942dea45af3f416d4a3c8dd2a421d600416016f",
+   "groups": [],
+   "hash": "2b712bef7412ecfe00a54bfa50061d096cae6e08",
    "location": "206.",
    "periods": "2.–3.",
    "start": "2026-09-15T09:10:00+03:00",
-   "summary": "Datu b?zu tehnolo?ijas"
+   "summary": "Datu bāzu tehnoloģijas",
+   "teachers": [
+    "K.Tomsons"
+   ],
+   "version": "507"
   },
   "2026-09-15|4|*714": {
    "date": "2026-09-15",
@@ -361,14 +463,20 @@
   },
   "2026-09-15|7|*946": {
    "date": "2026-09-15",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 7.–8.\nStundu saraksts v507",
    "end": "2026-09-15T14:50:00+03:00",
    "gcal_id": "421n9nhsao61i1rrec1pp0lapk",
-   "hash": "47a1f4c887622921f6e40b2aecab68c5d32c8757",
+   "groups": [],
+   "hash": "b36297f6c35e29b9f81813ecf33b3afbf1be8270",
    "location": "118.",
    "periods": "7.–8.",
    "start": "2026-09-15T13:20:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "507"
   },
   "2026-09-15|9|*867": {
    "date": "2026-09-15",
@@ -383,25 +491,37 @@
   },
   "2026-09-16|1|*403": {
    "date": "2026-09-16",
+   "dayType": "midweek",
    "description": "Skolotājs: K.Uškāns\nStundas: 1.–2.\nStundu saraksts v507",
    "end": "2026-09-16T09:50:00+03:00",
    "gcal_id": "b4cien023mh83nnmokltdl928s",
-   "hash": "b5529c4ecef1d004d79988c1705b86f50fedb357",
+   "groups": [],
+   "hash": "b559b7efe8cc043f71229cc7eda4134d25ef47c4",
    "location": "IT labor.",
    "periods": "1.–2.",
    "start": "2026-09-16T08:10:00+03:00",
-   "summary": "Programmas izstr?des process"
+   "summary": "Programmas izstrādes process",
+   "teachers": [
+    "K.Uškāns"
+   ],
+   "version": "507"
   },
   "2026-09-16|3|*403": {
    "date": "2026-09-16",
+   "dayType": "midweek",
    "description": "Skolotājs: K.Uškāns\nStundas: 3.–4.\nStundu saraksts v507",
    "end": "2026-09-16T11:30:00+03:00",
    "gcal_id": "5gak7ia8uolssp5q8faormghq0",
-   "hash": "89168feae722241c988cf3285fa8a9435b0a518a",
+   "groups": [],
+   "hash": "e2abf053efd07824c06acba3400a0ddb1e95abc4",
    "location": "IT labor.",
    "periods": "3.–4.",
    "start": "2026-09-16T10:00:00+03:00",
-   "summary": "Programmas izstr?des process"
+   "summary": "Programmas izstrādes process",
+   "teachers": [
+    "K.Uškāns"
+   ],
+   "version": "507"
   },
   "2026-09-16|5|*112": {
    "date": "2026-09-16",
@@ -427,14 +547,20 @@
   },
   "2026-09-16|7|*946": {
    "date": "2026-09-16",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 7.–8.\nStundu saraksts v507",
    "end": "2026-09-16T14:50:00+03:00",
    "gcal_id": "v2cpiklqr46ntemf5pgbbf52ak",
-   "hash": "2727edc4b0a494504f1c150c25d4442f482ee765",
+   "groups": [],
+   "hash": "43bb79c3dbe51072b091763c027d2caa12cc3aaa",
    "location": "104.",
    "periods": "7.–8.",
    "start": "2026-09-16T13:20:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "507"
   },
   "2026-09-17|2|*1036": {
    "date": "2026-09-17",
@@ -460,14 +586,20 @@
   },
   "2026-09-17|5|*393": {
    "date": "2026-09-17",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Eiklone\nStundas: 5.–6.\nStundu saraksts v507",
    "end": "2026-09-17T13:10:00+03:00",
    "gcal_id": "prj2op36npscuuilfv76242l5c",
-   "hash": "bd6a1397da9ceb29eb1e298de556fc9f8c2daf7f",
+   "groups": [],
+   "hash": "dc02440efcca7e970229b90d5e9ae29cfd387351",
    "location": "354.",
    "periods": "5.–6.",
    "start": "2026-09-17T11:40:00+03:00",
-   "summary": "Latvie?u val. I "
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "507"
   },
   "2026-09-17|7|*991": {
    "date": "2026-09-17",
@@ -482,58 +614,88 @@
   },
   "2026-09-17|8|*944": {
    "date": "2026-09-17",
+   "dayType": "midweek",
    "description": "Skolotājs: I.Kobiaka\nStundas: 8.\nStundu saraksts v507",
    "end": "2026-09-17T14:50:00+03:00",
    "gcal_id": "mphm38pm26ojknu0o423fi1coc",
-   "hash": "1e53ecf17aa24de75f68004681e118cdbae3f931",
+   "groups": [],
+   "hash": "52b4090125983cfbfa21eb4906386c2ea1aa4e10",
    "location": "104.",
    "periods": "8.",
    "start": "2026-09-17T14:10:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "507"
   },
   "2026-09-17|9|*394": {
    "date": "2026-09-17",
+   "dayType": "midweek",
    "description": "Skolotājs: A.Šamšele\nStundas: 9.–10.\nStundu saraksts v507",
    "end": "2026-09-17T16:30:00+03:00",
    "gcal_id": "va787mfs4p8id10ct604c6fuak",
-   "hash": "4280cc21833c533f7812d748a6530507db8f1b7b",
+   "groups": [],
+   "hash": "f058db9a68952fc28e04d03995c6ccbea018d6aa",
    "location": "355.",
    "periods": "9.–10.",
    "start": "2026-09-17T15:00:00+03:00",
-   "summary": "Soci?l?s zin. un v?sture"
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "507"
   },
   "2026-09-18|10|*944": {
    "date": "2026-09-18",
+   "dayType": "friday",
    "description": "Skolotājs: I.Kobiaka\nStundas: 10.\nStundu saraksts v507",
    "end": "2026-09-18T15:40:00+03:00",
    "gcal_id": "tgtkvnv9crarj2l25n6hlaqpfs",
-   "hash": "c1f8b4e68b29a8d37d11e706dc445cdb1898a7bc",
+   "groups": [],
+   "hash": "74e38c44fc4636c9dccfbc2b6f0a8c7d6ad6ee14",
    "location": "104.",
    "periods": "10.",
    "start": "2026-09-18T15:00:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "507"
   },
   "2026-09-18|2|*944": {
    "date": "2026-09-18",
+   "dayType": "friday",
    "description": "Skolotājs: I.Kobiaka\nStundas: 2.\nStundu saraksts v507",
    "end": "2026-09-18T09:40:00+03:00",
    "gcal_id": "a9bit4oti2716ctevo7cea7g6o",
-   "hash": "9f6b39f1c3cbec7f20ef58a275f4d4267f458ade",
+   "groups": [],
+   "hash": "9646b672a76b0207da0ff6618bfcaa5dab0de893",
    "location": "104.",
    "periods": "2.",
    "start": "2026-09-18T09:00:00+03:00",
-   "summary": "Iniciat?va un uz?m?jdarb. (1.l.)"
+   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
+   "teachers": [
+    "I.Kobiaka"
+   ],
+   "version": "507"
   },
   "2026-09-18|3|*774": {
    "date": "2026-09-18",
+   "dayType": "friday",
    "description": "Skolotājs: S.Upīte\nStundas: 3.–4.\nStundu saraksts v507",
    "end": "2026-09-18T11:10:00+03:00",
    "gcal_id": "teebaqg3fj8vlp9p3f2n88hnbo",
-   "hash": "d08399a8f38f14d1e1fc33973b94222c1dd09fda",
+   "groups": [],
+   "hash": "3e747180f4b6836ecc9e44eee9f60c4f877e3093",
    "location": "202.",
    "periods": "3.–4.",
    "start": "2026-09-18T09:45:00+03:00",
-   "summary": "Programmas koda rakst??ana(Kod?�?ana)"
+   "summary": "Programmas koda rakstīšana (Kodēšana)",
+   "teachers": [
+    "S.Upīte"
+   ],
+   "version": "507"
   },
   "2026-09-18|5|*9": {
    "date": "2026-09-18",
@@ -565,14 +727,20 @@
   },
   "2026-09-18|8|*401": {
    "date": "2026-09-18",
+   "dayType": "friday",
    "description": "Skolotājs: K.Tomsons\nStundas: 8.–9.\nStundu saraksts v507",
    "end": "2026-09-18T14:55:00+03:00",
    "gcal_id": "06d5et84pk6f2m59hlsfapk0b0",
-   "hash": "d5be0fab5ce2903cb24ddcdfc791e041c3025341",
+   "groups": [],
+   "hash": "84e7ce9b85c1456a0224b4292f19febfca56e6a7",
    "location": "206.",
    "periods": "8.–9.",
    "start": "2026-09-18T13:30:00+03:00",
-   "summary": "Datu b?zu tehnolo?ijas"
+   "summary": "Datu bāzu tehnoloģijas",
+   "teachers": [
+    "K.Tomsons"
+   ],
+   "version": "507"
   }
  }
 }
