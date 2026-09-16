@@ -2,140 +2,374 @@
 <html lang="lv">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>Stundu saraksts</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;--now:#fef3c7;--now-border:#f59e0b;--lunch:#f3f4f6;--add:#16a34a;--rem:#dc2626;--chg:#d97706}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--text:#e6e8eb;--muted:#9aa3af;--line:#262b35;--accent:#60a5fa;--accent-soft:#1e2a44;--now:#3b2f0c;--now-border:#f59e0b;--lunch:#1c2028}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-header{padding:20px 16px 8px;max-width:1200px;margin:0 auto}
-h1{margin:0;font-size:22px}
-.sub{color:var(--muted);font-size:13px;margin-top:2px}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
-button,.btn{border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;font:inherit;cursor:pointer;text-decoration:none}
-button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-button:disabled{opacity:.4;cursor:default}
-main{max-width:1200px;margin:0 auto;padding:0 16px 40px}
-.week{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-@media (max-width:900px){.week{grid-template-columns:1fr}}
-.day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:60px}
-.day h2{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;color:var(--muted);font-weight:600}
-.day.today{border-color:var(--accent)}
-.day.today h2{color:var(--accent)}
-.badge{display:inline-block;font-size:11px;font-weight:600;color:var(--now-border);border:1px solid var(--now-border);border-radius:6px;padding:1px 6px;margin-bottom:8px}
-.lesson{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:7px 9px;margin-bottom:6px}
-.lesson.lunch{border-left-color:var(--muted);background:var(--lunch)}
-.lesson.now{background:var(--now);border-left-color:var(--now-border)}
-.lesson.past{opacity:.55}
-.time{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
-.name{font-weight:600;margin:2px 0}
-.meta{font-size:12px;color:var(--muted)}
-.empty{color:var(--muted);font-size:13px;padding:6px 0}
-h3{margin:28px 0 10px;font-size:16px}
-.change{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
-.change .t{color:var(--muted);margin-bottom:4px}
-.change div span{display:inline-block;width:1.4em}
-.add{color:var(--add)}.rem{color:var(--rem)}.chg{color:var(--chg)}
-footer{color:var(--muted);font-size:12px;margin-top:30px}
-footer a{color:var(--accent)}
+:root{
+  --bg:#f2f2f7;--surface:#ffffff;--surface-2:#f7f7fa;--text:#1c1c1e;--text-2:#6e6e73;--text-3:#aeaeb2;
+  --line:rgba(60,60,67,.12);--line-strong:rgba(60,60,67,.24);--accent:#0a84ff;--red:#ff3b30;--amber:#ff9f0a;
+  --chrome:rgba(242,242,247,.72);--card-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.12);
+  --ev-bg-l:92%;--ev-bg-s:55%;--ev-fg-l:32%;--ev-bar-l:52%;--ev-now-l:50%;
+  --hour:5.5rem;--axis:3.25rem;--toolbar:6.75rem;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;
+  --line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--accent:#0a84ff;--red:#ff453a;--amber:#ffd60a;
+  --chrome:rgba(28,28,30,.72);--card-shadow:none;
+  --ev-bg-l:20%;--ev-bg-s:30%;--ev-fg-l:78%;--ev-bar-l:58%;--ev-now-l:44%;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font:100%/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Inter,system-ui,sans-serif;background:var(--bg);color:var(--text)}
+body{margin:0;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:var(--accent);text-decoration:none}
+
+.toolbar{position:sticky;top:0;z-index:20;background:var(--chrome);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--line)}
+.toolbar-inner{max-width:1280px;margin:0 auto;padding:.9rem 1rem .6rem;display:flex;flex-direction:column;gap:.55rem}
+.row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+h1{margin:0;font-size:1.55rem;line-height:1.1;letter-spacing:-.02em;font-weight:700}
+.sub{font-size:.8rem;color:var(--text-2);letter-spacing:.005em}
+.seg{display:inline-flex;background:var(--line);border-radius:.6rem;padding:2px;gap:2px}
+.seg button{padding:.35rem .75rem;border-radius:.5rem;font-size:.85rem;font-weight:600;color:var(--text);transition:transform .1s ease-out,background .15s}
+.seg button:hover{background:var(--surface)}
+.seg button:active{transform:scale(.96);background:var(--surface)}
+.seg button:disabled{opacity:.35;pointer-events:none}
+.range{font-weight:600;font-size:.95rem;font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+.picker{display:none;gap:.35rem}
+.picker button{flex:1;padding:.3rem 0;border-radius:.5rem;font-size:.8rem;font-weight:600;color:var(--text-2);display:flex;flex-direction:column;align-items:center;gap:.05rem;transition:transform .1s ease-out}
+.picker button:active{transform:scale(.95)}
+.picker button b{font-size:1rem;color:var(--text);width:1.75rem;height:1.75rem;display:grid;place-items:center;border-radius:50%}
+.picker button.active b{background:var(--accent);color:#fff}
+.picker button.istoday b{color:var(--accent)}
+.picker button.istoday.active b{color:#fff}
+
+main{max-width:1280px;margin:0 auto;padding:0 0 3rem}
+.grid{display:flex;align-items:flex-start;padding:0 1rem}
+.axis{flex:0 0 var(--axis);position:relative;margin-top:var(--dayhead);height:var(--canvas)}
+.axis span{position:absolute;right:.5rem;transform:translateY(-50%);font-size:.7rem;color:var(--text-3);font-variant-numeric:tabular-nums;font-weight:500}
+.nowchip{position:absolute;right:.35rem;transform:translateY(-50%);background:var(--red);color:#fff;font-size:.68rem;font-weight:700;padding:.1rem .35rem;border-radius:.35rem;font-variant-numeric:tabular-nums;z-index:5}
+.days{flex:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem;min-width:0}
+.day{min-width:0;position:relative}
+.dayhead{position:sticky;top:var(--toolbar);z-index:10;height:var(--dayhead);display:flex;align-items:center;gap:.5rem;padding:.25rem .25rem .4rem;background:var(--bg)}
+.dayhead .wd{font-size:.8rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em}
+.dayhead .num{font-size:1.15rem;font-weight:700;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.day.today .dayhead .wd{color:var(--accent)}
+.day.today .dayhead .num{background:var(--accent);color:#fff}
+.pill{font-size:.65rem;font-weight:700;color:var(--amber);border:1px solid currentColor;border-radius:1rem;padding:.05rem .45rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canvas{position:relative;height:var(--canvas);border-radius:.85rem;background:var(--surface);box-shadow:var(--card-shadow);overflow:hidden;
+  background-image:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent var(--hour));background-position:0 0}
+.day.today .canvas{outline:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:-1.5px}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-3);font-size:.85rem;font-weight:500}
+
+.ev{position:absolute;left:.3rem;right:.3rem;border-radius:.55rem;padding:.35rem .5rem .35rem .65rem;overflow:hidden;
+  --c:hsl(var(--h) var(--ev-bg-s) var(--ev-bg-l));--fg:hsl(var(--h) 60% var(--ev-fg-l));--bar:hsl(var(--h) 70% var(--ev-bar-l));
+  background:var(--c);color:var(--fg);transition:opacity .3s,background .3s,color .3s,transform .1s ease-out;display:flex;flex-direction:column;gap:.05rem;min-height:1.4rem}
+.ev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bar)}
+.ev .t{font-weight:600;font-size:.82rem;line-height:1.2;letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ev .m{font-size:.7rem;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.ev .tm{font-size:.68rem;opacity:.7;font-variant-numeric:tabular-nums;margin-top:auto;line-height:1.2}
+.ev.short{padding-top:.25rem;padding-bottom:.25rem;gap:0}
+.ev.short .t{-webkit-line-clamp:1}
+.ev.short .tm{margin-top:0}
+.ev.tiny{padding-top:.15rem;padding-bottom:.15rem}
+.ev.tiny .tm{display:none}
+.ev.lunch{--c:var(--surface-2);--fg:var(--text-2);--bar:var(--text-3)}
+.ev.past{opacity:.5}
+.ev.now{background:hsl(var(--h) 70% var(--ev-now-l));color:#fff;box-shadow:0 6px 18px -6px hsl(var(--h) 70% 40% / .55);z-index:2}
+.ev.now .m,.ev.now .tm{opacity:.9}
+.ev.now::before{background:rgba(255,255,255,.7)}
+.ev.lunch.now{background:var(--text-2);color:var(--bg)}
+.free{position:absolute;left:.3rem;right:.3rem;border-radius:.55rem;border:1.5px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.05rem;color:var(--text-3);font-size:.78rem;font-weight:600;letter-spacing:.01em}
+.free small{font-weight:500;font-size:.68rem;font-variant-numeric:tabular-nums}
+.free.past{opacity:.45}
+
+.nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none;box-shadow:0 0 0 .5px rgba(0,0,0,.05)}
+.nowline::before{content:"";position:absolute;left:-1px;top:50%;width:.7rem;height:.7rem;border-radius:50%;background:var(--red);transform:translate(0,-50%)}
+
+section{padding:0 1rem}
+h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin:2rem 0 .6rem .25rem;font-weight:600}
+.inset{background:var(--surface);border-radius:.85rem;box-shadow:var(--card-shadow);overflow:hidden}
+.inset>*{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-bottom:1px solid var(--line);color:var(--text);transition:background .15s}
+.inset>*:last-child{border-bottom:0}
+.inset a:hover{background:var(--surface-2)}
+.inset a:active{background:var(--line)}
+.inset .ico{width:2rem;height:2rem;border-radius:.5rem;display:grid;place-items:center;font-size:1rem;flex:none;color:#fff}
+.inset .lbl{flex:1;font-weight:500}
+.inset .chev{color:var(--text-3)}
+.change{display:block;font-size:.84rem}
+.change .t{color:var(--text-2);font-size:.75rem;margin-bottom:.3rem}
+.change div span{display:inline-block;width:1.4em;font-weight:700}
+.add{color:#34c759}.chg{color:var(--amber)}.rem{color:var(--red)}
+footer{padding:2rem 1rem 0;color:var(--text-3);font-size:.75rem;text-align:center}
+
+@media (max-width:899px){
+  :root{--hour:5.75rem}
+  .picker{display:flex}
+  .range{display:none}
+  .grid{padding:0 .75rem 0 .5rem}
+  .days{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .days::-webkit-scrollbar{display:none}
+  .day{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0 .25rem}
+  .dayhead{position:static;justify-content:center}
+  h1{font-size:1.35rem}
+}
+@media (prefers-reduced-transparency:reduce){.toolbar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<header>
-  <h1 id="title">Stundu saraksts</h1>
-  <div class="sub" id="updated"></div>
-  <div class="bar">
-    <button id="prev">‹</button>
-    <button id="thisweek">Šī nedēļa</button>
-    <button id="next">›</button>
-    <span id="range" class="sub"></span>
+<header class="toolbar">
+  <div class="toolbar-inner">
+    <div class="row">
+      <div>
+        <h1 id="title">Stundu saraksts</h1>
+        <div class="sub" id="updated"></div>
+      </div>
+      <span class="spacer"></span>
+      <span class="range" id="range"></span>
+      <div class="seg">
+        <button id="prev" aria-label="Iepriekšējā nedēļa">‹</button>
+        <button id="today">Šodien</button>
+        <button id="next" aria-label="Nākamā nedēļa">›</button>
+      </div>
+    </div>
+    <div class="picker" id="picker"></div>
   </div>
 </header>
+
 <main>
-  <div class="week" id="week"></div>
-  <h3>Pievienot kalendāram</h3>
-  <div class="bar">
-    <a class="btn" id="webcal" href="#">Apple / iPhone kalendārs</a>
-    <a class="btn" id="gcal" href="#" target="_blank" rel="noopener">Google kalendārs</a>
-    <a class="btn" href="timetable.ics" download>Lejupielādēt .ics</a>
+  <div class="grid">
+    <div class="axis" id="axis"></div>
+    <div class="days" id="days"></div>
   </div>
-  <h3>Izmaiņas</h3>
-  <div id="changes"></div>
-  <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a>, atjaunināti katru stundu.</footer>
+
+  <section>
+    <h2>Pievienot kalendāram</h2>
+    <div class="inset">
+      <a id="webcal" href="#"><span class="ico" style="background:#ff3b30"></span><span class="lbl">Apple / iPhone kalendārs</span><span class="chev">›</span></a>
+      <a id="gcal" href="#" target="_blank" rel="noopener"><span class="ico" style="background:#0a84ff">G</span><span class="lbl">Google kalendārs</span><span class="chev">›</span></a>
+      <a href="timetable.ics" download><span class="ico" style="background:#8e8e93">↓</span><span class="lbl">Lejupielādēt .ics</span><span class="chev">›</span></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Izmaiņas</h2>
+    <div class="inset" id="changes"></div>
+  </section>
+
+  <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a> · oficiālie stundu laiki · atjaunināts katru stundu</footer>
 </main>
+
 <script>
-const DAYS=["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena"];
+const WD=["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena"];
+const WDS=["P","O","T","C","Pk"];
+const HUES=[212,262,340,14,32,48,150,175,192,285];
 const pad=n=>String(n).padStart(2,"0");
-const fmtDate=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
-const isoDate=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtD=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
+const isoD=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const monday=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
 const hm=iso=>iso.slice(11,16);
+const toMin=t=>{const [h,m]=t.split(":").map(Number);return h*60+m};
+const minOf=iso=>toMin(hm(iso));
+const fromMin=m=>`${pad(Math.floor(m/60))}:${pad(m%60)}`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const isMobile=()=>matchMedia("(max-width: 899px)").matches;
 
-let data,weekStart;
+let data,weekStart,rangeStart=8*60,rangeEnd=17*60,bells={},hueMap={};
+
+function hueFor(summary){
+  const key=summary.replace(/\s*\(.*\)\s*$/,"");
+  if(!(key in hueMap)){let h=0;for(const c of key)h=(h*31+c.charCodeAt(0))>>>0;hueMap[key]=HUES[h%HUES.length]}
+  return hueMap[key];
+}
+function pct(min){return (min-rangeStart)/(rangeEnd-rangeStart)*100}
+function parsePeriods(p){const n=p.match(/\d+/g).map(Number);return [n[0],n[n.length-1]]}
 
 async function load(){
   data=await (await fetch("data.json?"+Date.now())).json();
+  for(const [type,slots] of Object.entries(data.bells||{}))bells[type]=slots.map(s=>s.split("-").map(toMin));
   document.getElementById("title").textContent=data.className;
   document.title=data.className+" · Stundu saraksts";
-  document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV");
-  const base=location.href.replace(/index\.html$/,"").replace(/#.*$/,"");
+  document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+  const base=location.href.replace(/index\.html$/,"").replace(/[#?].*$/,"");
   const ics=base+"timetable.ics";
   document.getElementById("webcal").href=ics.replace(/^https?:/,"webcal:");
   document.getElementById("gcal").href="https://calendar.google.com/calendar/r?cid="+encodeURIComponent(ics.replace(/^https?:/,"webcal:"));
   document.getElementById("src").href=`https://${data.school}.edupage.org/timetable/view.php`;
   weekStart=monday(new Date());
-  renderWeek();renderChanges();
-  setInterval(renderWeek,60000);
+  render();
+  renderChanges();
+  requestAnimationFrame(()=>scrollToNow(true));
+  setInterval(tick,30000);
 }
 
-function renderWeek(){
-  const now=new Date(),todayIso=isoDate(now);
-  const end=addDays(weekStart,4);
-  document.getElementById("range").textContent=`${fmtDate(weekStart)} – ${fmtDate(end)}${addDays(end,0).getFullYear()}`;
-  const dates=new Set(data.events.map(e=>e.date));
-  document.getElementById("prev").disabled=!data.events.some(e=>e.date<isoDate(weekStart));
-  document.getElementById("next").disabled=!data.events.some(e=>e.date>isoDate(end));
-  const wrap=document.getElementById("week");wrap.innerHTML="";
-  for(let i=0;i<5;i++){
-    const d=addDays(weekStart,i),iso=isoDate(d);
-    const day=document.createElement("div");
-    day.className="day"+(iso===todayIso?" today":"");
-    day.innerHTML=`<h2><span>${DAYS[i]}</span><span>${fmtDate(d)}</span></h2>`;
-    const evs=data.events.filter(e=>e.date===iso);
-    if(evs.some(e=>e.dayType==="short"))day.innerHTML+='<div class="badge">Pirmssvētku diena · 30 min stundas</div>';
-    if(!evs.length){day.innerHTML+=`<div class="empty">${dates.has(iso)?"":"Nav stundu"}</div>`}
-    for(const e of evs){
-      const s=new Date(e.start),en=new Date(e.end);
-      const cls=["lesson"];
-      if(/pusdienas/i.test(e.summary))cls.push("lunch");
-      if(now>=s&&now<en)cls.push("now");else if(now>=en)cls.push("past");
-      const meta=[e.location,(e.teachers||[]).join(", ")].filter(Boolean).join(" · ");
-      day.innerHTML+=`<div class="${cls.join(" ")}"><div class="time"><span>${hm(e.start)}–${hm(e.end)}</span><span>${e.periods} st.</span></div><div class="name">${esc(e.summary)}</div>${meta?`<div class="meta">${esc(meta)}</div>`:""}</div>`;
-    }
-    wrap.appendChild(day);
+function eventsFor(iso){return data.events.filter(e=>e.date===iso).sort((a,b)=>a.start<b.start?-1:1)}
+
+function freeBlocks(evs,dayType){
+  const table=bells[dayType]||bells.midweek;
+  if(!table||!evs.length)return [];
+  const covered=new Set();
+  let lo=99,hi=0;
+  for(const e of evs){const [a,b]=parsePeriods(e.periods);lo=Math.min(lo,a);hi=Math.max(hi,b);for(let p=a;p<=b;p++)covered.add(p)}
+  const out=[];let run=null;
+  for(let p=lo;p<=hi;p++){
+    if(covered.has(p)||!table[p-1]){if(run){out.push(run);run=null}continue}
+    if(run)run.last=p;else run={first:p,last:p};
+  }
+  if(run)out.push(run);
+  return out.map(r=>({start:table[r.first-1][0],end:table[r.last-1][1],count:r.last-r.first+1}));
+}
+
+function layoutOverlaps(evs){
+  const cols=[];
+  for(const e of evs){
+    e._s=minOf(e.start);e._e=minOf(e.end);
+    let placed=false;
+    for(const c of cols){if(c[c.length-1]._e<=e._s){c.push(e);e._col=cols.indexOf(c);placed=true;break}}
+    if(!placed){e._col=cols.length;cols.push([e])}
+  }
+  for(const e of evs){
+    e._n=1;
+    for(const o of evs)if(o!==e&&o._s<e._e&&e._s<o._e)e._n=Math.max(e._n,Math.max(e._col,o._col)+1);
   }
 }
+
+function render(){
+  const now=new Date(),todayIso=isoD(now);
+  const end=addDays(weekStart,4);
+  const weekEvs=[];for(let i=0;i<5;i++)weekEvs.push(...eventsFor(isoD(addDays(weekStart,i))));
+  rangeStart=8*60;rangeEnd=17*60;
+  for(const e of weekEvs){rangeStart=Math.min(rangeStart,Math.floor(minOf(e.start)/60)*60);rangeEnd=Math.max(rangeEnd,Math.ceil(minOf(e.end)/60)*60)}
+  const hours=(rangeEnd-rangeStart)/60;
+  document.documentElement.style.setProperty("--canvas",`calc(var(--hour) * ${hours})`);
+  document.documentElement.style.setProperty("--dayhead","3rem");
+  document.getElementById("range").textContent=`${fmtD(weekStart)} – ${fmtD(end)}${end.getFullYear()}`;
+  document.getElementById("prev").disabled=!data.events.some(e=>e.date<isoD(weekStart));
+  document.getElementById("next").disabled=!data.events.some(e=>e.date>isoD(end));
+
+  const axis=document.getElementById("axis");
+  axis.innerHTML="";
+  for(let h=rangeStart/60;h<=rangeEnd/60;h++){const s=document.createElement("span");s.style.top=pct(h*60)+"%";s.textContent=pad(h)+":00";axis.appendChild(s)}
+  const chip=document.createElement("span");chip.className="nowchip";chip.id="nowchip";axis.appendChild(chip);
+
+  const wrap=document.getElementById("days");wrap.innerHTML="";
+  const picker=document.getElementById("picker");picker.innerHTML="";
+  for(let i=0;i<5;i++){
+    const d=addDays(weekStart,i),iso=isoD(d),evs=eventsFor(iso);
+    const day=document.createElement("div");
+    day.className="day"+(iso===todayIso?" today":"");day.dataset.iso=iso;day.dataset.idx=i;
+    const short=evs.some(e=>e.dayType==="short");
+    day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>`;
+    const canvas=day.querySelector(".canvas");
+    if(!evs.length)canvas.innerHTML='<div class="empty">Nav stundu</div>';
+    layoutOverlaps(evs);
+    for(const e of evs){
+      const el=document.createElement("div");
+      const dur=e._e-e._s;
+      el.className="ev"+(/pusdienas/i.test(e.summary)?" lunch":"")+(dur<60?" short":"")+(dur<35?" tiny":"");
+      el.style.setProperty("--h",hueFor(e.summary));
+      el.style.top=pct(e._s)+"%";el.style.height=`calc(${pct(e._e)-pct(e._s)}% - 3px)`;
+      if(e._n>1){el.style.width=`calc((100% - .6rem)/${e._n} - 2px)`;el.style.left=`calc(.3rem + (100% - .6rem)/${e._n} * ${e._col})`;el.style.right="auto"}
+      el.dataset.s=e._s;el.dataset.e=e._e;
+      const meta=[e.location,(e.teachers||[]).join(", ")].filter(Boolean).join(" · ");
+      const time=`${hm(e.start)}–${hm(e.end)} · ${esc(e.periods)} st.`;
+      el.innerHTML=dur<60
+        ?`<div class="t">${esc(e.summary)}</div><div class="tm">${time}${meta?" · "+esc(meta):""}</div>`
+        :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`;
+      canvas.appendChild(el);
+    }
+    for(const f of freeBlocks(evs,evs[0]?.dayType)){
+      const el=document.createElement("div");
+      el.className="free";el.dataset.s=f.start;el.dataset.e=f.end;
+      el.style.top=pct(f.start)+"%";el.style.height=`calc(${pct(f.end)-pct(f.start)}% - 3px)`;
+      el.innerHTML=`Brīvstunda${f.count>1?` · ${f.count} st.`:""}<small>${fromMin(f.start)}–${fromMin(f.end)}</small>`;
+      canvas.appendChild(el);
+    }
+    if(iso===todayIso){const nl=document.createElement("div");nl.className="nowline";nl.id="nowline";canvas.appendChild(nl)}
+    wrap.appendChild(day);
+
+    const b=document.createElement("button");
+    b.className=(iso===todayIso?"istoday":"");b.dataset.idx=i;
+    b.innerHTML=`<span>${WDS[i]}</span><b>${d.getDate()}</b>`;
+    b.onclick=()=>scrollToDay(i,true);
+    picker.appendChild(b);
+  }
+  tick();
+  if(isMobile()){
+    const todayIdx=Math.round((new Date(todayIso)-weekStart)/864e5);
+    scrollToDay(todayIdx>=0&&todayIdx<5?todayIdx:0,false);
+  }
+}
+
+function tick(){
+  const now=new Date(),m=now.getHours()*60+now.getMinutes();
+  const todayIso=isoD(now);
+  document.querySelectorAll(".day").forEach(day=>{
+    const isToday=day.dataset.iso===todayIso,isPast=day.dataset.iso<todayIso;
+    day.querySelectorAll(".ev,.free").forEach(el=>{
+      const s=+el.dataset.s,e=+el.dataset.e;
+      el.classList.toggle("now",isToday&&m>=s&&m<e);
+      el.classList.toggle("past",isPast||(isToday&&m>=e));
+    });
+  });
+  const nl=document.getElementById("nowline"),chip=document.getElementById("nowchip");
+  const visible=m>=rangeStart&&m<=rangeEnd;
+  if(nl){nl.style.top=pct(m)+"%";nl.style.display=visible?"":"none"}
+  if(chip){chip.style.top=pct(m)+"%";chip.textContent=fromMin(m);chip.style.display=(nl&&visible&&todayVisible())?"":"none"}
+}
+function todayVisible(){
+  const t=document.querySelector(".day.today");
+  if(!t)return false;
+  if(!isMobile())return true;
+  const w=document.getElementById("days");
+  return Math.round(w.scrollLeft/w.clientWidth)===+t.dataset.idx;
+}
+
+function scrollToNow(initial){
+  const nl=document.getElementById("nowline");
+  if(!nl||nl.style.display==="none")return;
+  const y=nl.getBoundingClientRect().top+window.scrollY-window.innerHeight/3;
+  window.scrollTo({top:Math.max(0,y),behavior:initial||reduced?"auto":"smooth"});
+}
+
+function scrollToDay(i,smooth){
+  const wrap=document.getElementById("days");
+  wrap.scrollTo({left:wrap.clientWidth*i,behavior:smooth&&!reduced?"smooth":"auto"});
+  setPicker(i);
+}
+function setPicker(i){
+  document.querySelectorAll("#picker button").forEach(b=>b.classList.toggle("active",+b.dataset.idx===i));
+  const chip=document.getElementById("nowchip"),nl=document.getElementById("nowline");
+  if(chip)chip.style.display=(nl&&nl.style.display!=="none"&&todayVisible())?"":"none";
+}
+document.getElementById("days").addEventListener("scroll",()=>{
+  const w=document.getElementById("days");
+  if(w.clientWidth)setPicker(Math.round(w.scrollLeft/w.clientWidth));
+},{passive:true});
 
 async function renderChanges(){
   let changes=[];
   try{changes=await (await fetch("changes.json?"+Date.now())).json()}catch(e){}
   const el=document.getElementById("changes");
-  if(!changes.length){el.innerHTML='<div class="empty">Izmaiņu vēl nav.</div>';return}
+  if(!changes.length){el.innerHTML='<div class="change" style="color:var(--text-3)">Izmaiņu vēl nav.</div>';return}
   el.innerHTML=changes.slice(0,10).map(c=>{
     const rows=[...c.added.map(l=>`<div class="add"><span>+</span>${esc(l)}</div>`),
                 ...c.changed.map(l=>`<div class="chg"><span>~</span>${esc(l)}</div>`),
                 ...c.removed.map(l=>`<div class="rem"><span>−</span>${esc(l)}</div>`)];
-    return `<div class="change"><div class="t">${new Date(c.time).toLocaleString("lv-LV")} · versija ${c.versions.join(", ")}</div>${rows.join("")}</div>`;
+    return `<div class="change"><div class="t">${new Date(c.time).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})} · versija ${c.versions.join(", ")}</div>${rows.join("")}</div>`;
   }).join("");
 }
 
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek()};
-document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);renderWeek()};
-document.getElementById("thisweek").onclick=()=>{weekStart=monday(new Date());renderWeek()};
+document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);render()};
+document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);render()};
+document.getElementById("today").onclick=()=>{weekStart=monday(new Date());render();scrollToNow(false)};
+matchMedia("(max-width: 899px)").addEventListener("change",render);
+new ResizeObserver(([e])=>document.documentElement.style.setProperty("--toolbar",e.target.offsetHeight+"px")).observe(document.querySelector(".toolbar"));
 load();
 </script>
 </body>

@@ -34,6 +34,9 @@ STATE_FILE = ROOT / "state.json"
 ICS_FILE = ROOT / "docs" / "timetable.ics"
 DATA_FILE = ROOT / "docs" / "data.json"
 CHANGES_FILE = ROOT / "docs" / "changes.json"
+NAMES_FILE = ROOT / "names.json"
+NAME_FIXES = json.loads(NAMES_FILE.read_text()) if NAMES_FILE.exists() else {}
+BROKEN_CHARS = ("?", "\ufffd")
 DAY_NAMES = ["Pr", "Ot", "Tr", "Ce", "Pk"]
 WEEKDAY_TYPE_CHECK = bells.WEEKDAY_TYPE
 PAST_DAYS = 14
@@ -97,6 +100,22 @@ def period_window(periods, period_id, day_idx):
     return start, start + duration
 
 
+def fix_name(name):
+    if not any(c in name for c in BROKEN_CHARS):
+        return name.strip()
+    out = []
+    for token in name.split():
+        fixed = NAME_FIXES.get(token)
+        if fixed is None:
+            stripped = token.rstrip(".,;:")
+            if stripped in NAME_FIXES:
+                fixed = NAME_FIXES[stripped] + token[len(stripped):]
+        if fixed is None and any(c in token for c in BROKEN_CHARS):
+            print(f"WARNING: unknown broken word {token!r} in {name!r}")
+        out.append(fixed if fixed is not None else token)
+    return " ".join(out)
+
+
 def build_events(tables, week_start, tt_num, overrides):
     classes = [c for c in tables["classes"].values() if c["name"].strip() == CLASS_NAME.strip()]
     if not classes:
@@ -108,11 +127,11 @@ def build_events(tables, week_start, tt_num, overrides):
         lesson = tables["lessons"].get(card["lessonid"])
         if not lesson or class_id not in lesson["classids"] or not card["period"] or not card["days"]:
             continue
-        subject = tables["subjects"].get(lesson["subjectid"], {}).get("name", "?")
+        subject = fix_name(tables["subjects"].get(lesson["subjectid"], {}).get("name", "?"))
         groups = [tables["groups"][g] for g in lesson["groupids"] if g in tables["groups"] and tables["groups"][g]["classid"] == class_id]
-        group_names = [g["name"] for g in groups if not g["entireclass"]]
-        teachers = [tables["teachers"][t]["short"] for t in lesson["teacherids"] if t in tables["teachers"]]
-        rooms = [tables["classrooms"][r]["short"] for r in card["classroomids"] if r in tables["classrooms"]]
+        group_names = [fix_name(g["name"]) for g in groups if not g["entireclass"]]
+        teachers = [fix_name(tables["teachers"][t]["short"]) for t in lesson["teacherids"] if t in tables["teachers"]]
+        rooms = [fix_name(tables["classrooms"][r]["short"]) for r in card["classroomids"] if r in tables["classrooms"]]
         first = int(card["period"])
         last = first + int(lesson.get("durationperiods") or 1) - 1
         for day_idx, bit in enumerate(card["days"]):
@@ -282,6 +301,7 @@ def write_site_data(events, versions, added, changed, removed):
         "timezone": str(TZ),
         "updated": now,
         "versions": [{"weekStart": ws.isoformat(), "num": num} for ws, num in versions],
+        "bells": bells.SCHEDULES,
         "events": [{k: v for k, v in ev.items() if k not in ("hash", "gcal_id")} for _, ev in sorted(events.items(), key=lambda kv: kv[1]["start"])],
     }
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False) + "\n")

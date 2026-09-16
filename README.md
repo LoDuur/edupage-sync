@@ -42,6 +42,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 Lesson times come from the school's official bell schedule (`bells.py`, typed in from [MĀCĪBU STUNDU LAIKI](https://valmierastehnikums.lv/wp-content/uploads/2024/10/MACIBU_STUNDU_LAIKI.pdf-3.pdf)): separate tables for Monday, Tuesday–Thursday, Friday and the shortened pre-holiday day (30-minute lessons). A day is treated as pre-holiday when the next day is a Latvian public holiday; lessons on public holidays are skipped. To force a schedule for a specific date, add it to `overrides.json`, e.g. `{"2026-12-18": "short"}` (values: `monday`, `midweek`, `friday`, `short`).
 
+## Names with missing diacritics
+
+EduPage's data has `?` in place of Latvian letters in most subject, room and group names (e.g. `Soci?l?s zin. un v?sture`). `names.json` maps broken words to correct ones and is applied to every name. When a new unknown broken word appears, the sync log prints `WARNING: unknown broken word …` — add it to `names.json` and push.
+
 ## Configuration
 
 Environment variables: `CLASS_NAME` (default `2.k. 28.grupa`), `EDUPAGE_SCHOOL` (default `valteh`), `TIMEZONE` (default `Europe/Riga`). Class names must match the EduPage "Klases" list exactly.
