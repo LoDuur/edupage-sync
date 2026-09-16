@@ -438,10 +438,11 @@ def main():
         if added or changed or removed:
             for mark, group in (("➕", added), ("✏️", changed), ("➖", removed)):
                 recent += [f"{mark} {event_line(group[k])}" for k in group]
-        whatsapp.send(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
-                                     [r for r in subs_new.values() if r["date"] == today.isoformat()], list(dict.fromkeys(recent))[:20]))
-        state["last_daily"] = today.isoformat()
-        state["last_daily_at"] = now.isoformat(timespec="seconds")
+        sent = whatsapp.send(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
+                                            [r for r in subs_new.values() if r["date"] == today.isoformat()], list(dict.fromkeys(recent))[:20]))
+        if sent:
+            state["last_daily"] = today.isoformat()
+            state["last_daily_at"] = now.isoformat(timespec="seconds")
 
     cutoff = (today - timedelta(days=KEEP_DAYS)).isoformat()
     state["events"] = {k: v for k, v in old_events.items() if v["date"] >= cutoff}

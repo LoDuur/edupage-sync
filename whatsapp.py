@@ -22,10 +22,11 @@ def send(text, chat_id=None):
     chat_id = chat_id or CHAT_ID
     if not (ID_INSTANCE and TOKEN and chat_id):
         print("WhatsApp not configured; skipping message:\n" + text)
-        return
+        return False
     for chunk in _split(text):
         r = requests.post(_url("sendMessage"), json={"chatId": chat_id, "message": chunk}, timeout=30)
         r.raise_for_status()
+    return True
 
 
 def _split(text):
