@@ -49,6 +49,10 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 `compiler/` is a separate page (console command `compiler`) with a Java editor. Code is compiled and run on [Wandbox](https://wandbox.org) (OpenJDK 22, UTF-8). Saving goes to Supabase (project `edupage-sync`, table `snippets`) through the `save_snippet` RPC, which checks a bcrypt-hashed class passkey stored in `settings`. Anonymous clients can only read: saved snippets are public and immutable (no insert/update/delete grants). The same code gates the page itself (`compiler/`) and the works archive (`compiler/works/`) client-side (SHA-256 in `compiler/ui.js`), and is checked server-side for saving. Change it with `select set_passkey('new-key');` in the Supabase SQL editor and update `ACCESS_HASH` in `compiler/ui.js`. The editor has Java autocompletion (Tab / Ctrl+Space, snippets `sout psvm fori sc …`), error-line highlighting and an AI helper (pollinations.ai, keyless).
 
+## PIL interpreter (`compiler/pil/`)
+
+`compiler/pil/` (console command `pil` or `compiler pil`) is the same editor for [PIL](https://github.com/Acerx-AMJ/PIL), a small COBOL/assembly-style esolang. The upstream C++ interpreter is compiled to WebAssembly (`compiler/pil/pil.js`, single file) and runs in a Web Worker inside the browser: no server, stdin from the `stdin` tab, 10 s timeout per run, Latvian UTF-8 output. Rebuild with `tools/build-pil.sh` (needs `brew install emscripten`); the interpreter commit is in `compiler/pil/VERSION`. `compiler/pil/pil-lang.js` holds the CodeMirror mode, Tab completion (all built-ins with argument hints, snippets `main func loop if readnum …`), bundled examples and the language reference shown in the `Valoda` tab and given to the AI helper. Note the upstream README is older than the code: the real names are `println printfln readln readch const` (the page hints this on `No such function` errors). Saved works share the `snippets` table with Java through the `lang` column (`save_snippet(..., p_lang)`); the works archive shows both with a language filter.
+
 ## Local run
 
 ```bash

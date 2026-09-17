@@ -68,14 +68,14 @@ const UI = (() => {
     "╚█████╔╝██║  ██║ ╚████╔╝ ██║  ██║",
     " ╚════╝ ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝",
   ].join("\n");
-  async function requireAccess(onOk, { title = "PIEKĻUVES KODS", sub = "2.k. 28.grupa · Java" } = {}) {
+  async function requireAccess(onOk, { title = "PIEKĻUVES KODS", sub = "2.k. 28.grupa · Java", banner = BANNER, back = "../" } = {}) {
     const k = accessKey();
     if (k && await sha256(k) === ACCESS_HASH) { onOk(); return; }
     const g = document.createElement("div"); g.className = "gate"; g.id = "gate";
-    g.innerHTML = `<div class="card"><pre>${BANNER}</pre><p class="sub">${esc(sub)} — ${esc(title)}</p>
+    g.innerHTML = `<div class="card"><pre>${banner}</pre><p class="sub">${esc(sub)} — ${esc(title)}</p>
       <div class="field"><input id="gate-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ACCESS KEY"></div>
       <div class="err" id="gate-err"></div>
-      <div class="row"><button class="btn pri" id="gate-ok">Ienākt →</button><a class="btn" href="../">‹ Stundu saraksts</a></div>
+      <div class="row"><button class="btn pri" id="gate-ok">Ienākt →</button><a class="btn" href="${back}">‹ Stundu saraksts</a></div>
       <p class="note">Kods ir arī saglabāšanas atslēga. Tas paliek saglabāts šajā ierīcē.<br>SYSTEM.LOCKED · V1.0.0</p></div>`;
     document.body.appendChild(g);
     document.body.classList.add("hero");
