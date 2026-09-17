@@ -45,7 +45,7 @@ DAY_NAMES = ["Pr", "Ot", "Tr", "Ce", "Pk"]
 WEEKDAY_TYPE_CHECK = bells.WEEKDAY_TYPE
 PAST_DAYS = 14
 CLASS_SHORT = ""
-DAILY_HOUR = int(os.environ.get("DAILY_HOUR", "7"))
+DAILY_HOUR = int(os.environ.get("DAILY_HOUR", "21"))
 SITE_URL = os.environ.get("SITE_URL", "https://loduur.github.io/edupage-sync/")
 IMG_DIR = ROOT / "out"
 FUTURE_DAYS = 60
@@ -413,14 +413,15 @@ def main():
     new_versions = [] if seen_versions is None else [(ws, num) for ws, num in versions if num not in seen_versions]
 
     now = datetime.now(TZ)
-    send_daily = is_school_day(today) and now.hour >= DAILY_HOUR and state.get("last_daily") != today.isoformat()
+    tomorrow = today + timedelta(days=1)
+    send_daily = is_school_day(tomorrow) and now.hour >= DAILY_HOUR and state.get("last_daily") != today.isoformat()
 
     if args.dry_run:
         write_ics({**old_events, **new_events})
         write_site_data({**old_events, **new_events}, versions, {}, {}, {}, subs_new)
-        print("--- daily digest preview ---")
-        print(messages.daily(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
-                             [r for r in subs_new.values() if r["date"] == today.isoformat()], []))
+        print("--- vakara ziņas priekšskatījums (rīt) ---")
+        print(messages.daily(CLASS_NAME, tomorrow.isoformat(), [e for e in new_events.values() if e["date"] == tomorrow.isoformat()],
+                             [r for r in subs_new.values() if r["date"] == tomorrow.isoformat()], []))
         return
 
     if added or changed or removed:
@@ -470,15 +471,14 @@ def main():
             for mark, group in (("➕", added), ("✏️", changed), ("➖", removed)):
                 recent += [f"{mark} {event_line(group[k])}" for k in group]
         recent = list(dict.fromkeys(recent))
-        today_subs = [r for r in subs_new.values() if r["date"] == today.isoformat()]
+        target = tomorrow.isoformat()
+        day_subs = [r for r in subs_new.values() if r["date"] == target]
         IMG_DIR.mkdir(exist_ok=True)
-        path = render.day_image(CLASS_NAME, today.isoformat(), [e for e in new_events.values() if e["date"] == today.isoformat()],
-                                today_subs, IMG_DIR / f"day-{today}.png", footer_text())
-        caption = f"📅 *{messages._d(today.isoformat())}* · {CLASS_NAME}"
-        if today_subs:
-            caption += f"\n⚠️ Aizvietošana: {len(today_subs)}"
-        if recent:
-            caption += f"\n🔄 Izmaiņas kopš pēdējās ziņas: {len(recent)}"
+        path = render.day_image(CLASS_NAME, target, [e for e in new_events.values() if e["date"] == target],
+                                day_subs, IMG_DIR / f"day-{target}.png", footer_text())
+        caption = f"📅 *Rīt: {messages._d(target)}* · {CLASS_NAME}"
+        caption += f"\n⚠️ Aizvietošana: {len(day_subs)}" if day_subs else ""
+        caption += f"\n🔄 Izmaiņas kopš pēdējās ziņas: {len(recent)}" if recent else "\n✅ Izmaiņu nav"
         caption += f"\n{SITE_URL}"
         sent = whatsapp.send_image(str(path), caption)
         if sent:

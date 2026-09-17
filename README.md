@@ -40,10 +40,10 @@ Messages go to one WhatsApp chat from your own account via [Green API](https://g
 5. Test: `… WHATSAPP_CHAT_ID=… python whatsapp.py --test "Tests"`.
 
 What is sent (as a rendered image + one-line caption with the website link):
-- **Every school-day morning** (first run after 07:00 Riga): an image of today's lessons (times, rooms, teachers, breaks, substitutions).
+- **Every evening before a school day** (first run after 21:00 Riga): an image of tomorrow's lessons (times, rooms, teachers, breaks, substitutions), with "✅ Izmaiņu nav" or the number of changes since the last message.
 - **Immediately**: a new weekly timetable (week image), timetable changes (week image), and new/cancelled substitutions (day image) from EduPage's *Aizvietošana* page.
 
-`DAILY_HOUR` (default `7`) changes the digest hour. Linked-device automation is outside WhatsApp's terms; keep volume low.
+`DAILY_HOUR` (default `21`) changes the digest hour. Linked-device automation is outside WhatsApp's terms; keep volume low.
 
 ## Local run
 
