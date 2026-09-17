@@ -47,7 +47,7 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 ## Java compiler (`compiler/`)
 
-`compiler/` is a separate page (console command `compiler`) with a Java editor. Code is compiled and run on [Wandbox](https://wandbox.org) (OpenJDK 22, UTF-8). Saving goes to Supabase (project `edupage-sync`, table `snippets`) through the `save_snippet` RPC, which checks a bcrypt-hashed class passkey stored in `settings`. Anonymous clients can only read: saved snippets are public and immutable (no insert/update/delete grants). Change the passkey with `select set_passkey('new-key');` in the Supabase SQL editor.
+`compiler/` is a separate page (console command `compiler`) with a Java editor. Code is compiled and run on [Wandbox](https://wandbox.org) (OpenJDK 22, UTF-8). Saving goes to Supabase (project `edupage-sync`, table `snippets`) through the `save_snippet` RPC, which checks a bcrypt-hashed class passkey stored in `settings`. Anonymous clients can only read: saved snippets are public and immutable (no insert/update/delete grants). The same code gates the page itself (`compiler/`) and the works archive (`compiler/works/`) client-side (SHA-256 in `compiler/ui.js`), and is checked server-side for saving. Change it with `select set_passkey('new-key');` in the Supabase SQL editor and update `ACCESS_HASH` in `compiler/ui.js`. The editor has Java autocompletion (Tab / Ctrl+Space, snippets `sout psvm fori sc …`), error-line highlighting and an AI helper (pollinations.ai, keyless).
 
 ## Local run
 

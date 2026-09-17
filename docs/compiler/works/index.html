@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Darbi · Java</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+<link rel="stylesheet" href="../ui.css">
+<style>
+body{display:flex;flex-direction:column;min-height:100vh}
+main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 auto;padding:.6rem 1.2rem 1rem;display:grid;grid-template-columns:minmax(280px,2fr) minmax(0,3fr);gap:.8rem;min-height:0}
+.tools{display:flex;gap:.5rem;padding:.6rem .8rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tools .field{flex:1;padding:.35rem .7rem;min-width:180px}
+.tools select{background:rgba(0,0,0,.35);border:1px solid var(--line-2);color:var(--ink);font:inherit;padding:.35rem .5rem}
+.list{flex:1;overflow:auto;max-height:70vh}
+.item{display:grid;grid-template-columns:1fr auto;gap:.1rem .6rem;padding:.6rem .9rem;border-bottom:1px solid var(--line);cursor:pointer;color:var(--ink)}
+.item:hover{background:var(--panel-2)}
+.item.on{background:rgba(120,184,107,.12);border-left:2px solid var(--fern)}
+.item b{font-size:.86rem;font-weight:600}
+.item small{color:var(--ink-3);font-size:.66rem;letter-spacing:.06em;grid-column:1/-1}
+.item .n{color:var(--ink-3);font-size:.7rem}
+.empty{padding:1.5rem;color:var(--ink-3);text-align:center;font-size:.8rem;letter-spacing:.08em}
+.CodeMirror{flex:1;height:auto;min-height:480px;font:13.5px/1.6 var(--mono);background:transparent;color:var(--ink)}
+.cm-s-material-darker.CodeMirror{background:transparent}
+.cm-s-material-darker .CodeMirror-gutters{background:rgba(255,255,255,.03);border-right:1px solid var(--line)}
+.cm-s-material-darker .CodeMirror-linenumber{color:var(--ink-3)}
+.cm-s-material-darker .cm-keyword{color:#c3a6ff}.cm-s-material-darker .cm-string{color:#dcf0c8}.cm-s-material-darker .cm-def{color:#9fe28a}.cm-s-material-darker .cm-variable-3,.cm-s-material-darker .cm-type{color:#f5c26b}.cm-s-material-darker .cm-comment{color:var(--ink-3)}.cm-s-material-darker .cm-number{color:#ffb86b}
+.viewbar{display:flex;gap:.5rem;align-items:center;padding:.5rem .8rem;border-top:1px solid var(--line);font-size:.72rem;color:var(--ink-2);flex-wrap:wrap}
+.stats{display:flex;gap:1.2rem;padding:.5rem .9rem;border-top:1px solid var(--line);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.stats b{color:var(--ink)}
+.placeholder{flex:1;display:grid;place-items:center;color:var(--ink-3);text-align:center;padding:2rem;font-size:.78rem;letter-spacing:.08em;line-height:2}
+.placeholder pre{font:.6rem/1.1 var(--mono);color:var(--line-2);margin:0 0 1rem}
+@media (max-width:900px){main{grid-template-columns:1fr;padding:.6rem .8rem}.list{max-height:40vh}.CodeMirror{min-height:320px}}
+</style>
+</head>
+<body>
+<div class="dither"><canvas id="dither"></canvas></div>
+<div class="frame"><i></i><i></i><i></i><i></i></div>
+
+<header class="strip"><div class="strip-in">
+  <a class="wordmark" href="../../" title="Stundu saraksts"><b>VAL</b>TEH</a>
+  <span class="vbar"></span><span class="tag">2.k. 28.grupa · Java · Darbi</span>
+  <span class="sp"></span>
+  <nav class="nav"><a href="../">Kompilators</a><a class="on" href="./">Darbi</a><a href="../../">Saraksts</a></nav>
+  <span class="dot"></span><span class="tag" id="clock">--:--:--</span>
+</div></header>
+
+<div class="banner">
+  <pre>██████╗  █████╗ ██████╗ ██████╗ ██╗
+██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║
+██║  ██║███████║██████╔╝██████╔╝██║
+██║  ██║██╔══██║██╔══██╗██╔══██╗██║
+██████╔╝██║  ██║██║  ██║██████╔╝██║
+╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝</pre>
+  <div class="meta">∞ <b>SAGLABĀTIE DARBI</b> · TIKAI LASĀMI<br>ATVER, LASI, PALAID KOMPILATORĀ<br>ARHĪVS IR NEMAINĪGS</div>
+</div>
+
+<main>
+  <section class="panel">
+    <div class="panel-h"><span class="file">darbi/</span><span class="status" id="count"></span></div>
+    <div class="tools"><span class="field"><input id="q" placeholder="meklēt pēc nosaukuma, autora vai koda…"></span><select id="sort"><option value="new">jaunākie</option><option value="old">vecākie</option><option value="az">A–Z</option><option value="author">autors</option></select></div>
+    <div class="list" id="list"><div class="empty">ielādē…</div></div>
+    <div class="stats" id="stats"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-h"><span class="file" id="file">—</span><span class="ro" style="background:var(--amber);color:#000;font-size:.58rem;font-weight:700;padding:.05rem .4rem;text-transform:uppercase;letter-spacing:.1em">tikai lasāms</span><span class="status" id="meta"></span></div>
+    <div class="placeholder" id="ph"><div><pre>┌──────────────────────┐
+│  izvēlies darbu ←    │
+└──────────────────────┘</pre>Saraksts pa kreisi · meklēšana augšā</div></div>
+    <textarea id="code" hidden></textarea>
+    <div class="viewbar" id="viewbar" hidden><span id="viewmeta"></span><span class="sp"></span><button class="btn sm" id="copy">Kopēt kodu</button><button class="btn sm" id="link">Kopēt saiti</button><a class="btn sm pri" id="open" href="#">Atvērt kompilatorā →</a></div>
+  </section>
+</main>
+
+<footer class="foot"><div class="foot-in">
+  <span>ARCHIVE.READONLY</span><span class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></span><span>V1.1.0</span><span class="dot"></span><span>SUPABASE · EU-NORTH-1</span>
+  <span class="sp"></span>
+  <span>◐ RENDERING</span><span class="pulse"><i></i><i></i><i></i></span><span>FRAME: ∞</span>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+<script src="../ui.js"></script>
+<script>
+const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
+const SUPABASE_KEY="sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
+const {esc,$,toast}=UI;
+const HEAD={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
+let all=[],current=null,cm=null;
+const fmt=d=>new Date(d).toLocaleString("lv-LV",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const cls=code=>{const m=code.match(/public\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/)||code.match(/class\s+([A-Za-z_$][\w$]*)/);return m?m[1]:"Main"};
+
+async function load(){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/snippets?select=id,title,author,code,created_at&order=created_at.desc&limit=500`,{headers:HEAD});
+  all=await r.json();
+  const authors=new Set(all.map(s=>s.author||"anonīms")),lines=all.reduce((n,s)=>n+s.code.split("\n").length,0);
+  $("stats").innerHTML=`<span><b>${all.length}</b> darbi</span><span><b>${authors.size}</b> autori</span><span><b>${lines}</b> rindas</span>`;
+  renderList();
+  const id=new URLSearchParams(location.search).get("id");if(id)open(id);
+}
+function renderList(){
+  const q=$("q").value.trim().toLowerCase(),sort=$("sort").value;
+  let items=all.filter(s=>!q||[s.title,s.author,s.code].join("\n").toLowerCase().includes(q));
+  items.sort((a,b)=>sort==="old"?a.created_at.localeCompare(b.created_at):sort==="az"?a.title.localeCompare(b.title,"lv"):sort==="author"?(a.author||"").localeCompare(b.author||"","lv")||b.created_at.localeCompare(a.created_at):b.created_at.localeCompare(a.created_at));
+  $("count").textContent=`${items.length}/${all.length}`;
+  $("list").innerHTML=items.length?items.map((s,i)=>`<div class="item${current&&current.id===s.id?" on":""}" data-id="${s.id}"><b>${esc(s.title)}</b><span class="n">#${String(all.length-all.indexOf(s)).padStart(3,"0")}</span><small>${esc(s.author||"anonīms")} · ${fmt(s.created_at)} · ${s.code.split("\n").length} rindas</small></div>`).join(""):'<div class="empty">nekas netika atrasts</div>';
+  $("list").querySelectorAll(".item").forEach(el=>el.onclick=()=>open(el.dataset.id));
+}
+function open(id){
+  const s=all.find(x=>x.id===id);if(!s)return;
+  current=s;
+  if(!cm){$("ph").hidden=true;$("code").hidden=false;cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",theme:"material-darker",lineNumbers:true,readOnly:true,lineWrapping:false})}
+  cm.setValue(s.code);
+  $("file").textContent=cls(s.code)+".java";
+  $("meta").textContent=fmt(s.created_at);
+  $("viewbar").hidden=false;
+  $("viewmeta").innerHTML=`<b>${esc(s.title)}</b> · ${esc(s.author||"anonīms")}`;
+  $("open").href=`../?id=${s.id}`;
+  history.replaceState(null,"",`?id=${s.id}`);document.title=s.title+" · Darbi";
+  document.querySelectorAll(".item").forEach(el=>el.classList.toggle("on",el.dataset.id===s.id));
+  setTimeout(()=>cm.refresh(),0);
+}
+$("q").addEventListener("input",renderList);$("sort").addEventListener("change",renderList);
+$("copy").onclick=async()=>{try{await navigator.clipboard.writeText(current.code);toast("Kods nokopēts")}catch(e){toast("Neizdevās nokopēt")}};
+$("link").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast("Saite nokopēta")}catch(e){prompt("Saite:",location.href)}};
+
+UI.clock($("clock"));
+UI.initDither($("dither"));
+UI.requireAccess(load,{title:"PIEKĻUVES KODS",sub:"2.k. 28.grupa · Darbi"});
+</script>
+</body>
+</html>
