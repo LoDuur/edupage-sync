@@ -154,6 +154,22 @@ body.design-default .grid{display:none}
 .paper .cls-foot{display:flex;justify-content:space-between;font-size:.72rem;margin-top:.35rem}
 .paper .cls-subs{margin-top:.6rem;font-size:.75rem}
 .paper .cls-subs b{display:inline-block;margin-right:.4rem}
+.sheet-bg{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{width:min(560px,100%);background:var(--surface);color:var(--text);border-radius:1.1rem 1.1rem 0 0;padding:1rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom));box-shadow:0 -12px 40px -20px rgba(0,0,0,.5);max-height:88vh;overflow:auto}
+.sheet h3{margin:.2rem 0 .8rem;font-size:1.05rem;letter-spacing:-.01em}
+.sheet .grab{width:2.4rem;height:.3rem;border-radius:1rem;background:var(--line-strong);margin:0 auto .7rem}
+.sheet .act{display:flex;align-items:center;gap:.75rem;padding:.75rem .85rem;border-radius:.75rem;background:var(--surface-2);color:var(--text);margin-bottom:.5rem;font-weight:600;border:1px solid var(--line);transition:transform .1s ease-out}
+.sheet .act:active{transform:scale(.985)}
+.sheet .act .ico{width:2rem;height:2rem;border-radius:.5rem;display:grid;place-items:center;color:#fff;flex:none}
+.sheet .act small{display:block;font-weight:400;color:var(--text-2);font-size:.75rem}
+.sheet .url{display:flex;gap:.4rem;margin:.9rem 0 .4rem}
+.sheet .url input{flex:1;font:.8rem ui-monospace,Menlo,monospace;padding:.55rem .65rem;border-radius:.6rem;border:1px solid var(--line-strong);background:var(--bg);color:var(--text);min-width:0}
+.sheet .url button{padding:.55rem .8rem;border-radius:.6rem;background:var(--accent);color:#fff;font-weight:600}
+.sheet ol{margin:.4rem 0 0;padding-left:1.2rem;color:var(--text-2);font-size:.82rem;line-height:1.5}
+.sheet .note{font-size:.78rem;color:var(--text-2);margin-top:.5rem}
+.sheet details{margin-top:.6rem}
+.sheet summary{cursor:pointer;font-weight:600;font-size:.85rem}
 .conbtn{width:2rem;height:2rem;border-radius:.5rem;background:var(--line);color:var(--text);font:600 .8rem ui-monospace,Menlo,monospace;display:grid;place-items:center;transition:transform .1s ease-out}
 .conbtn:active{transform:scale(.94)}
 section{padding:0 1rem}
@@ -236,11 +252,13 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
   <section>
     <h2>Pievienot kalendāram</h2>
     <div class="inset">
-      <a id="webcal" href="#"><span class="ico" style="background:#ff3b30"></span><span class="lbl">Apple / iPhone kalendārs</span><span class="chev">›</span></a>
-      <a id="gcal" href="#" target="_blank" rel="noopener"><span class="ico" style="background:#0a84ff">G</span><span class="lbl">Google kalendārs</span><span class="chev">›</span></a>
-      <a href="timetable.ics" download><span class="ico" style="background:#8e8e93">↓</span><span class="lbl">Lejupielādēt .ics</span><span class="chev">›</span></a>
+      <a href="#" data-cal="apple"><span class="ico" style="background:#ff3b30"></span><span class="lbl">Apple / iPhone kalendārs</span><span class="chev">›</span></a>
+      <a href="#" data-cal="google"><span class="ico" style="background:#0a84ff">G</span><span class="lbl">Google kalendārs</span><span class="chev">›</span></a>
+      <a href="#" data-cal="outlook"><span class="ico" style="background:#0078d4">O</span><span class="lbl">Outlook</span><span class="chev">›</span></a>
+      <a href="#" data-cal="other"><span class="ico" style="background:#8e8e93">↓</span><span class="lbl">Cits kalendārs / .ics fails</span><span class="chev">›</span></a>
     </div>
   </section>
+  <div class="sheet-bg" id="sheet-bg"><div class="sheet" id="sheet" role="dialog" aria-label="Pievienot kalendāram"></div></div>
 
   <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a> · oficiālie stundu laiki · atjaunināts katru stundu · konsole: <kbd>Ctrl</kbd>+<kbd>L</kbd> vai <kbd>`</kbd></footer>
 </main>
@@ -301,10 +319,6 @@ async function load(){
   document.getElementById("title").textContent=data.className;
   document.title=data.className+" · Stundu saraksts";
   setUpdated();
-  const base=location.href.replace(/index\.html$/,"").replace(/[#?].*$/,"");
-  const ics=base+"timetable.ics";
-  document.getElementById("webcal").href=ics.replace(/^https?:/,"webcal:");
-  document.getElementById("gcal").href="https://calendar.google.com/calendar/r?cid="+encodeURIComponent(ics.replace(/^https?:/,"webcal:"));
   document.getElementById("src").href=`https://${data.school}.edupage.org/timetable/view.php`;
   weekStart=monday(new Date());
   render();
@@ -521,6 +535,40 @@ document.getElementById("days").addEventListener("scroll",()=>{
   const w=document.getElementById("days");
   if(w.clientWidth)setPicker(Math.round(w.scrollLeft/w.clientWidth));
 },{passive:true});
+const ICS_URL=location.href.replace(/index\.html$/,"").replace(/[#?].*$/,"")+"timetable.ics";
+const WEBCAL_URL=ICS_URL.replace(/^https?:/,"webcal:");
+const UA=navigator.userAgent,IS_IOS=/iPhone|iPad|iPod/.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),IS_MAC=/Macintosh/.test(UA)&&!IS_IOS,IS_ANDROID=/Android/.test(UA);
+const GOOGLE_ADD="https://calendar.google.com/calendar/r?cid="+encodeURIComponent(ICS_URL);
+const OUTLOOK_ADD="https://outlook.live.com/calendar/0/addfromweb?url="+encodeURIComponent(ICS_URL)+"&name="+encodeURIComponent("Stundu saraksts");
+function act(href,ico,color,title,sub,attrs=""){return `<a class="act" href="${href}" ${attrs}><span class="ico" style="background:${color}">${ico}</span><span>${title}<small>${sub}</small></span></a>`}
+function openSheet(kind){
+  const url=`<div class="url"><input readonly value="${ICS_URL}" onclick="this.select()"><button id="copy-ics">Kopēt</button></div>`;
+  let h='<div class="grab"></div>';
+  if(kind==="apple"){
+    h+="<h3>Apple kalendārs</h3>";
+    if(IS_IOS||IS_MAC)h+=act(WEBCAL_URL,"","#ff3b30","Abonēt kalendāru","Atvērsies Kalendārs un jautās apstiprinājumu · atjaunojas automātiski");
+    else h+='<div class="note">Šī ierīce nav Apple. Atver šo lapu iPhone/Mac vai pievieno abonementu manuāli:</div>';
+    h+=url+"<ol><li>iPhone: Iestatījumi → Programmas → Kalendārs → Konti → Pievienot kontu → Cits → <b>Pievienot abonēto kalendāru</b> → ielīmē saiti</li><li>Mac: Kalendārs → Fails → <b>Jauns kalendāra abonements</b> → ielīmē saiti</li></ol>";
+  }else if(kind==="google"){
+    h+="<h3>Google kalendārs</h3>";
+    h+=act(GOOGLE_ADD,"G","#0a84ff","Pievienot Google kalendāram","Atvērsies calendar.google.com un piedāvās pievienot",'target="_blank" rel="noopener"');
+    h+='<div class="note">Google kalendāra <b>mobilā lietotne</b> abonēšanu neatbalsta — jāizdara pārlūkā (var arī telefonā). Ja poga nenostrādā, manuāli:</div>'+url+"<ol><li>Atver <a href=\"https://calendar.google.com/calendar/u/0/r/settings/addbyurl\" target=\"_blank\" rel=\"noopener\">calendar.google.com → Iestatījumi → Pievienot kalendāru → No URL</a></li><li>Ielīmē saiti un spied <b>Pievienot kalendāru</b></li><li>Pēc tam tas parādās arī Google kalendāra lietotnē (var būt jāieslēdz sadaļā Kalendāri)</li></ol><div class=\"note\">Google atjauno abonētos kalendārus reizi ~12–24 h.</div>";
+  }else if(kind==="outlook"){
+    h+="<h3>Outlook</h3>";
+    h+=act(OUTLOOK_ADD,"O","#0078d4","Pievienot Outlook kalendāram","Atvērsies outlook.live.com ar aizpildītu saiti",'target="_blank" rel="noopener"');
+    h+=url+"<ol><li>Outlook → Kalendārs → <b>Pievienot kalendāru</b> → <b>Abonēt no tīmekļa</b> → ielīmē saiti</li></ol>";
+  }else{
+    h+="<h3>Cits kalendārs</h3>";
+    h+=act("timetable.ics","↓","#8e8e93","Lejupielādēt .ics failu","Vienreizējs imports (bez automātiskas atjaunošanas)","download");
+    h+='<div class="note">Labāk abonē saiti — tad izmaiņas ienāk automātiski:</div>'+url+"<ol><li>Samsung Calendar / citi Android: pievieno caur Google kalendāru (skat. Google)</li><li>Thunderbird, Fastmail, Proton u.c.: <b>Abonēt kalendāru no URL</b> → ielīmē saiti</li></ol>";
+  }
+  document.getElementById("sheet").innerHTML=h;
+  document.getElementById("sheet-bg").classList.add("on");
+  const cp=document.getElementById("copy-ics");
+  cp.onclick=async()=>{try{await navigator.clipboard.writeText(ICS_URL);cp.textContent="Nokopēts ✓"}catch(e){document.querySelector(".sheet .url input").select();document.execCommand("copy");cp.textContent="Nokopēts ✓"}setTimeout(()=>cp.textContent="Kopēt",1500)};
+}
+document.querySelectorAll("[data-cal]").forEach(a=>a.onclick=e=>{e.preventDefault();openSheet(a.dataset.cal)});
+document.getElementById("sheet-bg").onclick=e=>{if(e.target.id==="sheet-bg")e.target.classList.remove("on")};
 document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);render()};
 document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);render()};
 document.getElementById("today").onclick=()=>{weekStart=monday(new Date());render();scrollToNow(false)};
@@ -836,6 +884,7 @@ document.addEventListener("keydown",e=>{
   const inCon=e.target===conIn;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();toggleCon();return}
   if(!inCon&&(e.key==="`"||e.key==="'")&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();toggleCon(true);return}
+  if(e.key==="Escape"&&document.getElementById("sheet-bg").classList.contains("on")){document.getElementById("sheet-bg").classList.remove("on");return}
   if(e.key==="Escape"&&con.classList.contains("open")){
     if(busy==="seq"){cancelSeq=true;return}
     if(busy){stopAnim();return}
