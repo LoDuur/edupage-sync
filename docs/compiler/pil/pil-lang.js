@@ -32,7 +32,7 @@ const PIL = (() => {
     "array-idx": "MASĪVS, I, MĒRĶIS", "array-set": "MASĪVS, I, V", "array-push": "MASĪVS, V", "array-pop": "MASĪVS", "array-back": "MASĪVS, MĒRĶIS", "array-front": "MASĪVS, MĒRĶIS", "array-insert": "MASĪVS, I, V", "array-erase": "MASĪVS, I", "array-erase-all": "MASĪVS, V",
     "array-join": "MASĪVS, DALĪTĀJS, MĒRĶIS · virkne", "array-concat": "MASĪVS, MASĪVS2, MĒRĶIS", "array-slice": "MASĪVS, NO, LĪDZ, MĒRĶIS", "array-shuffle": "MASĪVS", "array-sort": "MASĪVS, DILSTOŠI", "array-count": "MASĪVS, V, MĒRĶIS", "array-reverse": "MASĪVS", "array-find": "MASĪVS, V, MĒRĶIS", "array-contains": "MASĪVS, V, MĒRĶIS",
     "array-shallow-copy": "MASĪVS, MĒRĶIS", "array-deep-copy": "MASĪVS, MĒRĶIS", "array-capacity": "MASĪVS, MĒRĶIS", "array-reserve": "MASĪVS, N", "array-resize": "MASĪVS, N, V", "array-memfree": "MASĪVS", "array-mark": "MASĪVS, MARĶIERIS", "array-get-mark": "MASĪVS, MĒRĶIS", "array-free-marked": "MARĶIERIS",
-    "map-new": "MĒRĶIS, K1, V1, …", "map-free": "MAPE, …",
+    "map-new": "MĒRĶIS, K1, V1, …", "map-free": "MAPE, …", "map-deep-free": "MAPE, …", "map-mark": "MAPE, MARĶIERIS", "map-get-mark": "MAPE, MĒRĶIS", "map-free-marked": "MARĶIERIS", "map-shallow-copy": "MAPE, MĒRĶIS", "map-deep-copy": "MAPE, MĒRĶIS",
   };
   const BUILTINS = Object.keys(B).map(n => ({ n, sig: B[n] }));
   const BUILTIN_SET = new Set(Object.keys(B));
