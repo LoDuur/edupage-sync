@@ -129,6 +129,33 @@ main{max-width:1280px;margin:0 auto;padding:0 0 3rem}
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-1px;top:50%;width:.7rem;height:.7rem;border-radius:50%;background:var(--red);transform:translate(0,-50%)}
 
+.classic{display:none;padding:0 1rem}
+.classic.on{display:block}
+body.design-default .grid{display:none}
+.paper{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;border-radius:.85rem;box-shadow:var(--card-shadow);padding:1.25rem 1.25rem 1rem;overflow-x:auto}
+.paper .cls-title{text-align:center;font-size:1.05rem;margin:0 0 .35rem}
+.paper .cls-class{text-align:center;font-size:1.45rem;font-weight:700;margin:0 0 .5rem}
+.paper .cls-school{font-size:.75rem;margin:0 0 .15rem}
+.paper table{border-collapse:collapse;width:100%;min-width:900px;table-layout:fixed}
+.paper th,.paper td{border:1px solid #000;padding:0;vertical-align:middle}
+.paper thead th{height:3.4rem;font-weight:700;font-size:1.05rem;line-height:1.1}
+.paper thead th small{display:block;font-weight:400;font-size:.55rem;margin-top:.15rem}
+.paper thead th:first-child,.paper tbody th{width:3.4rem}
+.paper tbody th{font-size:1.5rem;font-weight:700}
+.paper tbody tr{height:7.2rem}
+.paper td.cell{padding:0}
+.paper .lesson{position:relative;height:100%;min-height:7.1rem;display:flex;align-items:center;justify-content:center;text-align:center;padding:1rem .3rem;font-weight:700;font-size:.8rem;line-height:1.15;word-break:break-word}
+.paper .lesson.lunch{background:#fff!important}
+.paper .lesson .tch{position:absolute;top:.15rem;right:.25rem;font-size:.6rem;font-weight:400}
+.paper .lesson .room{position:absolute;bottom:.15rem;right:.25rem;font-size:.7rem;font-weight:400}
+.paper .stack{display:flex;flex-direction:column;height:100%}
+.paper .stack .lesson{min-height:3.5rem;flex:1;border-top:1px solid #000;padding:.9rem .3rem;font-size:.7rem}
+.paper .stack .lesson:first-child{border-top:0}
+.paper .cls-foot{display:flex;justify-content:space-between;font-size:.72rem;margin-top:.35rem}
+.paper .cls-subs{margin-top:.6rem;font-size:.75rem}
+.paper .cls-subs b{display:inline-block;margin-right:.4rem}
+.conbtn{width:2rem;height:2rem;border-radius:.5rem;background:var(--line);color:var(--text);font:600 .8rem ui-monospace,Menlo,monospace;display:grid;place-items:center;transition:transform .1s ease-out}
+.conbtn:active{transform:scale(.94)}
 section{padding:0 1rem}
 h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin:2rem 0 .6rem .25rem;font-weight:600}
 .inset{background:var(--surface);border-radius:.85rem;box-shadow:var(--card-shadow);overflow:hidden}
@@ -188,6 +215,7 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
       </div>
       <span class="spacer"></span>
       <span class="range" id="range"></span>
+      <button class="conbtn" id="conbtn" aria-label="Konsole" title="Konsole (Ctrl+L)">&gt;_</button>
       <div class="seg">
         <button id="prev" aria-label="Iepriekšējā nedēļa">‹</button>
         <button id="today">Šodien</button>
@@ -203,6 +231,7 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
     <div class="axis" id="axis"></div>
     <div class="days" id="days"></div>
   </div>
+  <div class="classic" id="classic"></div>
 
   <section>
     <h2>Pievienot kalendāram</h2>
@@ -244,12 +273,14 @@ const dname=iso=>`${WD[wdIdx(iso)]}, ${fmtD(new Date(iso))}`;
 
 let data,weekStart,rangeStart=8*60,rangeEnd=17*60,bells={},hueMap={},changesData=[];
 
-let prefs={colors:{},theme:"auto"};
+let prefs={colors:{},theme:"auto",design:"remastered"};
 try{prefs={...prefs,...JSON.parse(localStorage.getItem("prefs")||"{}")}}catch(e){}
 function savePrefs(){try{localStorage.setItem("prefs",JSON.stringify(prefs))}catch(e){}}
 const juarch=()=>!!(prefs.juarch&&prefs.juarch.installed);
 const THEMES={auto:"seko sistēmai",light:"gaišā",dark:"tumšā",nord:"Nord – arktiski zils",dracula:"Dracula – violets",forest:"Forest – gaišs, zaļš",sunset:"Sunset – gaišs, silts",rose:"Rosé Pine – tumšs, maigs"};
 const themeList=()=>Object.keys(THEMES).concat(juarch()?["juarch"]:[]);
+const DESIGNS={default:"klasiskais EduPage režģis",remastered:"jaunais dizains ar laika asi"};
+function applyDesign(){if(!DESIGNS[prefs.design])prefs.design="remastered";document.body.classList.toggle("design-default",prefs.design==="default");document.getElementById("classic").classList.toggle("on",prefs.design==="default")}
 function applyTheme(){if(!themeList().includes(prefs.theme))prefs.theme="auto";if(prefs.theme==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=prefs.theme}
 applyTheme();
 
@@ -407,6 +438,44 @@ function render(){
     const todayIdx=Math.round((new Date(todayIso)-weekStart)/864e5);
     scrollToDay(todayIdx>=0&&todayIdx<5?todayIdx:0,false);
   }
+  renderClassic();
+  applyDesign();
+}
+
+const SCHOOL_NAME="Valmieras tehnikums, Vadu iela 3, Valmiera, Latvija";
+const EVENING=[[18*60,18*60+45],[19*60,19*60+45],[20*60,20*60+45]];
+const CLASSIC_DAYS=["Pi","Ot","Tr","Ce","Pi"];
+const fmtFull=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}.`;
+const fmtSlash=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+function pastel(c){return `color-mix(in srgb,${c} 38%,#fff)`}
+function renderClassic(){
+  const el=document.getElementById("classic");
+  const table=(bells.midweek||[]).concat(EVENING),nP=table.length;
+  const end=addDays(weekStart,4);
+  let h=`<div class="paper"><div class="cls-title">Stundu saraksts ${fmtFull(weekStart)}-${fmtFull(end)}</div><div class="cls-class">${esc(data.className)}</div><div class="cls-school">${SCHOOL_NAME}</div><table><thead><tr><th></th>`;
+  table.forEach(([s,e],i)=>{h+=`<th>${i+1}<small>${fromMin(s).replace(/^0/,"")} - ${fromMin(e).replace(/^0/,"")}</small></th>`});
+  h+="</tr></thead><tbody>";
+  for(let d=0;d<5;d++){
+    const iso=isoD(addDays(weekStart,d));
+    const evs=data.events.filter(e=>e.date===iso).map(e=>{const [a,b]=parsePeriods(e.periods);return {...e,a,b}}).sort((x,y)=>x.a-y.a||x.b-y.b);
+    const clusters=[];
+    for(const e of evs){const c=clusters.find(c=>e.a<=c.b&&e.b>=c.a);if(c){c.a=Math.min(c.a,e.a);c.b=Math.max(c.b,e.b);c.items.push(e)}else clusters.push({a:e.a,b:e.b,items:[e]})}
+    h+=`<tr><th>${CLASSIC_DAYS[d]}</th>`;
+    let p=1;
+    while(p<=nP){
+      const c=clusters.find(c=>c.a===p);
+      if(!c){h+="<td></td>";p++;continue}
+      const span=Math.min(c.b,nP)-c.a+1;
+      const cell=e=>`<div class="lesson${/pusdienas/i.test(e.summary)?" lunch":""}" style="background:${pastel(baseColor(e.summary))}"><span class="tch">${esc((e.teachers||[]).join(", "))}</span>${esc(e.summary)}<span class="room">${esc(e.location||"")}</span></div>`;
+      h+=`<td class="cell" colspan="${span}">${c.items.length>1?`<div class="stack">${c.items.map(cell).join("")}</div>`:cell(c.items[0])}</td>`;
+      p=c.a+span;
+    }
+    h+="</tr>";
+  }
+  h+=`</tbody></table><div class="cls-foot"><span>Derīgums: ${fmtSlash(weekStart)}-${fmtSlash(end)}</span><span>Stundu saraksts tiešsaistē</span></div>`;
+  const subs=(data.substitutions||[]).filter(s=>s.date>=isoD(weekStart)&&s.date<=isoD(end));
+  if(subs.length)h+=`<div class="cls-subs"><b>Aizvietošana:</b>${subs.map(s=>`<div>${esc(s.date)} · ${esc(s.period)}. ${esc(s.text)}</div>`).join("")}</div>`;
+  el.innerHTML=h+"</div>";
 }
 
 function tick(){
@@ -545,6 +614,7 @@ const FILES={
   subst:()=>(data.substitutions||[]).length?data.substitutions.map(s=>`${esc(s.date)}  ${esc(s.period)}. ${esc(s.text)}`):['<span class="dim">Aizvietošanu nav</span>'],
   colors:()=>subjects().map(s=>{const c=baseColor(s);return `${sw(c)}${esc(s)} <span class="dim">${esc(c)}${s in prefs.colors?" · saglabāts":""}</span>`}),
   themes:()=>themeList().map(t=>`${t===prefs.theme?"<b>●</b>":" "} <b>${t}</b> <span class="dim">${THEMES[t]||"juarch – uz Arch bāzēta"}</span>`),
+  designs:()=>Object.keys(DESIGNS).map(d=>`${d===prefs.design?"<b>●</b>":" "} <b>${d}</b> <span class="dim">${DESIGNS[d]}</span>`),
 };
 const COW=t=>{const w=[...t].length;return ` ${"_".repeat(w+2)}\n< ${esc(t)} >\n ${"-".repeat(w+2)}\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||`};
 
@@ -587,7 +657,7 @@ async function juarchPurge(){
     ":: Iztīra visu OS...",
     "noņem judo",120,"noņem juarch-theme",120,"noņem kafija <span class=\"dim\">☕ (nēēē)</span>",200,"noņem krāsas, vēsturi, iestatījumus",
     async()=>{for(let i=0;i<evs.length;i++){evs[i].style.transition="opacity .25s";evs[i].style.opacity="0";if(i%4===0)await sleep(60)}await sleep(400)},
-    ()=>{prefs={colors:{},theme:"auto"};savePrefs();history=[];try{localStorage.removeItem("con-history")}catch(e){}root=false;applyTheme();setPrompt();render()},
+    ()=>{prefs={colors:{},theme:"auto",design:prefs.design};savePrefs();history=[];try{localStorage.removeItem("con-history")}catch(e){}root=false;applyTheme();setPrompt();render()},
     "<b>Sistēma iztīrīta.</b> Atpakaļ uz garlaicīgo noklusējumu. <span class=\"dim\">sudo atkal strādā.</span>",
   ]);
 }
@@ -612,7 +682,7 @@ function finishSudo(){
 const CMDS={
   help:{g:"Saraksts",d:"komandu saraksts",f(){const gs={};for(const [k,c] of Object.entries(CMDS)){if(c.hide&&c.hide())continue;(gs[c.g]??=[]).push(`  <b>${k}</b>${c.u?" "+esc(c.u):""} <span class="dim">— ${c.d}</span>`)}for(const g of ["Saraksts","Sistēma","juarch","Jautri"])if(gs[g]){print(`<span class="dim">${g}</span>`);gs[g].forEach(l=>print(l))}print('<span class="dim">man &lt;komanda&gt; — vairāk · saīsnes: '+Object.entries(ALIASES).slice(0,8).map(([a,b])=>`${a}=${b}`).join(", ")+'</span>')}},
   ls:{g:"Saraksts",u:"[-l]",d:"faili: dienas, week, changes, subst, colors, themes",f(a){const names=Object.keys(FILES);if(a[0]==="-l"||a[0]==="-la")for(const n of names){const iso=dayIso(n);print(`${n.padEnd(9)} <span class="dim">${iso?eventsFor(iso).length+" st.":""}</span>`)}else print(names.join("  "))}},
-  cat:{g:"Saraksts",u:"<fails>",d:"parāda failu (piem. cat today, cat week)",m:"Faili: today tomorrow week mon tue wed thu fri changes subst colors themes",f(a){if(!a.length)return print("lietojums: cat &lt;fails&gt;","err");for(const n of a){if(!FILES[n])return print(`cat: ${esc(n)}: nav tāda faila`,"err");FILES[n]().forEach(l=>print(l))}}},
+  cat:{g:"Saraksts",u:"<fails>",d:"parāda failu (piem. cat today, cat week)",m:"Faili: today tomorrow week mon tue wed thu fri changes subst colors themes designs",f(a){if(!a.length)return print("lietojums: cat &lt;fails&gt;","err");for(const n of a){if(!FILES[n])return print(`cat: ${esc(n)}: nav tāda faila`,"err");FILES[n]().forEach(l=>print(l))}}},
   next:{g:"Saraksts",d:"kas notiek tagad un kas nākamais",f(){
     const now=new Date(),m=now.getHours()*60+now.getMinutes(),evs=eventsFor(isoD(now));
     const cur=evs.find(e=>minOf(e.start)<=m&&m<minOf(e.end)),nx=evs.find(e=>minOf(e.start)>m);
@@ -630,6 +700,7 @@ const CMDS={
   }},
   reset:{g:"Saraksts",u:"[priekšmets]",d:"atiestata krāsas",f(a){if(!a.length){prefs.colors={}}else{const name=pickSubject(a.join(" "));if(!name)return;delete prefs.colors[name]}savePrefs();render();print("ok","ok")}},
   theme:{g:"Saraksts",u:"[nosaukums]",d:"tēma; bez argumenta parāda sarakstu",m:"Tēmas: "+Object.keys(THEMES).join(", ")+" (+ juarch pēc instalēšanas).",f(a){if(!a.length)return FILES.themes().forEach(l=>print(l));if(!themeList().includes(a[0]))return print(`nezināma tēma · ${themeList().join(" | ")}`,"err");prefs.theme=a[0];savePrefs();applyTheme();setPrompt();print("ok","ok")}},
+  design:{g:"Saraksts",u:"[default|remastered]",d:"dizains: klasiskais EduPage vai jaunais; saglabājas",m:"default – klasiskais EduPage režģis (dienas rindās, stundas kolonnās). remastered – jaunais dizains ar laika asi, starpbrīžiem un tagadnes līniju.",f(a){if(!a.length)return FILES.designs().forEach(l=>print(l));if(!DESIGNS[a[0]])return print("lietojums: design default|remastered","err");prefs.design=a[0];savePrefs();applyDesign();print("ok","ok")}},
   week:{g:"Saraksts",u:"today|next|prev",d:"pārslēdz nedēļu",f(a){if(a[0]==="next")weekStart=addDays(weekStart,7);else if(a[0]==="prev")weekStart=addDays(weekStart,-7);else weekStart=monday(new Date());render();print(document.getElementById("range").textContent)}},
   cal:{g:"Saraksts",d:"mēneša kalendārs",f(){const now=new Date(),y=now.getFullYear(),mo=now.getMonth(),first=new Date(y,mo,1),days=new Date(y,mo+1,0).getDate();const title=first.toLocaleString("lv-LV",{month:"long",year:"numeric"});const lines=[`<b>${title.padStart(Math.floor((20+title.length)/2)).padEnd(20)}</b>`,"Pr Ot Tr Ce Pk Se Sv"];let row=" ".repeat(((first.getDay()+6)%7)*3);for(let d=1;d<=days;d++){const iso=isoD(new Date(y,mo,d)),has=data.events.some(e=>e.date===iso);let cell=String(d).padStart(2);if(d===now.getDate())cell=`<span style="background:var(--accent);color:#fff;border-radius:3px">${cell}</span>`;else if(has)cell=`<b>${cell}</b>`;else cell=`<span class="dim">${cell}</span>`;row+=cell+" ";if((first.getDay()+6+d)%7===0){lines.push(row);row=""}}if(row.trim())lines.push(row);pre(lines)}},
   top:{g:"Saraksts",d:"šodienas stundas kā procesi",f(){const now=new Date(),m=now.getHours()*60+now.getMinutes(),evs=eventsFor(isoD(now));if(!evs.length)return print("nav procesu (šodien nav stundu)");print(`<span class="dim">top - ${fromMin(m)} · ${evs.length} procesi · slodze: ${evs.filter(e=>minOf(e.start)<=m&&m<minOf(e.end)).length} aktīvs</span>`);print("<b>  PID  STAT  %CPU  LAIKS        KOMANDA</b>");evs.forEach((e,i)=>{const s=minOf(e.start),en=minOf(e.end),pc=m<s?0:m>=en?100:Math.round((m-s)/(en-s)*100),st=m<s?"S":m>=en?"Z":"R";print(`${String(1000+i).padStart(5)}  ${st}     ${String(pc).padStart(3)}%  ${hm(e.start)}–${hm(e.end)}  ${esc(e.summary)}`)})}},
@@ -679,7 +750,7 @@ const CMDS={
     askConfirm(":: Tas iztīrīs <b>visu OS</b> (juarch, tēmu, krāsas, vēsturi). Turpināt?",()=>juarchPurge());
   }},
 
-  neofetch:{g:"Jautri",d:"sistēmas info",f(){const evs=weekEvents();const logo=juarch()?JUARCH_LOGO:LOGO;const info=[`<b>${user()}@${host()}</b>`,"─".repeat(24),`<b>OS</b>: ${juarch()?`juarch ${prefs.juarch.version}`:"stundu-saraksts web"} · <b>Klase</b>: ${esc(data.className)}`,`<b>Nedēļa</b>: ${document.getElementById("range").textContent}`,`<b>Stundas</b>: ${evs.length} · <b>Priekšmeti</b>: ${subjects().length}`,`<b>Tēma</b>: ${prefs.theme} · <b>Darbojas</b>: ${fmtDur(Date.now()-PAGE_LOADED)}`,`<b>Versijas</b>: ${data.versions.map(v=>v.num).join(", ")}`];pre(logo.map((l,i)=>`<span style="color:var(--accent)">${l}</span>   ${info[i]||""}`).concat([`             ${info.slice(6).join("")}`]))}},
+  neofetch:{g:"Jautri",d:"sistēmas info",f(){const evs=weekEvents();const logo=juarch()?JUARCH_LOGO:LOGO;const info=[`<b>${user()}@${host()}</b>`,"─".repeat(24),`<b>OS</b>: ${juarch()?`juarch ${prefs.juarch.version}`:"stundu-saraksts web"} · <b>Klase</b>: ${esc(data.className)}`,`<b>Nedēļa</b>: ${document.getElementById("range").textContent}`,`<b>Stundas</b>: ${evs.length} · <b>Priekšmeti</b>: ${subjects().length}`,`<b>Tēma</b>: ${prefs.theme} · <b>Dizains</b>: ${prefs.design} · <b>Darbojas</b>: ${fmtDur(Date.now()-PAGE_LOADED)}`,`<b>Versijas</b>: ${data.versions.map(v=>v.num).join(", ")}`];pre(logo.map((l,i)=>`<span style="color:var(--accent)">${l}</span>   ${info[i]||""}`).concat([`             ${info.slice(6).join("")}`]))}},
   cowsay:{g:"Jautri",u:"<teksts>",d:"",f(a){pre([COW(a.join(" ")||"Mūūū")])}},
   fortune:{g:"Jautri",d:"gudrība dienai",f(){print(esc(FORTUNES[Math.floor(Math.random()*FORTUNES.length)]))}},
   sl:{g:"Jautri",d:"čuh-čuh",f(){const w=Math.min(60,Math.floor(conOut.clientWidth/9));const frames=[];for(let off=w;off>=-56;off-=2)frames.push(TRAIN.map(l=>(" ".repeat(Math.max(0,off))+l).slice(Math.max(0,-off)).slice(0,w)).join("\n"));animate(frames,45)}},
@@ -718,6 +789,7 @@ function pools(){
     else pool=subjects().map(q);
   }
   else if(cmd==="theme")pool=themeList();
+  else if(cmd==="design")pool=Object.keys(DESIGNS);
   else if(cmd==="week")pool=["today","next","prev"];
   else if(cmd==="cat"||cmd==="rm")pool=Object.keys(FILES);
   else if(cmd==="man"||((cmd==="sudo"||cmd==="judo")&&n===1))pool=Object.keys(CMDS).filter(c=>!["sudo","judo"].includes(c)&&!(CMDS[c].hide&&CMDS[c].hide()));
@@ -791,6 +863,7 @@ document.addEventListener("keydown",e=>{
 });
 conIn.addEventListener("input",()=>{sugIdx=0;renderSug()});
 conSug.addEventListener("click",e=>{const i=e.target.dataset.i;if(i!==undefined){accept(+i);conIn.focus()}});
+document.getElementById("conbtn").onclick=()=>toggleCon();
 setPrompt();
 load();
 </script>
