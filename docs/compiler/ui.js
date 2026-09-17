@@ -99,7 +99,7 @@ const UI = (() => {
       document.addEventListener("mousedown", hide, true); document.addEventListener("keydown", hide, true);
     }
     el.textContent = t; el.classList.add("on"); toast._at = performance.now();
-    clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("on"), 1800);
+    clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("on"), 2500);
   }
   function clock(el) { const tick = () => { el.textContent = new Date().toLocaleTimeString("lv-LV", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }; tick(); setInterval(tick, 1000); }
 

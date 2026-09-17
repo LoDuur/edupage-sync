@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
-<link rel="stylesheet" href="../ui.css">
+<link rel="stylesheet" href="../ui.css?v=3">
 <style>
 body{display:flex;flex-direction:column;min-height:100vh}
 main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 auto;padding:.6rem 1.2rem 1rem;display:grid;grid-template-columns:minmax(280px,2fr) minmax(0,3fr);gap:.8rem;min-height:0}
@@ -25,8 +25,8 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
 .lang{display:inline-block;font-size:.56rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 .35rem;margin-right:.4rem;border:1px solid var(--line-2);color:var(--sprout)}
 .lang.pil{color:#f5c26b}
 .live-h{display:flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-bottom:1px solid var(--line);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
-.live-h b{display:inline-flex;align-items:center;gap:.35rem;background:var(--red);color:#fff;font-size:.56rem;font-weight:700;padding:.05rem .4rem;letter-spacing:.14em}
-.live-h b::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.2s ease-in-out infinite}
+.live-h b{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,107,107,.22);border:1px solid var(--red);color:var(--ink);font-size:.56rem;font-weight:700;padding:.05rem .4rem;letter-spacing:.14em}
+.live-h b::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
 .item.live{border-left:2px solid var(--red)}
 .item.live small::before{content:"● ";color:var(--red)}
 .empty{padding:1.5rem;color:var(--ink-3);text-align:center;font-size:.8rem;letter-spacing:.08em}
@@ -68,7 +68,7 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
 <main>
   <section class="panel">
     <div class="panel-h"><span class="file">darbi/</span><span class="status" id="count"></span></div>
-    <div class="tools"><span class="field"><input id="q" placeholder="meklēt pēc nosaukuma, autora vai koda…"></span><select id="lang"><option value="">java + pil</option><option value="java">java</option><option value="pil">pil</option></select><select id="sort"><option value="new">jaunākie</option><option value="old">vecākie</option><option value="az">A–Z</option><option value="author">autors</option></select></div>
+    <div class="tools"><span class="field"><input id="q" placeholder="meklēt pēc nosaukuma, autora vai koda…"></span><select id="lang"><option value="">visas valodas</option><option value="java">java</option><option value="python">python</option><option value="c">c</option><option value="cpp">c++</option><option value="csharp">c#</option><option value="lua">lua</option><option value="pil">pil</option></select><select id="sort"><option value="new">jaunākie</option><option value="old">vecākie</option><option value="az">A–Z</option><option value="author">autors</option></select></div>
     <div id="live-box" hidden><div class="live-h"><b>live</b> Tiešraides sesijas</div><div id="live-list"></div></div>
     <div class="list" id="list"><div class="empty">ielādē…</div></div>
     <div class="stats" id="stats"></div>
@@ -91,9 +91,11 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/lua/lua.min.js"></script>
 <script src="../pil/pil-lang.js"></script>
 <script src="../live.js"></script>
-<script src="../ui.js"></script>
+<script src="../ui.js?v=3"></script>
 <script>
 const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
@@ -102,7 +104,8 @@ const HEAD={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
 let all=[],current=null,cm=null;
 const fmt=d=>new Date(d).toLocaleString("lv-LV",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const cls=code=>{const m=code.match(/public\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/)||code.match(/class\s+([A-Za-z_$][\w$]*)/);return m?m[1]:"Main"};
-const fileOf=s=>s.lang==="pil"?((s.code.match(/^\s*([A-Za-z_][\w-]*)\s*\(/m)||[])[1]||"main")+".pil":cls(s.code)+".java";
+const EXT={java:".java",pil:".pil",python:".py",c:".c",cpp:".cpp",csharp:".cs",lua:".lua"},MODE={java:"text/x-java",pil:"pil",python:"python",c:"text/x-csrc",cpp:"text/x-c++src",csharp:"text/x-csharp",lua:"lua"},LABEL={cpp:"c++",csharp:"c#"};
+const fileOf=s=>s.lang==="pil"?((s.code.match(/^\s*([A-Za-z_][\w-]*)\s*\(/m)||[])[1]||"main")+".pil":s.lang==="java"?cls(s.code)+".java":"main"+(EXT[s.lang]||"");
 const langOf=s=>s.lang||"java";
 
 async function load(){
@@ -111,7 +114,7 @@ async function load(){
   const authors=new Set(all.map(s=>s.author||"anonīms")),lines=all.reduce((n,s)=>n+s.code.split("\n").length,0);
   $("stats").innerHTML=`<span><b>${all.length}</b> darbi</span><span><b>${authors.size}</b> autori</span><span><b>${lines}</b> rindas</span>`;
   const p=new URLSearchParams(location.search);
-  if(["java","pil"].includes(p.get("lang")))$("lang").value=p.get("lang");
+  if(EXT[p.get("lang")])$("lang").value=p.get("lang");
   renderList();
   if(p.get("id"))open(p.get("id"));
 }
@@ -120,14 +123,14 @@ function renderList(){
   let items=all.filter(s=>(!lang||langOf(s)===lang)&&(!q||[s.title,s.author,s.code].join("\n").toLowerCase().includes(q)));
   items.sort((a,b)=>sort==="old"?a.created_at.localeCompare(b.created_at):sort==="az"?a.title.localeCompare(b.title,"lv"):sort==="author"?(a.author||"").localeCompare(b.author||"","lv")||b.created_at.localeCompare(a.created_at):b.created_at.localeCompare(a.created_at));
   $("count").textContent=`${items.length}/${all.length}`;
-  $("list").innerHTML=items.length?items.map((s,i)=>`<div class="item${current&&current.id===s.id?" on":""}" data-id="${s.id}"><b><span class="lang ${langOf(s)}">${langOf(s)}</span>${esc(s.title)}</b><span class="n">#${String(all.length-all.indexOf(s)).padStart(3,"0")}</span><small>${esc(s.author||"anonīms")} · ${fmt(s.created_at)} · ${s.code.split("\n").length} rindas</small></div>`).join(""):'<div class="empty">nekas netika atrasts</div>';
+  $("list").innerHTML=items.length?items.map((s,i)=>`<div class="item${current&&current.id===s.id?" on":""}" data-id="${s.id}"><b><span class="lang ${langOf(s)}">${LABEL[langOf(s)]||langOf(s)}</span>${esc(s.title)}</b><span class="n">#${String(all.length-all.indexOf(s)).padStart(3,"0")}</span><small>${esc(s.author||"anonīms")} · ${fmt(s.created_at)} · ${s.code.split("\n").length} rindas</small></div>`).join(""):'<div class="empty">nekas netika atrasts</div>';
   $("list").querySelectorAll(".item").forEach(el=>el.onclick=()=>open(el.dataset.id));
 }
 function open(id){
   const s=all.find(x=>x.id===id);if(!s)return;
   current=s;
   if(!cm){$("ph").hidden=true;$("code").hidden=false;cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",theme:"material-darker",lineNumbers:true,readOnly:true,lineWrapping:false})}
-  cm.setOption("mode",langOf(s)==="pil"?"pil":"text/x-java");
+  cm.setOption("mode",MODE[langOf(s)]||"text/x-java");
   cm.setValue(s.code);
   $("file").textContent=fileOf(s);
   $("meta").textContent=fmt(s.created_at);
@@ -148,7 +151,7 @@ async function loadLive(){
   try{
     const items=await LIVE.listActive();
     $("live-box").hidden=!items.length;
-    $("live-list").innerHTML=items.map(s=>`<a class="item live" href="../?live=${s.id}"><b><span class="lang ${esc(s.lang)}">${esc(s.lang)}</span>${esc(s.title)}${s.protected?" 🔒":""}</b><small>${esc(s.author||"anonīms")} · sākts ${new Date(s.started_at).toLocaleTimeString("lv-LV",{hour:"2-digit",minute:"2-digit"})} · skatīties tiešraidē →</small></a>`).join("");
+    $("live-list").innerHTML=items.map(s=>`<a class="item live" href="../?live=${s.id}"><b><span class="lang ${esc(s.lang)}">${esc(LABEL[s.lang]||s.lang)}</span>${esc(s.title)}${s.protected?" 🔒":""}</b><small>${esc(s.author||"anonīms")} · sākts ${new Date(s.started_at).toLocaleTimeString("lv-LV",{hour:"2-digit",minute:"2-digit"})} · skatīties tiešraidē →</small></a>`).join("");
   }catch(e){}
 }
 UI.requireAccess(()=>{load();loadLive();setInterval(()=>{if(!document.hidden)loadLive()},15000)},{title:"PIEKĻUVES KODS",sub:"2.k. 28.grupa · Darbi",back:"../../"});

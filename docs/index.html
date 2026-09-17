@@ -219,6 +219,14 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
 }
 @media (prefers-reduced-transparency:reduce){.toolbar,.con{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+.game{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column}
+.game-bar{display:flex;align-items:center;gap:.8rem;padding:.45rem .9rem;background:#0a0a0a;color:#bbb;font:.72rem ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid #222}
+.game-bar b{color:#e8e8e8}
+.game-bar .sp{flex:1}
+.game-bar button{font:inherit;color:#ddd;background:none;border:1px solid #444;padding:.25rem .6rem;cursor:pointer;letter-spacing:.08em;text-transform:uppercase}
+.game-bar button:hover{background:#ddd;color:#000}
+.game-el{flex:1;min-height:0;position:relative}
+.game-el>div,.game-el canvas{width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -263,6 +271,7 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
   <footer>Dati no <a id="src" href="#" target="_blank" rel="noopener">EduPage</a> · oficiālie stundu laiki · atjaunināts katru stundu · konsole: <kbd>Ctrl</kbd>+<kbd>L</kbd> vai <kbd>`</kbd></footer>
 </main>
 
+<div class="game" id="game" hidden><div class="game-bar"><b id="game-title">DOOM</b><span>bultiņas · ctrl šauj · atstarpe atver · esc izvēlne</span><span class="sp"></span><button id="game-fs">Pilnekrāns</button><button id="game-x">Aizvērt · Ctrl+Q</button></div><div class="game-el" id="game-el"></div></div>
 <div class="con" id="con" role="dialog" aria-label="Konsole">
   <div class="con-out" id="con-out"></div>
   <div class="con-sug" id="con-sug"></div>
@@ -581,7 +590,7 @@ const con=document.getElementById("con"),conOut=document.getElementById("con-out
 let history=[],histIdx=-1,sugs=[],sugIdx=0,root=false,pendingSudo=null,pendingConfirm=null,busy=null,cancelSeq=false,vimMode=false;
 try{history=JSON.parse(localStorage.getItem("con-history")||"[]")}catch(e){}
 const NAMED_COLORS={sarkans:"#ff3b30",red:"#ff3b30",oranžs:"#ff9500",orange:"#ff9500",dzeltens:"#ffcc00",yellow:"#ffcc00",zaļš:"#34c759",green:"#34c759",piparmētra:"#00c7be",mint:"#00c7be",tirkīzs:"#30b0c7",teal:"#30b0c7",ciāns:"#32ade6",cyan:"#32ade6",zils:"#007aff",blue:"#007aff",indigo:"#5856d6",violets:"#af52de",purple:"#af52de",rozā:"#ff2d55",pink:"#ff2d55",brūns:"#a2845e",brown:"#a2845e",pelēks:"#8e8e93",gray:"#8e8e93",grey:"#8e8e93",melns:"#1c1c1e",black:"#1c1c1e",balts:"#f2f2f7",white:"#f2f2f7",lime:"#a5d63f",olive:"#808000",navy:"#1d3f8f",maroon:"#800000",coral:"#ff7f50",salmon:"#fa8072",gold:"#ffd700",khaki:"#c3b091",lavender:"#b57edc",magenta:"#ff00ff",crimson:"#dc143c",turquoise:"#40e0d0",tomato:"#ff6347",orchid:"#da70d6",skyblue:"#87ceeb",steelblue:"#4682b4",seagreen:"#2e8b57"};
-const ALIASES={java:"compiler",javac:"compiler",pil:"compiler pil",h:"help",c:"clear",q:"exit",n:"next",t:"cat today",tm:"cat tomorrow",w:"cat week",s:"stats",g:"grep",m:"man",cls:"clear",l:"ls",ll:"ls -l",dir:"ls",pacman:"juarchupdate"};
+const ALIASES={java:"compiler",javac:"compiler",pil:"compiler pil",play:"games",h:"help",c:"clear",q:"exit",n:"next",t:"cat today",tm:"cat tomorrow",w:"cat week",s:"stats",g:"grep",m:"man",cls:"clear",l:"ls",ll:"ls -l",dir:"ls",pacman:"juarchupdate"};
 const FORTUNES=["Brīvstunda ir tikai starpbrīdis ar ambīcijām.","Mājasdarbs, kas nav uzdots, nav jāizdara.","Piektdien 5 minūšu starpbrīži – jo ātrāk mājās.","Skolotājs kavē 15 minūtes = brīvstunda. Teorētiski.","Kafija pirms 1. stundas ir cilvēktiesības.","Pusdienas – vienīgā stunda, kurā visi ir laikā.","Vislabākā stunda ir tā, kura tiek atcelta.","Ja nezini atbildi – atbildi ar jautājumu.","Kodēšana: 10 % rakstīšana, 90 % domāšana, kāpēc nestrādā.","Matemātika ir viegla, ja tu esi kalkulators.","Pirmssvētku dienā pat 30 minūtes šķiet garas.","Stundu saraksts mainās biežāk nekā laikapstākļi Valmierā.","Neaizmirsti: 213. kabinets ir 2. stāvā, ne 21. stāvā.","Sports 3.–4. stundā – dušas nav, dezodorants ir.","Aizvietošana = pārsteiguma stunda.","Rīts sākas nevis 8:10, bet tad, kad atrodi kabinetu."];
 const TRAIN=["      ====        ________                ___________ ","  _D _|  |_______/        \\__I_I_____===__|_________| ","   |(_)---  |   H\\________/ |   |        =|___ ___|   ","   /     |  |   H  |  |     |   |         ||_| |_||   ","  |      |  |   H  |__--------------------| [___] |   ","  | ________|___H__/__|_____/[][]~\\_______|       |   ","  |/ |   |-----------I_____I [][] []  D   |=======|__ ","__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ "," |/-=|___|=    ||    ||    ||    |_____/~\\___/        ","  \\_/      \\O=====O=====O=====O_/      \\_/            "];
 const JUARCH_VERSION="2026.09";
@@ -800,6 +809,8 @@ const CMDS={
     askConfirm(":: Tas iztīrīs <b>visu OS</b> (juarch, tēmu, krāsas, vēsturi). Turpināt?",()=>juarchPurge());
   }},
 
+  doom:{g:"Jautri",u:"",d:"palaiž DOOM (1993, shareware) tieši pārlūkā",m:"doom – DOS emulators (js-dos) ar DOOM shareware epizodi „Knee-Deep in the Dead”. Vadība: bultiņas, Ctrl šauj, atstarpe atver durvis, Esc – spēles izvēlne. Aizvērt: poga vai Ctrl+Q. Pirmajā reizē lejupielādē ~6 MB.",f(){launchGame("doom")}},
+  games:{g:"Jautri",d:"spēļu saraksts",f(){print(Object.entries(GAMES).map(([k,g])=>`<span class="ok">${k.padEnd(8)}</span> ${g.title} <span class="dim">· ${g.note}</span>`).join("\n"))}},
   neofetch:{g:"Jautri",d:"sistēmas info",f(){const evs=weekEvents();const logo=juarch()?JUARCH_LOGO:LOGO;const info=[`<b>${user()}@${host()}</b>`,"─".repeat(24),`<b>OS</b>: ${juarch()?`juarch ${prefs.juarch.version}`:"stundu-saraksts web"} · <b>Klase</b>: ${esc(data.className)}`,`<b>Nedēļa</b>: ${document.getElementById("range").textContent}`,`<b>Stundas</b>: ${evs.length} · <b>Priekšmeti</b>: ${subjects().length}`,`<b>Tēma</b>: ${prefs.theme} · <b>Dizains</b>: ${prefs.design} · <b>Darbojas</b>: ${fmtDur(Date.now()-PAGE_LOADED)}`,`<b>Versijas</b>: ${data.versions.map(v=>v.num).join(", ")}`];pre(logo.map((l,i)=>`<span style="color:var(--accent)">${l}</span>   ${info[i]||""}`).concat([`             ${info.slice(6).join("")}`]))}},
   cowsay:{g:"Jautri",u:"<teksts>",d:"",f(a){pre([COW(a.join(" ")||"Mūūū")])}},
   fortune:{g:"Jautri",d:"gudrība dienai",f(){print(esc(FORTUNES[Math.floor(Math.random()*FORTUNES.length)]))}},
@@ -872,6 +883,24 @@ function accept(i){
   const base=trailing?v:v.replace(/(^|\s)("[^"]*"?|'[^']*'?|\S+)$/,"$1");
   conIn.value=base+s+" ";sugIdx=0;renderSug();
 }
+const GAMES={doom:{title:"DOOM (1993)",note:"shareware · id Software",url:"games/doom.jsdos"}};
+let gameCtl=null;
+function launchGame(key){
+  const g=GAMES[key];if(!g)return print(`nav tādas spēles: ${key}`,"err");
+  print(`ielādē ${g.title}… <span class="dim">(aizvērt: Ctrl+Q)</span>`,"ok");
+  const box=document.getElementById("game"),el=document.getElementById("game-el");
+  box.hidden=false;document.getElementById("game-title").textContent=g.title;
+  toggleCon(false);
+  el.innerHTML="";
+  const f=document.createElement("iframe");f.setAttribute("allow","fullscreen; autoplay; gamepad; pointer-lock; keyboard-map");f.style.cssText="border:0;width:100%;height:100%;display:block;background:#000";
+  f.srcdoc=`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css"><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#d{position:absolute;inset:0}</style></head><body><div id="d"></div><script src="https://v8.js-dos.com/latest/js-dos.js"><\/script><script>Dos(document.getElementById("d"),{url:${JSON.stringify(g.url)},pathPrefix:"https://v8.js-dos.com/latest/emulators/",autoStart:true,kiosk:true,noCloud:true,theme:"dark"});addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="q"){e.preventDefault();parent.postMessage("game-close","*")}});<\/script></body></html>`;
+  el.appendChild(f);gameCtl=f;
+  setTimeout(()=>{try{f.contentWindow.focus()}catch(e){}},500);
+}
+addEventListener("message",e=>{if(e.data==="game-close")closeGame()});
+function closeGame(){const box=document.getElementById("game");if(box.hidden)return;gameCtl=null;document.getElementById("game-el").innerHTML="";box.hidden=true;if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}
+document.getElementById("game-x").onclick=closeGame;
+document.getElementById("game-fs").onclick=()=>{const b=document.getElementById("game");if(document.fullscreenElement)document.exitFullscreen();else b.requestFullscreen&&b.requestFullscreen()};
 function toggleCon(open){
   const o=open??!con.classList.contains("open");
   con.classList.toggle("open",o);
@@ -884,6 +913,7 @@ function submit(){
   renderSug();
 }
 document.addEventListener("keydown",e=>{
+  if(!document.getElementById("game").hidden){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="q"){e.preventDefault();closeGame()}return}
   const inCon=e.target===conIn;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();toggleCon();return}
   if(!inCon&&(e.key==="`"||e.key==="'")&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();toggleCon(true);return}

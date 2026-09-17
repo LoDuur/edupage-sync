@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.css">
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="ui.css?v=3">
 <style>
 body{display:flex;flex-direction:column;min-height:100vh}
 main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 auto;padding:.6rem 1.2rem 1rem;display:grid;grid-template-columns:minmax(0,3fr) minmax(320px,2fr);gap:.8rem;min-height:0}
@@ -36,7 +36,7 @@ li.CodeMirror-hint-active{background:var(--fern);color:var(--pine)}
 .tin{display:flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-top:1px solid var(--line);font:13px var(--mono)}
 .tin .ps{color:var(--ink-3);white-space:nowrap;letter-spacing:.04em}
 .tin.wait .ps{color:var(--amber)}
-.tin.wait .ps::after{content:"▏";animation:blink 1s steps(2) infinite}
+.tin.wait .ps::after{content:"▏";animation:blink 1.4s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .tin input{flex:1;background:none;border:0;outline:0;font:inherit;color:#7fd4ff;min-width:0}
 .tin input::placeholder{color:var(--ink-3)}
@@ -51,8 +51,8 @@ li.CodeMirror-hint-active{background:var(--fern);color:var(--pine)}
 .empty{padding:1.5rem;color:var(--ink-3);text-align:center;font-size:.8rem;letter-spacing:.08em}
 .viewbar{display:flex;gap:.5rem;align-items:center;padding:.5rem .8rem;border-top:1px solid var(--line);font-size:.72rem;color:var(--ink-2);flex-wrap:wrap}
 .ro{background:var(--amber);color:#000;font-size:.58rem;font-weight:700;padding:.05rem .4rem;text-transform:uppercase;letter-spacing:.1em}
-.livebadge{display:inline-flex;align-items:center;gap:.35rem;background:var(--red);color:#fff;font-size:.58rem;font-weight:700;padding:.05rem .45rem;text-transform:uppercase;letter-spacing:.14em}
-.livebadge::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.2s ease-in-out infinite}
+.livebadge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,107,107,.22);border:1px solid var(--red);color:var(--ink);font-size:.58rem;font-weight:700;padding:.05rem .45rem;text-transform:uppercase;letter-spacing:.14em}
+.livebadge::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
 .livebadge.off{background:var(--line-2);color:var(--ink)}.livebadge.off::before{animation:none;opacity:.5}
 .btn.live-on{border-color:var(--red);color:#fff;background:rgba(255,107,107,.25)}
 .btn.live-on:hover{background:var(--red);color:#fff}
@@ -106,7 +106,7 @@ select.ex.lang{color:var(--ink);border-color:var(--fern)}
   <div class="meta" id="meta"></div>
   <span class="sp"></span>
   <div style="display:flex;gap:.45rem;flex-wrap:wrap;align-items:center">
-    <select class="ex lang" id="lang" title="Programmēšanas valoda"><option value="java">Java</option><option value="pil">PIL</option></select>
+    <select class="ex lang" id="lang" title="Programmēšanas valoda"><option value="java">Java</option><option value="python">Python</option><option value="c">C</option><option value="cpp">C++</option><option value="csharp">C#</option><option value="lua">Lua</option><option value="pil">PIL</option></select>
     <select class="ex" id="examples" title="Piemēri"><option value="">piemēri…</option></select>
     <span class="zoom"><button id="zoom-out" title="Mazāks fonts (Ctrl+-)">A−</button><button id="zoom-in" title="Lielāks fonts (Ctrl+=)">A+</button></span>
     <button class="btn" id="format" title="Pārkārtot atkāpes (Shift+Alt+F)">Formatēt</button>
@@ -176,6 +176,8 @@ select.ex.lang{color:var(--ink);border-color:var(--fern)}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/lua/lua.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
@@ -187,9 +189,10 @@ select.ex.lang{color:var(--ink);border-color:var(--fern)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/jump-to-line.min.js"></script>
 <script src="java-lang.js"></script>
 <script src="pil/pil-lang.js"></script>
+<script src="langs.js"></script>
 <script src="prompts.js"></script>
 <script src="live.js"></script>
-<script src="ui.js"></script>
+<script src="ui.js?v=3"></script>
 <script>
 const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
@@ -205,7 +208,10 @@ const LANGS={
   pil:{name:"PIL",mode:"pil",indent:3,comment:";",engine:"PIL · WEBASSEMBLY · LOKĀLI",banner:PIL.BANNER,
     meta:'∞ <b>INTERPRETATORS</b> · PIL · PĀRLŪKĀ<br>TAB PABEIDZ · CTRL+↵ PALAIŽ · CTRL+S SAGLABĀ<br>IEVADE PROGRAMMAI – TERMINĀLĪ ZEM IZVADES',
     fileOf:c=>{const m=c.match(/^\s*([A-Za-z_][\w-]*)\s*\(/m);return (m&&m[1]!=="main"?m[1]:"main")+".pil"},examples:PIL.EXAMPLES,template:PIL.TEMPLATE,snippets:PIL.SNIPPETS,newFile:'main()\n   println "Sveika, pasaule!"\n'},
+  ...LANGS_EXTRA.list,
 };
+LANGS.java.wandbox={compiler:JAVA_COMPILER};LANGS.java.need=/java\.util\.NoSuchElementException|NumberFormatException: Cannot parse null string/;
+for(const l of Object.values(LANGS))if(!l.newFile)l.newFile=l.template;
 let lang="java",pilVer="";
 fetch("pil/VERSION",{cache:"no-store"}).then(r=>r.ok?r.text():"").then(v=>{pilVer=v.trim()}).catch(()=>{});
 const L=()=>LANGS[lang];
@@ -255,7 +261,17 @@ function pilHint(cm){
   if(!atStart)for(const w of PIL.MATH)if(w.startsWith(low))push(w,"[ matemātika ]");
   return {list:out.slice(0,40),from,to};
 }
-const hinter=()=>lang==="pil"?pilHint:javaHint;
+function genericHint(cm){
+  const cur=cm.getCursor(),line=cm.getLine(cur.line).slice(0,cur.ch);
+  const m=line.match(/[A-Za-z_$][\w$.]*$/),word=m?m[0]:"";
+  if(!word)return null;
+  const from={line:cur.line,ch:cur.ch-word.length},to=cur,low=word.toLowerCase(),seen=new Set(),out=[],push=mkPush(out,seen);
+  for(const [key,sn] of Object.entries(L().snippets))if(key.startsWith(low))push(key,sn.k,{hint:insertSnippet});
+  for(const w of L().keywords||[])if(w.toLowerCase().startsWith(low))push(w,w.includes(".")?"":"keyword");
+  const re=/[A-Za-z_$][\w$]{2,}/g,doc=cm.getValue();let mm;while((mm=re.exec(doc))){const w=mm[0];if(w!==word&&w.toLowerCase().startsWith(low))push(w,"")}
+  return {list:out.slice(0,40),from,to};
+}
+const hinter=()=>lang==="pil"?pilHint:lang==="java"?javaHint:genericHint;
 const wordRe=()=>lang==="pil"?/[A-Za-z_@$][\w$-]*$/:/[A-Za-z_$][\w$.]*$/;
 function autoHint(cm,ev){
   if(ev.origin!=="+input"||cm.state.completionActive)return;
@@ -277,7 +293,7 @@ cm.on("inputRead",autoHint);
 document.addEventListener("mousedown",e=>{if(cm.state.completionActive&&!e.target.closest(".CodeMirror-hints"))cm.state.completionActive.close()});
 function dup(c){const cur=c.getCursor(),l=c.getLine(cur.line);c.replaceRange("\n"+l,{line:cur.line,ch:l.length});c.setCursor({line:cur.line+1,ch:cur.ch})}
 function moveLine(c,d){const cur=c.getCursor(),n=cur.line+d;if(n<0||n>=c.lineCount())return;const a=c.getLine(cur.line),b=c.getLine(n);c.operation(()=>{c.replaceRange(a,{line:n,ch:0},{line:n,ch:b.length});c.replaceRange(b,{line:cur.line,ch:0},{line:cur.line,ch:a.length});c.setCursor({line:n,ch:cur.ch})})}
-function formatCode(){if(lang!=="java")return;const cur=cm.getCursor();cm.operation(()=>{for(let i=0;i<cm.lineCount();i++)cm.indentLine(i,"smart")});cm.setCursor(cur);toast("Atkāpes sakārtotas")}
+function formatCode(){if($("format").hidden)return;const cur=cm.getCursor();cm.operation(()=>{for(let i=0;i<cm.lineCount();i++)cm.indentLine(i,"smart")});cm.setCursor(cur);toast("Atkāpes sakārtotas")}
 $("format").onclick=formatCode;
 let fontSize=+localStorage.getItem("code-font")||+localStorage.getItem("java-font")||14;
 function zoom(d){fontSize=Math.max(10,Math.min(24,fontSize+d));localStorage.setItem("code-font",fontSize);document.querySelector(".CodeMirror").style.fontSize=fontSize+"px";cm.refresh()}
@@ -287,7 +303,7 @@ function clearErrors(){errMarks.forEach(l=>{cm.removeLineClass(l,"background","c
 function markLines(pairs){clearErrors();for(const [n,msg] of pairs){const l=n-1;if(l>=0&&l<cm.lineCount()&&!errMarks.includes(l)){cm.addLineClass(l,"background","cm-err-line");const g=document.createElement("span");g.className="err-gutter";g.textContent="●";g.title=msg;cm.setGutterMarker(l,"err",g);errMarks.push(l)}}}
 cm.on("change",()=>{if(errMarks.length)clearErrors()});
 const draftKey=l=>"draft-"+l;
-const loadDraft=l=>localStorage.getItem(draftKey(l))??localStorage.getItem(l==="java"?"java-draft":"pil-draft")??LANGS[l].template;
+const loadDraft=l=>localStorage.getItem(draftKey(l))??(l==="java"?localStorage.getItem("java-draft"):l==="pil"?localStorage.getItem("pil-draft"):null)??LANGS[l].template;
 cm.on("change",()=>{if(!viewing){try{localStorage.setItem(draftKey(lang),cm.getValue())}catch(e){}updateFile();if(liveHost)liveHost.changed()}});
 function updateFile(){$("file").textContent=L().fileOf(cm.getValue())}
 function status(t,cls){const s=$("status");s.textContent=t;s.className="status "+(cls||"")}
@@ -306,7 +322,7 @@ function setLang(l,{keepCode=false}={}){
   if(!keepCode&&!viewing)cm.setValue(loadDraft(l));
   $("ascii").textContent=d.banner;$("meta").innerHTML=d.meta;$("foot-engine").textContent=d.engine;
   $("strip-tag").textContent=`2.k. 28.grupa · ${d.name} · EST. 2026`;
-  $("format").hidden=l!=="java";$("tab-doc").hidden=l!=="pil";
+  $("format").hidden=!["java","c","cpp","csharp"].includes(l);$("tab-doc").hidden=l!=="pil";
   if(l!=="pil"&&!$("doc").hidden)showTab("out");
   exSel.innerHTML='<option value="">piemēri…</option>'+d.examples.map((e,i)=>`<option value="${i}">${esc(e.name)}</option>`).join("");
   if(!viewing)document.title=`${d.name} kompilators`;
@@ -324,19 +340,20 @@ $("new").onclick=()=>{if(viewing){if(liveView)closeLiveView();else exitView()}el
 
 /* ---- terminālis: izvade + ievade vienā logā ---- */
 const out=$("out"),tin=$("tin"),termIn=$("term-in");
-let segs=[],consumed=0,stdinBuf="",waiting=false,busy=false,pendingIn=[],worker=null,runTimer=0,runSeq=0;
+let segs=[],consumed=0,stdinBuf="",waiting=false,busy=false,pendingIn=[],worker=null,runTimer=0,runSeq=0,eofMode=false;
 const ansi=s=>esc(s).replace(/\x1b\[0;31m/g,'<span class="e">').replace(/\x1b\[0;33m/g,'<span class="w">').replace(/\x1b\[0m/g,"</span>").replace(/\x1b\[[0-9;]*m/g,"");
 function renderTerm(){
   let html=segs.map(s=>s.t==="in"?`<span class="in">${esc(s.s)}</span>\n`:s.t==="e"?`<span class="e">${esc(s.s)}</span>`:s.t==="w"?`<span class="w">${esc(s.s)}</span>`:s.t==="d"?`<span class="d">${esc(s.s)}</span>`:s.t==="h"?`<span class="h">${s.s}</span>`:ansi(s.s)).join("");
   if(!html.trim())html='<span class="d">❯ gaida kodu…\n   uzraksti programmu un spied ▶ Palaist\n   ievadi programmai raksti šeit zemāk – tā apstāsies un gaidīs</span>';
   out.innerHTML=html;out.scrollTop=out.scrollHeight;
 }
-function setWaiting(on){waiting=on;tin.classList.toggle("wait",on);$("ps").textContent=on?"programma gaida ievadi":"stdin ❯";termIn.placeholder=on?"ieraksti rindu un spied Enter":"ievade programmai · Enter";if(on){status("gaida ievadi","run");termIn.focus()}}
-function resetTerm(){abortRun();segs=[];consumed=0;stdinBuf="";pendingIn=[];setWaiting(false);renderTerm();$("time").textContent="";status("")}
+function setWaiting(on){waiting=on;tin.classList.toggle("wait",on);$("ps").textContent=on?"programma gaida ievadi":"stdin ❯";termIn.placeholder=on?"ieraksti rindu un spied Enter · Ctrl+D beidz ievadi":"ievade programmai · Enter";if(on){status("gaida ievadi","run");termIn.focus()}}
+function resetTerm(){abortRun();segs=[];consumed=0;stdinBuf="";pendingIn=[];eofMode=false;setWaiting(false);renderTerm();$("time").textContent="";status("")}
 $("clear").onclick=resetTerm;
 function abortRun(){runSeq++;clearTimeout(runTimer);if(worker){worker.terminate();worker=null}busy=false;termIn.disabled=false;$("run").disabled=false}
 termIn.addEventListener("keydown",e=>{
   if(e.key==="c"&&e.ctrlKey){e.preventDefault();if(busy||waiting){abortRun();setWaiting(false);segs.push({t:"d",s:"^C\n"});renderTerm();status("pārtraukts","err")}return}
+  if(e.key==="d"&&e.ctrlKey){e.preventDefault();if(waiting&&!busy){eofMode=true;setWaiting(false);segs.push({t:"d",s:"^D\n"});renderTerm();execute(true)}return}
   if(e.key!=="Enter")return;
   e.preventDefault();
   const lines=termIn.value.split(/\r?\n/);termIn.value="";
@@ -351,7 +368,7 @@ function run(){
   showTab("out");
   abortRun();
   segs=pendingIn.map(s=>({t:"in",s}));
-  stdinBuf=pendingIn.length?pendingIn.join("\n")+"\n":"";pendingIn=[];consumed=0;
+  stdinBuf=pendingIn.length?pendingIn.join("\n")+"\n":"";pendingIn=[];consumed=0;eofMode=false;
   setWaiting(false);renderTerm();
   execute(false);
 }
@@ -359,11 +376,11 @@ $("run").onclick=()=>run();
 async function execute(cont){
   const code=cm.getValue(),seq=++runSeq,t0=performance.now();
   busy=true;termIn.disabled=true;$("run").disabled=true;
-  status(cont?"turpina…":lang==="java"?"kompilē…":"izpilda…","run");
+  status(cont?"turpina…":L().wandbox&&L().wandbox.ext!=="py"&&L().wandbox.ext!=="lua"?"kompilē…":"izpilda…","run");
   if(!cont)$("time").textContent="";
   out.innerHTML=out.innerHTML+'<span class="d">'+(cont?"…":"◐ izpilda…")+'</span>';out.scrollTop=out.scrollHeight;
   let r;
-  try{r=await (lang==="java"?runJava(code,stdinBuf):runPil(code,stdinBuf))}
+  try{r=await (lang==="pil"?runPil(code,stdinBuf):runWandbox(code,stdinBuf))}
   catch(e){if(seq!==runSeq)return;r={out:"",err:"Neizdevās palaist: "+e.message,rc:-1,needAt:-1}}
   if(seq!==runSeq)return;
   busy=false;termIn.disabled=false;$("run").disabled=false;
@@ -384,20 +401,42 @@ async function execute(cont){
   const ok=r.rc===0&&!r.compileErr;
   status(ok?"izpildīts":"kļūda",ok?"ok":"err");
 }
-async function runJava(code,stdin){
-  const cls=JAVA.classNameOf(code),esc$=cls.replace(/\$/g,"\\$");
-  const body={compiler:JAVA_COMPILER,stdin,"compiler-option-raw":"-encoding\nUTF-8","runtime-option-raw":"-Dfile.encoding=UTF-8\n-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8",
-    code:`public class prog { public static void main(String[] a) throws Exception { ${cls}.main(a); } }`,codes:[{file:cls+".java",code}]};
+async function runWandbox(code,stdin){
+  const d0=L(),wb=d0.wandbox,marker=LANGS_EXTRA.NEED;
+  const trimmed=stdin.replace(/\n$/,"");
+  let body;
+  if(lang==="java"){
+    const cls=JAVA.classNameOf(code);
+    body={compiler:wb.compiler,stdin:trimmed,"compiler-option-raw":"-encoding\nUTF-8","runtime-option-raw":"-Dfile.encoding=UTF-8\n-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8",
+      code:`public class prog { public static void main(String[] a) throws Exception { ${cls}.main(a); } }`,codes:[{file:cls+".java",code}]};
+  }else{
+    const shim=!eofMode;
+    body={compiler:wb.compiler,stdin:trimmed,code:(shim&&wb.prepend?wb.prepend:"")+(shim&&wb.transform?wb.transform(code):code)};
+    if(shim&&wb.options)body["compiler-option-raw"]=wb.options;else if(!shim&&wb.options)body["compiler-option-raw"]=wb.options.split("\n").filter(o=>o!=="-include"&&o!=="shim.h").join("\n");
+    if(shim&&wb.codes)body.codes=wb.codes();
+  }
   const resp=await fetch(WANDBOX,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!resp.ok)throw new Error("kompilatora serviss atbildēja "+resp.status);
   const d=await resp.json();
-  const ce=(d.compiler_error||"").replace(/prog\.java:\d+: error:.*?\n.*?\n.*?\n/gs,"").trim();
-  const perr=d.program_error||"";
-  const need=!ce&&/java\.util\.NoSuchElementException|NumberFormatException: Cannot parse null string/.test(perr);
+  let cmsg=(d.compiler_error||"").replace(/prog\.java:\d+: error:.*?\n.*?\n.*?\n/gs,"").replace(/^(?:In file included from )?shim\.h:.*(?:\n(?![^\s]).*)*\n?/gm,"").trim();
+  const failed=/(^|\n)[^\n]*\b(error|Error)\b[: (]/.test(cmsg)&&!(d.program_output||d.program_error);
+  let ce=failed?cmsg:"",cwarn=failed?"":cmsg;
+  let perr=d.program_error||"";
+  let need=false;
+  if(!eofMode&&!ce){
+    if(perr.includes(marker)){need=true;perr=perr.replace(marker,"").replace(/\n$/,"")}
+    else if(d0.need&&d0.need.test(perr))need=true;
+  }
   const marks=[];
-  if(ce){const re=new RegExp("(?:\\./)?"+esc$+"\\.java:(\\d+): error: (.*)","g");let m;while((m=re.exec(ce)))marks.push([+m[1],m[2]])}
-  else if(perr&&!need){const m=perr.match(new RegExp("at "+esc$+"\\.\\w+\\("+esc$+"\\.java:(\\d+)\\)"));if(m)marks.push([+m[1],perr.split("\n")[0]])}
-  return {out:d.program_output||"",err:need?"":perr,compileErr:ce,warn:d.compiler_output||"",rc:ce?1:+(d.status??-1),signal:d.signal,needAt:need?(d.program_output||"").length:-1,marks};
+  if(lang==="java"){
+    const cls=JAVA.classNameOf(code),e$=cls.replace(/\$/g,"\\$");
+    if(ce){const re=new RegExp("(?:\\./)?"+e$+"\\.java:(\\d+): error: (.*)","g");let m;while((m=re.exec(ce)))marks.push([+m[1],m[2]])}
+    else if(perr&&!need){const m=perr.match(new RegExp("at "+e$+"\\.\\w+\\("+e$+"\\.java:(\\d+)\\)"));if(m)marks.push([+m[1],perr.split("\n")[0]])}
+  }else if(d0.errLine){
+    const re=new RegExp(d0.errLine.source,"g");let m;
+    for(const text of [ce,need?"":perr]){while((m=re.exec(text)))marks.push([+m[1],m[2]||text.split("\n")[0]])}
+  }
+  return {out:d.program_output||"",err:need?"":perr,compileErr:ce,warn:[(d.compiler_output||"").trim(),cwarn].filter(Boolean).join("\n"),rc:ce?1:+(d.status??-1),signal:d.signal,needAt:need?(d.program_output||"").length:-1,marks};
 }
 const STALE={printn:"println",printfn:"printfln",readline:"readln",readchar:"readch",global:"const (faila līmenī)"};
 function runPil(code,stdin){
@@ -423,7 +462,7 @@ function runPil(code,stdin){
     }
     worker.onerror=e=>{clearTimeout(runTimer);reject(new Error(e.message||"worker kļūda"))};
     runTimer=setTimeout(()=>{if(worker){worker.terminate();worker=null}resolve({out:raw,err:`Pārtraukts: programma darbojās ilgāk par ${PIL_TIMEOUT/1000} s (bezgalīgs cikls?)`,rc:-1,needAt:-1})},PIL_TIMEOUT);
-    worker.postMessage({code,stdin});
+    worker.postMessage({code,stdin,eof:eofMode});
   });
 }
 

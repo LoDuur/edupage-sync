@@ -1,7 +1,7 @@
 importScripts("pil.js?v=" + (new URL(self.location.href).searchParams.get("v") || ""));
 const dec = new TextDecoder(), enc = new TextEncoder();
 onmessage = async e => {
-  const { code, stdin } = e.data;
+  const { code, stdin, eof } = e.data;
   const input = enc.encode(stdin || "");
   let pos = 0, delivered = 0, buf = [], sent = 0, needAt = -1;
   const flush = () => { if (buf.length) { const s = dec.decode(new Uint8Array(buf)); sent += s.length; postMessage({ t: "out", s }); buf = []; } };
@@ -9,7 +9,7 @@ onmessage = async e => {
   const readStdin = () => {
     if (pos < input.length) { delivered++; return input[pos++]; }
     if (delivered > 0) { delivered = 0; return null; }
-    if (needAt < 0) { flush(); needAt = sent; postMessage({ t: "need", at: needAt }); }
+    if (!eof && needAt < 0) { flush(); needAt = sent; postMessage({ t: "need", at: needAt }); }
     return null;
   };
   let rc = 0;
