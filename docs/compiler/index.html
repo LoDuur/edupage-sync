@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Java kompilators</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+<style>
+:root{
+  --bg:#f2f2f7;--surface:#ffffff;--surface-2:#f7f7fa;--text:#1c1c1e;--text-2:#6e6e73;--text-3:#aeaeb2;
+  --line:rgba(60,60,67,.12);--line-strong:rgba(60,60,67,.24);--accent:#0a84ff;--red:#ff3b30;--amber:#ff9f0a;--green:#34c759;
+  --chrome:rgba(242,242,247,.72);--card-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.12);--cm:light;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Inter,system-ui,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme=dark]{--bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;--line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--chrome:rgba(28,28,30,.72);--card-shadow:none;--cm:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#000;--surface:#1c1c1e;--surface-2:#2c2c2e;--text:#f2f2f7;--text-2:#98989f;--text-3:#636366;--line:rgba(84,84,88,.45);--line-strong:rgba(84,84,88,.75);--chrome:rgba(28,28,30,.72);--card-shadow:none;--cm:dark}}
+:root[data-theme=juarch]{--bg:#0a0e17;--surface:#111827;--surface-2:#1b2434;--text:#e5edf7;--text-2:#8fa3bf;--text-3:#4f6280;--line:rgba(23,147,209,.22);--line-strong:rgba(23,147,209,.5);--accent:#1793d1;--chrome:rgba(10,14,23,.8);--card-shadow:none;--cm:dark;--font:var(--mono)}
+:root[data-theme=nord]{--bg:#2e3440;--surface:#3b4252;--surface-2:#434c5e;--text:#eceff4;--text-2:#d8dee9;--text-3:#7b88a1;--line:rgba(216,222,233,.12);--line-strong:rgba(216,222,233,.3);--accent:#88c0d0;--chrome:rgba(46,52,64,.8);--card-shadow:none;--cm:dark}
+:root[data-theme=dracula]{--bg:#282a36;--surface:#343746;--surface-2:#44475a;--text:#f8f8f2;--text-2:#bfc3d6;--text-3:#6272a4;--line:rgba(98,114,164,.3);--line-strong:rgba(98,114,164,.6);--accent:#bd93f9;--chrome:rgba(40,42,54,.82);--card-shadow:none;--cm:dark}
+:root[data-theme=forest]{--bg:#edf3ea;--surface:#fff;--surface-2:#f4f8f2;--text:#1f2d22;--text-2:#556b5a;--text-3:#94a898;--line:rgba(31,45,34,.12);--line-strong:rgba(31,45,34,.28);--accent:#2f8f4e;--chrome:rgba(237,243,234,.8)}
+:root[data-theme=sunset]{--bg:#fff4ec;--surface:#fff;--surface-2:#fff8f3;--text:#3a1f14;--text-2:#8a5a44;--text-3:#c9a48f;--line:rgba(58,31,20,.12);--line-strong:rgba(58,31,20,.28);--accent:#ff6b35;--chrome:rgba(255,244,236,.8)}
+:root[data-theme=rose]{--bg:#191724;--surface:#1f1d2e;--surface-2:#26233a;--text:#e0def4;--text-2:#b8b4d6;--text-3:#6e6a86;--line:rgba(110,106,134,.3);--line-strong:rgba(110,106,134,.6);--accent:#ebbcba;--chrome:rgba(25,23,36,.84);--card-shadow:none;--cm:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);display:flex;flex-direction:column}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.top{position:sticky;top:0;z-index:10;background:var(--chrome);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--line)}
+.top-in{max-width:1400px;margin:0 auto;padding:.7rem 1rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.2rem;letter-spacing:-.02em;display:flex;align-items:center;gap:.5rem}
+.top .back{font-size:.85rem;color:var(--text-2);padding:.3rem .6rem;border-radius:.5rem}
+.top .back:hover{background:var(--line)}
+.sp{flex:1}
+.btn{padding:.45rem .85rem;border-radius:.6rem;font-weight:600;font-size:.85rem;background:var(--line);color:var(--text);transition:transform .1s ease-out,background .15s;display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap}
+.btn:hover{background:var(--line-strong)}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn kbd{font:inherit;opacity:.65;font-size:.7rem;font-weight:500}
+main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:.8rem 1rem 1rem;display:grid;grid-template-columns:minmax(0,3fr) minmax(320px,2fr);gap:.8rem;min-height:0}
+.pane{background:var(--surface);border-radius:.85rem;box-shadow:var(--card-shadow);border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.pane-h{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-bottom:1px solid var(--line);font-size:.78rem;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.pane-h .tab{padding:.2rem .55rem;border-radius:.4rem;text-transform:none;letter-spacing:0;font-size:.8rem;color:var(--text-2)}
+.pane-h .tab.on{background:var(--line);color:var(--text)}
+.pane-h .file{font:.8rem var(--mono);text-transform:none;letter-spacing:0;color:var(--text)}
+.pane-h .status{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0}
+.status.ok{color:var(--green)}.status.err{color:var(--red)}.status.run{color:var(--amber)}
+.CodeMirror{flex:1;height:auto;min-height:420px;font:14px/1.55 var(--mono);background:transparent;color:var(--text)}
+:root[style*="--cm:light"] .CodeMirror,.cm-light .CodeMirror{background:transparent}
+.CodeMirror-gutters{background:var(--surface-2);border-right:1px solid var(--line)}
+.CodeMirror-linenumber{color:var(--text-3)}
+.cm-light .cm-s-material-darker.CodeMirror{background:transparent;color:var(--text)}
+.cm-light .cm-s-material-darker .CodeMirror-gutters{background:var(--surface-2)}
+.cm-light .cm-s-material-darker .CodeMirror-linenumber{color:var(--text-3)}
+.cm-light .cm-s-material-darker .CodeMirror-cursor{border-left-color:var(--text)}
+.cm-light .cm-s-material-darker .cm-keyword{color:#a626a4}.cm-light .cm-s-material-darker .cm-def{color:#4078f2}.cm-light .cm-s-material-darker .cm-variable,.cm-light .cm-s-material-darker .cm-variable-2{color:#383a42}.cm-light .cm-s-material-darker .cm-string{color:#50a14f}.cm-light .cm-s-material-darker .cm-number{color:#986801}.cm-light .cm-s-material-darker .cm-comment{color:#a0a1a7}.cm-light .cm-s-material-darker .cm-type,.cm-light .cm-s-material-darker .cm-variable-3{color:#c18401}.cm-light .cm-s-material-darker .cm-operator{color:#0184bc}.cm-light .cm-s-material-darker .cm-atom{color:#986801}.cm-light .cm-s-material-darker .cm-meta{color:#4078f2}
+.cm-light .cm-s-material-darker .CodeMirror-selected{background:rgba(10,132,255,.15)}
+.cm-light .cm-s-material-darker .CodeMirror-activeline-background{background:rgba(0,0,0,.03)}
+.out{flex:1;margin:0;padding:.8rem .9rem;font:13px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;overflow:auto;min-height:160px;color:var(--text)}
+.out .e{color:var(--red)}.out .d{color:var(--text-3)}.out .w{color:var(--amber)}
+textarea.stdin{flex:1;border:0;outline:0;resize:none;padding:.8rem .9rem;font:13px/1.5 var(--mono);background:transparent;color:var(--text);min-height:160px}
+.hint{padding:.5rem .9rem;border-top:1px solid var(--line);font-size:.75rem;color:var(--text-3)}
+.list{flex:1;overflow:auto}
+.item{display:flex;flex-direction:column;gap:.1rem;padding:.65rem .9rem;border-bottom:1px solid var(--line);cursor:pointer;color:var(--text)}
+.item:hover{background:var(--surface-2)}
+.item b{font-size:.9rem}
+.item small{color:var(--text-2);font-size:.75rem}
+.item.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.empty{padding:1.5rem;color:var(--text-3);text-align:center;font-size:.85rem}
+.viewbar{display:flex;gap:.5rem;align-items:center;padding:.5rem .8rem;border-top:1px solid var(--line);font-size:.8rem;color:var(--text-2);flex-wrap:wrap}
+.ro{background:var(--amber);color:#000;font-size:.65rem;font-weight:700;padding:.05rem .4rem;border-radius:.3rem;text-transform:uppercase;letter-spacing:.05em}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem}
+.modal-bg.on{display:flex}
+.modal{width:min(440px,100%);background:var(--surface);color:var(--text);border-radius:1rem;padding:1.1rem 1.2rem;box-shadow:0 20px 60px -20px rgba(0,0,0,.6)}
+.modal h3{margin:0 0 .8rem;font-size:1.05rem;letter-spacing:-.01em}
+.modal label{display:block;font-size:.78rem;color:var(--text-2);margin:.6rem 0 .25rem}
+.modal input{width:100%;padding:.55rem .7rem;border-radius:.6rem;border:1px solid var(--line-strong);background:var(--bg);color:var(--text);font:inherit}
+.modal .row{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+.modal .msg{font-size:.8rem;margin-top:.5rem;min-height:1.2em}
+.msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+.toast{position:fixed;left:50%;bottom:1.2rem;transform:translate(-50%,120%);background:var(--text);color:var(--bg);padding:.6rem 1rem;border-radius:.7rem;font-size:.85rem;font-weight:600;transition:transform .3s cubic-bezier(.32,.72,0,1);z-index:60;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0)}
+@media (max-width:900px){main{grid-template-columns:1fr}.CodeMirror{min-height:300px}.top h1 span{display:none}}
+@media (prefers-reduced-transparency:reduce){.top{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="back" href="../">‹ Stundu saraksts</a>
+  <h1>☕ Java <span>kompilators</span></h1>
+  <span class="sp"></span>
+  <button class="btn" id="new" title="Jauns fails">Jauns</button>
+  <button class="btn" id="saved">Saglabātie <span id="cnt"></span></button>
+  <button class="btn" id="save">Saglabāt</button>
+  <button class="btn pri" id="run">▶ Palaist <kbd>Ctrl+↵</kbd></button>
+</div></header>
+
+<main>
+  <section class="pane" id="editor-pane">
+    <div class="pane-h"><span class="file" id="file">Main.java</span><span id="ro" class="ro" hidden>tikai lasāms</span><span class="status" id="status"></span></div>
+    <textarea id="code"></textarea>
+    <div class="viewbar" id="viewbar" hidden><span id="viewmeta"></span><span class="sp"></span><button class="btn" id="copylink">Kopēt saiti</button><button class="btn" id="fork">Atvērt redaktorā</button></div>
+  </section>
+  <section class="pane" id="side">
+    <div class="pane-h"><button class="tab on" data-tab="out">Izvade</button><button class="tab" data-tab="in">Ievade (stdin)</button><button class="tab" data-tab="list">Saglabātie</button><span class="status" id="time"></span></div>
+    <pre class="out" id="out"><span class="d">Uzraksti kodu un spied ▶ Palaist. Kods tiek kompilēts un izpildīts ar OpenJDK 22.</span></pre>
+    <textarea class="stdin" id="stdin" hidden placeholder="Teksts, ko programma nolasīs no System.in (Scanner, BufferedReader …)"></textarea>
+    <div class="list" id="list" hidden></div>
+    <div class="hint" id="hint">Publiskā klase → fails ar tādu pašu nosaukumu tiek izveidots automātiski. Laika limits ~10 s.</div>
+  </section>
+</main>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" role="dialog">
+  <h3>Saglabāt kodu</h3>
+  <label>Nosaukums</label><input id="m-title" maxlength="80" placeholder="piem. Mājasdarbs 3 – masīvi">
+  <label>Autors</label><input id="m-author" maxlength="40" placeholder="Vārds vai segvārds">
+  <label>Atslēga</label><input id="m-key" type="password" autocomplete="off" placeholder="Klases atslēga">
+  <div class="msg" id="m-msg"></div>
+  <div class="row"><button class="btn" id="m-cancel">Atcelt</button><button class="btn pri" id="m-ok">Saglabāt</button></div>
+  <div class="msg" style="color:var(--text-3)">Saglabātais kods būs publiski redzams un vairs nebūs maināms.</div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
+<script>
+const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
+const SUPABASE_KEY="sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
+const WANDBOX="https://wandbox.org/api/compile.json";
+const COMPILER="openjdk-jdk-22+36";
+const TEMPLATE=`import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        System.out.println("Sveika, pasaule!");
+    }
+}
+`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
+
+let prefs={theme:"auto"};
+try{prefs={...prefs,...JSON.parse(localStorage.getItem("prefs")||"{}")}}catch(e){}
+if(prefs.theme&&prefs.theme!=="auto")document.documentElement.dataset.theme=prefs.theme;
+const isDark=()=>getComputedStyle(document.documentElement).getPropertyValue("--cm").trim()==="dark";
+document.body.classList.toggle("cm-light",!isDark());
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>document.body.classList.toggle("cm-light",!isDark()));
+
+const cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",theme:"material-darker",lineNumbers:true,indentUnit:4,tabSize:4,indentWithTabs:false,autoCloseBrackets:true,matchBrackets:true,styleActiveLine:true,extraKeys:{
+  "Ctrl-Enter":run,"Cmd-Enter":run,"Ctrl-S":e=>openSave(),"Cmd-S":e=>openSave(),
+  Tab:c=>{if(c.somethingSelected())c.indentSelection("add");else c.replaceSelection("    ","end")},
+  "Shift-Tab":c=>c.indentSelection("subtract")
+}});
+let viewing=null,current=[];
+cm.setValue(localStorage.getItem("java-draft")||TEMPLATE);
+cm.on("change",()=>{if(!viewing){try{localStorage.setItem("java-draft",cm.getValue())}catch(e){}updateFile()}});
+function classNameOf(code){const m=code.match(/public\s+(?:final\s+|abstract\s+)*class\s+([A-Za-z_$][\w$]*)/)||code.match(/class\s+([A-Za-z_$][\w$]*)[^{]*\{[\s\S]*?static\s+void\s+main/);return m?m[1]:"Main"}
+function updateFile(){$("file").textContent=classNameOf(cm.getValue())+".java"}
+updateFile();
+
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("on"),2200)}
+function status(t,cls){const s=$("status");s.textContent=t;s.className="status "+(cls||"")}
+function showTab(name){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));$("out").hidden=name!=="out";$("stdin").hidden=name!=="in";$("list").hidden=name!=="list";$("hint").hidden=name==="list"}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);if(b.dataset.tab==="list")loadList()});
+
+async function run(){
+  const code=cm.getValue();
+  if(!code.trim())return;
+  const cls=classNameOf(code);
+  const out=$("out");showTab("out");
+  status("kompilē…","run");$("run").disabled=true;out.innerHTML='<span class="d">Kompilē un izpilda…</span>';
+  const t0=performance.now();
+  try{
+    const body={compiler:COMPILER,stdin:$("stdin").value,"compiler-option-raw":"-encoding\nUTF-8","runtime-option-raw":"-Dfile.encoding=UTF-8\n-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8",
+      code:`public class prog { public static void main(String[] a) throws Exception { ${cls}.main(a); } }`,
+      codes:[{file:cls+".java",code}]};
+    const r=await fetch(WANDBOX,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error("Kompilatora serviss atbildēja "+r.status);
+    const d=await r.json();
+    const ms=Math.round(performance.now()-t0);
+    let html="";
+    const ce=(d.compiler_error||"").replace(/prog\.java:\d+: error:.*?\n.*?\n.*?\n/gs,"");
+    if(ce.trim())html+=`<span class="e">${esc(ce)}</span>`;
+    if(d.compiler_output)html+=`<span class="w">${esc(d.compiler_output)}</span>`;
+    if(d.program_output)html+=esc(d.program_output);
+    if(d.program_error)html+=`<span class="e">${esc(d.program_error)}</span>`;
+    if(d.signal)html+=`<span class="e">\nProcess pārtraukts: ${esc(d.signal)}</span>`;
+    const code_=d.status??"?";
+    if(!html.trim())html='<span class="d">(nav izvades)</span>';
+    out.innerHTML=html;
+    $("time").textContent=`${ms} ms · izeja ${code_}`;
+    status(code_==="0"&&!ce.trim()?"izpildīts":"kļūda",code_==="0"&&!ce.trim()?"ok":"err");
+  }catch(e){out.innerHTML=`<span class="e">Neizdevās palaist: ${esc(e.message)}</span>`;status("kļūda","err")}
+  $("run").disabled=false;
+}
+$("run").onclick=run;
+
+$("new").onclick=()=>{if(viewing)exitView();else if(cm.getValue().trim()&&cm.getValue()!==TEMPLATE&&!confirm("Notīrīt redaktoru?"))return;cm.setValue(TEMPLATE);cm.focus()};
+
+/* ---- saglabāšana ---- */
+function openSave(){if(viewing)return toast("Šis kods jau ir saglabāts");if(!cm.getValue().trim())return;$("m-title").value=$("m-title").value||classNameOf(cm.getValue());$("m-author").value=localStorage.getItem("java-author")||"";$("m-key").value=sessionStorage.getItem("java-key")||"";$("m-msg").textContent="";$("modal-bg").classList.add("on");$("m-title").focus()}
+$("save").onclick=openSave;
+$("m-cancel").onclick=()=>$("modal-bg").classList.remove("on");
+$("modal-bg").onclick=e=>{if(e.target.id==="modal-bg")e.target.classList.remove("on")};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal-bg").classList.remove("on");if(e.key==="Enter"&&$("modal-bg").classList.contains("on")&&e.target.tagName==="INPUT")$("m-ok").click()});
+$("m-ok").onclick=async()=>{
+  const title=$("m-title").value.trim(),author=$("m-author").value.trim(),key=$("m-key").value;
+  const msg=$("m-msg");
+  if(!title)return msg.textContent="Vajag nosaukumu",msg.className="msg err";
+  if(!key)return msg.textContent="Vajag atslēgu",msg.className="msg err";
+  $("m-ok").disabled=true;msg.textContent="Saglabā…";msg.className="msg";
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/save_snippet`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_title:title,p_author:author,p_code:cm.getValue(),p_passkey:key})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.message||"kļūda");
+    localStorage.setItem("java-author",author);sessionStorage.setItem("java-key",key);
+    $("modal-bg").classList.remove("on");
+    history.replaceState(null,"",`?id=${d}`);
+    toast("Saglabāts · saite nokopējama ar „Kopēt saiti”");
+    await loadList();openSnippet(d);
+  }catch(e){msg.textContent=e.message==="Nepareiza atslēga"?"Nepareiza atslēga":"Neizdevās saglabāt: "+e.message;msg.className="msg err"}
+  $("m-ok").disabled=false;
+};
+
+/* ---- saraksts un skatīšana ---- */
+async function loadList(){
+  const list=$("list");
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/snippets?select=id,title,author,created_at&order=created_at.desc&limit=200`,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});
+    current=await r.json();
+    $("cnt").textContent=current.length?`(${current.length})`:"";
+    list.innerHTML=current.length?current.map(s=>`<div class="item${viewing&&viewing.id===s.id?" on":""}" data-id="${s.id}"><b>${esc(s.title)}</b><small>${esc(s.author||"anonīms")} · ${new Date(s.created_at).toLocaleString("lv-LV",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join(""):'<div class="empty">Vēl nekas nav saglabāts</div>';
+    list.querySelectorAll(".item").forEach(el=>el.onclick=()=>openSnippet(el.dataset.id));
+  }catch(e){list.innerHTML=`<div class="empty">Neizdevās ielādēt: ${esc(e.message)}</div>`}
+}
+async function openSnippet(id){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/snippets?id=eq.${encodeURIComponent(id)}&select=*`,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});
+  const [s]=await r.json();
+  if(!s)return toast("Kods nav atrasts");
+  if(!viewing)sessionStorage.setItem("java-draft-backup",cm.getValue());
+  viewing=s;
+  cm.setValue(s.code);cm.setOption("readOnly",true);
+  $("ro").hidden=false;$("viewbar").hidden=false;$("file").textContent=classNameOf(s.code)+".java";
+  $("viewmeta").innerHTML=`<b>${esc(s.title)}</b> · ${esc(s.author||"anonīms")} · ${new Date(s.created_at).toLocaleString("lv-LV")}`;
+  history.replaceState(null,"",`?id=${s.id}`);document.title=s.title+" · Java kompilators";
+  document.querySelectorAll(".item").forEach(el=>el.classList.toggle("on",el.dataset.id===s.id));
+  showTab("out");
+}
+function exitView(){viewing=null;cm.setOption("readOnly",false);$("ro").hidden=true;$("viewbar").hidden=true;history.replaceState(null,"","./");document.title="Java kompilators";document.querySelectorAll(".item").forEach(el=>el.classList.remove("on"))}
+$("fork").onclick=()=>{const code=cm.getValue();exitView();cm.setValue(code);toast("Kopija atvērta rediģēšanai (oriģināls paliek nemainīgs)");cm.focus()};
+$("copylink").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast("Saite nokopēta")}catch(e){prompt("Saite:",location.href)}};
+$("saved").onclick=()=>{showTab("list");loadList()};
+
+const params=new URLSearchParams(location.search);
+if(params.has("list")){showTab("list")}
+loadList().then(()=>{if(params.get("id"))openSnippet(params.get("id"))});
+</script>
+</body>
+</html>
