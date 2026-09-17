@@ -49,6 +49,8 @@ textarea.stdin{flex:1;border:0;outline:0;resize:none;padding:.8rem .9rem;font:13
 .ai-quick{display:flex;flex-wrap:wrap;gap:.35rem;padding:.55rem .8rem;border-bottom:1px solid var(--line)}
 .ai-quick button{padding:.25rem .6rem;border:1px solid var(--line-2);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
 .ai-quick button:hover{background:var(--ink);color:var(--bg)}
+.ai-quick select{max-width:15rem;background:rgba(0,0,0,.35);border:1px solid var(--line-2);color:var(--sprout);font:.66rem var(--mono);letter-spacing:.06em;padding:.25rem .4rem}
+.msg-a .prov{display:block;margin-top:.3rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 .ai-log{flex:1;overflow:auto;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.6rem;font-size:.82rem}
 .msg-u{align-self:flex-end;border:1px solid var(--fern);color:var(--sprout);padding:.4rem .7rem;max-width:90%;white-space:pre-wrap}
 .msg-u::before{content:"❯ ";color:var(--fern)}
@@ -107,7 +109,7 @@ textarea.stdin{flex:1;border:0;outline:0;resize:none;padding:.8rem .9rem;font:13
     <textarea class="stdin" id="stdin" hidden placeholder="Teksts, ko programma nolasīs no System.in (Scanner, BufferedReader …)"></textarea>
     <div class="list" id="list" hidden></div>
     <div class="ai" id="ai" hidden>
-      <div class="ai-quick"><button data-q="err">Paskaidro kļūdu</button><button data-q="explain">Paskaidro kodu</button><button data-q="review">Atrodi kļūdas</button><button data-q="complete">Pabeidz kodu</button><button data-q="tests">Piemēra ievade</button></div>
+      <div class="ai-quick"><select id="ai-model" title="Modelis"><option value="">modelis…</option></select><button data-q="err">Paskaidro kļūdu</button><button data-q="explain">Paskaidro kodu</button><button data-q="review">Atrodi kļūdas</button><button data-q="complete">Pabeidz kodu</button><button data-q="tests">Piemēra ievade</button></div>
       <div class="ai-log" id="ai-log"><div class="msg-a">Sveiks! Es redzu tavu kodu un pēdējo izvadi. Jautā par Java, lūdz paskaidrot kļūdu vai pabeigt kodu. <span class="thinking">Bezmaksas AI (pollinations.ai) – atbildes var būt neprecīzas; pārbaudi, palaižot kodu.</span></div></div>
       <div class="ai-in"><span class="field"><textarea id="ai-q" placeholder="jautājums par kodu… (Enter sūta, Shift+Enter jauna rinda)"></textarea></span><button class="btn pri" id="ai-send">Sūtīt</button></div>
     </div>
@@ -340,21 +342,41 @@ $("saved").onclick=()=>{showTab("list");loadList()};
 
 /* ---- AI palīgs (pollinations.ai, bez atslēgas) ---- */
 const AI_URL="https://text.pollinations.ai/openai";
+const AI_PROXY="https://edupage-proxy.loduur.workers.dev/ai";
+let aiModels=[],aiInfo={openrouter:false,groq:false};
+async function loadModels(){
+  try{
+    const r=await fetch(`${AI_PROXY}/models`,{headers:{"X-Access-Key":accessKey()}});
+    if(!r.ok)throw 0;
+    aiInfo=await r.json();aiModels=aiInfo.models||[];
+    const sel=$("ai-model"),saved=localStorage.getItem("java-ai-model");
+    sel.innerHTML=aiModels.length?aiModels.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(""):'<option value="">pollinations (openai)</option>';
+    if(saved&&aiModels.some(m=>m.id===saved))sel.value=saved;
+    sel.onchange=()=>localStorage.setItem("java-ai-model",sel.value);
+    sel.title=aiInfo.openrouter?`OpenRouter bezmaksas modeļi (${aiModels.length})${aiInfo.groq?" · Groq rezervē":""}`:"OpenRouter atslēga nav iestatīta";
+  }catch(e){$("ai-model").innerHTML='<option value="">pollinations (openai)</option>'}
+}
 const SYSTEM="Tu esi draudzīgs Java skolotājs Latvijas tehnikuma 2. kursam. Atbildi latviski, īsi un konkrēti. Koda piemērus liec ```java blokos. Ja lūdz pabeigt vai izlabot kodu, atgriez pilnu, kompilējamu failu vienā ```java blokā un pēc tam 1–3 teikumus, ko izmainīji. Neizdomā izvadi – ja nezini, saki.";
 const aiLog=$("ai-log");let aiBusy=false,aiHistory=[];
 async function aiChat(messages){
+  try{
+    const r=await fetch(`${AI_PROXY}/chat`,{method:"POST",headers:{"Content-Type":"text/plain","X-Access-Key":accessKey()},body:JSON.stringify({model:$("ai-model").value,messages})});
+    const d=await r.json();
+    if(r.ok&&d.content)return {content:d.content,provider:d.provider,model:d.model};
+    console.warn("ai proxy",d);
+  }catch(e){console.warn("ai proxy",e)}
   const body=JSON.stringify({model:"openai",messages,temperature:0.3});
   for(let attempt=0;attempt<2;attempt++){
     try{
       const r=await fetch(AI_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body});
-      if(r.ok){const d=await r.json();const c=d.choices?.[0]?.message?.content;if(c)return c}
+      if(r.ok){const d=await r.json();const c=d.choices?.[0]?.message?.content;if(c)return {content:c,provider:"pollinations",model:"openai"}}
     }catch(e){}
     await sleep(1500);
   }
   const sys=messages[0].content,user=messages[messages.length-1].content;
   const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(user.slice(0,6000))}?model=openai&system=${encodeURIComponent(sys)}`);
   if(!r.ok)throw new Error("AI serviss atbildēja "+r.status);
-  return await r.text();
+  return {content:await r.text(),provider:"pollinations",model:"openai"};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctx(){return `Pašreizējais kods (${classNameOf(cm.getValue())}.java):\n\`\`\`java\n${cm.getValue()}\n\`\`\`${$("stdin").value?`\nstdin:\n${$("stdin").value}`:""}${lastError?`\nPēdējā kļūda/stderr:\n${lastError}`:""}${lastOutput?`\nPēdējā izvade:\n${lastOutput.slice(0,800)}`:""}`}
@@ -368,9 +390,9 @@ async function ask(userText,shown){
   const a=document.createElement("div");a.className="msg-a";a.innerHTML='<span class="thinking">Domā…</span>';aiLog.appendChild(a);aiLog.scrollTop=aiLog.scrollHeight;
   try{
     const messages=[{role:"system",content:SYSTEM},...aiHistory.slice(-6),{role:"user",content:userText+"\n\n"+ctx()}];
-    const text=await aiChat(messages);
+    const res=await aiChat(messages);const text=res.content;
     aiHistory.push({role:"user",content:shown||userText},{role:"assistant",content:text});
-    a.innerHTML=renderMd(text);
+    a.innerHTML=renderMd(text)+`<span class="prov">${esc(res.provider)} · ${esc(res.model)}</span>`;
     a.querySelectorAll(".ins").forEach(b=>b.onclick=()=>{const code=decodeURIComponent(b.dataset.code);if(viewing)exitView();if(/class\s+\w+/.test(code)&&code.includes("main(")){if(confirm("Aizvietot visu kodu redaktorā?"))cm.setValue(code)}else cm.replaceSelection(code);cm.focus();toast("Ievietots")});
   }catch(e){a.innerHTML=`<span style="color:var(--red)">Neizdevās: ${esc(e.message)}. Pamēģini vēlreiz pēc brīža.</span>`}
   aiBusy=false;aiLog.scrollTop=aiLog.scrollHeight;
@@ -386,7 +408,7 @@ document.querySelectorAll(".ai-quick button").forEach(b=>b.onclick=()=>{const [q
 $("ai-send").onclick=()=>{const v=$("ai-q").value.trim();if(!v)return;$("ai-q").value="";ask(v)};
 $("ai-q").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("ai-send").click()}});
 
-UI.requireAccess(()=>{cm.refresh();cm.focus()});
+UI.requireAccess(()=>{cm.refresh();cm.focus();loadModels()});
 UI.clock($("clock"));
 UI.initDither($("dither"));
 

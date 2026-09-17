@@ -5,3 +5,4 @@ workers_dev = true
 
 [vars]
 SCHOOL = "valteh"
+ACCESS_HASH = "40f241867b5b11875589f3fa4f95e363c1f12802496f7667c44a5443df175a00"
