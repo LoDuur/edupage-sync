@@ -26,23 +26,23 @@ def day_block(iso, events):
 
 
 def daily(class_name, iso, events, subs, changes):
-    lines = [f"📅 *{_d(iso)}* · {class_name}"]
+    lines = [f"*{_d(iso)}* · {class_name}"]
     if events:
         lines += [lesson_line(e) for e in sorted(events, key=lambda e: e["start"])]
         if any(e.get("dayType") == "short" for e in events):
             lines.append("_Pirmssvētku diena – 30 min stundas_")
     else:
-        lines.append("Šodien nav stundu 🎉")
+        lines.append("Šodien nav stundu")
     if subs:
-        lines += ["", "⚠️ *Aizvietošana šodien*"] + [f"{s['period']}. {s['text']}" for s in subs]
+        lines += ["", "*Aizvietošana šodien*"] + [f"{s['period']}. {s['text']}" for s in subs]
     if changes:
-        lines += ["", "🔄 *Izmaiņas kopš pēdējās ziņas*"] + changes
+        lines += ["", "*Izmaiņas kopš pēdējās ziņas*"] + changes
     return "\n".join(lines)
 
 
 def week(class_name, version, week_start, days):
     end = date.fromordinal(week_start.toordinal() + 4)
-    lines = [f"🗓 *Jauns stundu saraksts {week_start:%d.%m.}–{end:%d.%m.}* · {class_name} (v{version})", ""]
+    lines = [f"*Jauns stundu saraksts {week_start:%d.%m.}–{end:%d.%m.}* · {class_name} (v{version})", ""]
     for iso, events in days:
         lines.append(day_block(iso, events))
         lines.append("")
@@ -50,7 +50,7 @@ def week(class_name, version, week_start, days):
 
 
 def changes(added, changed, removed, event_line):
-    lines = ["🔄 *Izmaiņas stundu sarakstā*"]
+    lines = ["*Izmaiņas stundu sarakstā*"]
     for mark, group in (("➕", added), ("✏️", changed), ("➖", removed)):
         for k in sorted(group, key=lambda k: group[k]["start"]):
             lines.append(f"{mark} {event_line(group[k])}")
@@ -58,7 +58,7 @@ def changes(added, changed, removed, event_line):
 
 
 def substitutions(added, removed):
-    lines = ["⚠️ *Aizvietošana*"]
+    lines = ["*Aizvietošana*"]
     by_date = {}
     for r in added:
         by_date.setdefault(r["date"], []).append(f"{r['period']}. {r['text']}")

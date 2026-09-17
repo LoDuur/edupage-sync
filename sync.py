@@ -441,11 +441,11 @@ def main():
             n = len(added) + len(changed) + len(removed)
             for ws in weeks:
                 send_week_image(f"Izmaiņas stundu sarakstā {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
-                                f"🔄 *Izmaiņas stundu sarakstā* ({n})\n{SITE_URL}")
+                                f"*Izmaiņas stundu sarakstā* ({n})\n{SITE_URL}")
 
     for ws, num in new_versions:
         send_week_image(f"Stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
-                        f"🗓 *Jauns stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}*\n{SITE_URL}")
+                        f"*Jauns stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}*\n{SITE_URL}")
     state["seen_versions"] = sorted({num for _, num in versions} | set(seen_versions or []))[-20:]
 
     if subs_added or subs_removed:
@@ -457,7 +457,7 @@ def main():
                                     [r for r in subs_new.values() if r["date"] == iso], IMG_DIR / f"day-{iso}.png", footer_text())
             cancelled = [r for r in subs_removed if r["date"] == iso]
             note = f"\n_(atcelts: {', '.join(r['period'] + '. st.' for r in cancelled)})_" if cancelled else ""
-            whatsapp.send_image(str(path), f"⚠️ *Aizvietošana {messages._d(iso)}*{note}\n{SITE_URL}")
+            whatsapp.send_image(str(path), f"*Aizvietošana {messages._d(iso)}*{note}\n{SITE_URL}")
     state["substitutions"] = {k: r for k, r in subs_new.items()}
 
     if send_daily:
@@ -476,9 +476,9 @@ def main():
         IMG_DIR.mkdir(exist_ok=True)
         path = render.day_image(CLASS_NAME, target, [e for e in new_events.values() if e["date"] == target],
                                 day_subs, IMG_DIR / f"day-{target}.png", footer_text())
-        caption = f"📅 *Rīt: {messages._d(target)}* · {CLASS_NAME}"
-        caption += f"\n⚠️ Aizvietošana: {len(day_subs)}" if day_subs else ""
-        caption += f"\n🔄 Izmaiņas kopš pēdējās ziņas: {len(recent)}" if recent else "\n✅ Izmaiņu nav"
+        caption = f"*Rīt: {messages._d(target)}* · {CLASS_NAME}"
+        caption += f"\nAizvietošana: {len(day_subs)}" if day_subs else ""
+        caption += f"\nIzmaiņas kopš pēdējās ziņas: {len(recent)}" if recent else "\nIzmaiņu nav"
         caption += f"\n{SITE_URL}"
         sent = whatsapp.send_image(str(path), caption)
         if sent:
