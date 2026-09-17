@@ -55,7 +55,7 @@ PIL is the second language in the same editor (`compiler/?lang=pil`; `compiler/p
 
 ## Games
 
-The timetable console has `doom` (and `games`): DOOM shareware v1.9 runs in js-dos v8 (emulator from v8.js-dos.com, CORS-enabled) in an isolated iframe overlay; the bundle `docs/games/doom.jsdos` was built from the official `doom19s.zip` shareware release (DOOM1.WAD 4,196,020 bytes) with a `.jsdos/dosbox.conf` autoexec. Only redistributable shareware files are included. Close with Ctrl+Q.
+The timetable console has `doom` (and `games`): DOOM shareware v1.9 runs in js-dos v8 (emulator from v8.js-dos.com, CORS-enabled) inside the console panel itself (an isolated iframe appended to the console output, so the timetable stays visible); the bundle `docs/games/doom.jsdos` was built from the official `doom19s.zip` shareware release (DOOM1.WAD 4,196,020 bytes) with a `.jsdos/dosbox.conf` autoexec. Only redistributable shareware files are included. Close with Ctrl+Q.
 
 ## Local run
 
