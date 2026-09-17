@@ -7,7 +7,7 @@ work=$(mktemp -d)
 git clone -q --depth 1 https://github.com/Acerx-AMJ/PIL "$work/PIL"
 cd "$work/PIL"
 sed -i.bak 's/   long long t = std::time(nullptr);/   time_t t = std::time(nullptr);/' source/builtin.cpp
-em++ -std=c++20 -O2 -Iinclude source/*.cpp -o "$here/docs/compiler/pil/pil.js" \
+em++ -std=c++20 -O2 -fwasm-exceptions -Iinclude source/*.cpp -o "$here/docs/compiler/pil/pil.js" \
   -sMODULARIZE=1 -sEXPORT_NAME=createPIL -sENVIRONMENT=worker -sEXIT_RUNTIME=1 -sINVOKE_RUN=0 \
   -sFORCE_FILESYSTEM=1 -sEXPORTED_RUNTIME_METHODS=callMain,FS -sALLOW_MEMORY_GROWTH=1 -sSINGLE_FILE=1 -sASSERTIONS=0
 git rev-parse --short HEAD > "$here/docs/compiler/pil/VERSION"

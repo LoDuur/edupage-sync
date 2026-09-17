@@ -24,6 +24,11 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
 .item .n{color:var(--ink-3);font-size:.7rem}
 .lang{display:inline-block;font-size:.56rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 .35rem;margin-right:.4rem;border:1px solid var(--line-2);color:var(--sprout)}
 .lang.pil{color:#f5c26b}
+.live-h{display:flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-bottom:1px solid var(--line);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.live-h b{display:inline-flex;align-items:center;gap:.35rem;background:var(--red);color:#fff;font-size:.56rem;font-weight:700;padding:.05rem .4rem;letter-spacing:.14em}
+.live-h b::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.2s ease-in-out infinite}
+.item.live{border-left:2px solid var(--red)}
+.item.live small::before{content:"● ";color:var(--red)}
 .empty{padding:1.5rem;color:var(--ink-3);text-align:center;font-size:.8rem;letter-spacing:.08em}
 .CodeMirror{flex:1;height:auto;min-height:480px;font:13.5px/1.6 var(--mono);background:transparent;color:var(--ink)}
 .cm-s-material-darker.CodeMirror{background:transparent}
@@ -46,7 +51,7 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
   <a class="wordmark" href="../../" title="Stundu saraksts"><b>VAL</b>TEH</a>
   <span class="vbar"></span><span class="tag">2.k. 28.grupa · Java + PIL · Darbi</span>
   <span class="sp"></span>
-  <nav class="nav"><a href="../">Java</a><a href="../pil/">PIL</a><a class="on" href="./">Darbi</a><a href="../../">Saraksts</a></nav>
+  <nav class="nav"><a href="../">Kompilators</a><a class="on" href="./">Darbi</a><a href="../../">Saraksts</a></nav>
   <span class="dot"></span><span class="tag" id="clock">--:--:--</span>
 </div></header>
 
@@ -64,6 +69,7 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
   <section class="panel">
     <div class="panel-h"><span class="file">darbi/</span><span class="status" id="count"></span></div>
     <div class="tools"><span class="field"><input id="q" placeholder="meklēt pēc nosaukuma, autora vai koda…"></span><select id="lang"><option value="">java + pil</option><option value="java">java</option><option value="pil">pil</option></select><select id="sort"><option value="new">jaunākie</option><option value="old">vecākie</option><option value="az">A–Z</option><option value="author">autors</option></select></div>
+    <div id="live-box" hidden><div class="live-h"><b>live</b> Tiešraides sesijas</div><div id="live-list"></div></div>
     <div class="list" id="list"><div class="empty">ielādē…</div></div>
     <div class="stats" id="stats"></div>
   </section>
@@ -86,6 +92,7 @@ main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 aut
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
 <script src="../pil/pil-lang.js"></script>
+<script src="../live.js"></script>
 <script src="../ui.js"></script>
 <script>
 const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
@@ -126,7 +133,7 @@ function open(id){
   $("meta").textContent=fmt(s.created_at);
   $("viewbar").hidden=false;
   $("viewmeta").innerHTML=`<b>${esc(s.title)}</b> · ${esc(s.author||"anonīms")}`;
-  $("open").href=langOf(s)==="pil"?`../pil/?id=${s.id}`:`../?id=${s.id}`;
+  $("open").href=`../?lang=${langOf(s)}&id=${s.id}`;
   history.replaceState(null,"",`?id=${s.id}`);document.title=s.title+" · Darbi";
   document.querySelectorAll(".item").forEach(el=>el.classList.toggle("on",el.dataset.id===s.id));
   setTimeout(()=>cm.refresh(),0);
@@ -137,7 +144,14 @@ $("link").onclick=async()=>{try{await navigator.clipboard.writeText(location.hre
 
 UI.clock($("clock"));
 UI.initDither($("dither"));
-UI.requireAccess(load,{title:"PIEKĻUVES KODS",sub:"2.k. 28.grupa · Darbi"});
+async function loadLive(){
+  try{
+    const items=await LIVE.listActive();
+    $("live-box").hidden=!items.length;
+    $("live-list").innerHTML=items.map(s=>`<a class="item live" href="../?live=${s.id}"><b><span class="lang ${esc(s.lang)}">${esc(s.lang)}</span>${esc(s.title)}${s.protected?" 🔒":""}</b><small>${esc(s.author||"anonīms")} · sākts ${new Date(s.started_at).toLocaleTimeString("lv-LV",{hour:"2-digit",minute:"2-digit"})} · skatīties tiešraidē →</small></a>`).join("");
+  }catch(e){}
+}
+UI.requireAccess(()=>{load();loadLive();setInterval(()=>{if(!document.hidden)loadLive()},15000)},{title:"PIEKĻUVES KODS",sub:"2.k. 28.grupa · Darbi",back:"../../"});
 </script>
 </body>
 </html>

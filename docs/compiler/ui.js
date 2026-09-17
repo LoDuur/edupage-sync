@@ -90,7 +90,17 @@ const UI = (() => {
     inp.addEventListener("keydown", e => { if (e.key === "Enter") tryIt(); });
   }
 
-  function toast(t) { let el = $("toast"); if (!el) { el = document.createElement("div"); el.className = "toast"; el.id = "toast"; document.body.appendChild(el); } el.textContent = t; el.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("on"), 2200); }
+  function toast(t) {
+    let el = $("toast");
+    if (!el) {
+      el = document.createElement("div"); el.className = "toast"; el.id = "toast"; document.body.appendChild(el);
+      const hide = () => { if (performance.now() - toast._at > 250) el.classList.remove("on"); };
+      el.onclick = () => el.classList.remove("on");
+      document.addEventListener("mousedown", hide, true); document.addEventListener("keydown", hide, true);
+    }
+    el.textContent = t; el.classList.add("on"); toast._at = performance.now();
+    clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("on"), 1800);
+  }
   function clock(el) { const tick = () => { el.textContent = new Date().toLocaleTimeString("lv-LV", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }; tick(); setInterval(tick, 1000); }
 
   return { esc, $, initDither, requireAccess, accessKey, sha256, toast, clock, BANNER };

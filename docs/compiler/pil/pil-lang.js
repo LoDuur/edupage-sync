@@ -32,7 +32,7 @@ const PIL = (() => {
     "array-idx": "MASĪVS, I, MĒRĶIS", "array-set": "MASĪVS, I, V", "array-push": "MASĪVS, V", "array-pop": "MASĪVS", "array-back": "MASĪVS, MĒRĶIS", "array-front": "MASĪVS, MĒRĶIS", "array-insert": "MASĪVS, I, V", "array-erase": "MASĪVS, I", "array-erase-all": "MASĪVS, V",
     "array-join": "MASĪVS, DALĪTĀJS, MĒRĶIS · virkne", "array-concat": "MASĪVS, MASĪVS2, MĒRĶIS", "array-slice": "MASĪVS, NO, LĪDZ, MĒRĶIS", "array-shuffle": "MASĪVS", "array-sort": "MASĪVS, DILSTOŠI", "array-count": "MASĪVS, V, MĒRĶIS", "array-reverse": "MASĪVS", "array-find": "MASĪVS, V, MĒRĶIS", "array-contains": "MASĪVS, V, MĒRĶIS",
     "array-shallow-copy": "MASĪVS, MĒRĶIS", "array-deep-copy": "MASĪVS, MĒRĶIS", "array-capacity": "MASĪVS, MĒRĶIS", "array-reserve": "MASĪVS, N", "array-resize": "MASĪVS, N, V", "array-memfree": "MASĪVS", "array-mark": "MASĪVS, MARĶIERIS", "array-get-mark": "MASĪVS, MĒRĶIS", "array-free-marked": "MARĶIERIS",
-    "map-new": "MĒRĶIS, K1, V1, …", "map-free": "MAPE, …", "map-deep-free": "MAPE, …", "map-mark": "MAPE, MARĶIERIS", "map-get-mark": "MAPE, MĒRĶIS", "map-free-marked": "MARĶIERIS", "map-shallow-copy": "MAPE, MĒRĶIS", "map-deep-copy": "MAPE, MĒRĶIS",
+    "map-new": "MĒRĶIS, K1, V1, …", "map-free": "MAPE, …", "map-deep-free": "MAPE, …", "map-mark": "MAPE, MARĶIERIS", "map-get-mark": "MAPE, MĒRĶIS", "map-free-marked": "MARĶIERIS", "map-shallow-copy": "MAPE, MĒRĶIS", "map-deep-copy": "MAPE, MĒRĶIS", "map-erase": "MAPE, ATSLĒGA", "map-set": "MAPE, ATSLĒGA, V", "map-at": "MAPE, ATSLĒGA, MĒRĶIS", "map-contains": "MAPE, ATSLĒGA, MĒRĶIS", "map-size": "MAPE, MĒRĶIS", "map-empty": "MAPE, MĒRĶIS", "map-clear": "MAPE", "map-keys": "MAPE, MĒRĶIS", "map-values": "MAPE, MĒRĶIS", "map-merge": "MAPE, MAPE2, MĒRĶIS",
   };
   const BUILTINS = Object.keys(B).map(n => ({ n, sig: B[n] }));
   const BUILTIN_SET = new Set(Object.keys(B));
@@ -145,7 +145,7 @@ print-loop:
    le $5, 15, $7
    jmp $7, print-loop
 ` },
-    { name: "Ievade (stdin)", stdin: "Roland\n17\n", code: `; nolasa vārdu un vecumu no stdin (cilnē „stdin”)
+    { name: "Ievade (stdin)", code: `; nolasa vārdu un vecumu – ieraksti tos terminālī, kad programma gaida
 main() let name, age
    print "Tavs vārds: "
    readln name
@@ -163,7 +163,7 @@ bad-age:
    println "Vecumam jābūt skaitlim."
    string-free name
 ` },
-    { name: "Kalkulators", stdin: "12\n7\n*\n", code: `input-number(msg) let input, tmp
+    { name: "Kalkulators", code: `input-number(msg) let input, tmp
    goto input-number-start
 input-number-error:
    println "Nederīga ievade, mēģini vēlreiz."
@@ -250,6 +250,7 @@ row:
     "Plūsma": "goto jmp jmpn jmptable call func-call return catch assert warn error exit sleep valtable table-contains",
     "Virknes": "string-new string-fmt string-free string-size string-idx string-set string-push string-pop string-concat string-substr string-split string-find string-contains string-replace string-replace-all string-starts-with string-ends-with string-trim string-to-lower string-to-upper string-reverse string-count string-copy string-repeat string-insert string-erase string-clear string-empty",
     "Masīvi": "array-new array-fill array-iota array-free array-size array-idx array-set array-push array-pop array-insert array-erase array-back array-front array-join array-concat array-slice array-sort array-reverse array-shuffle array-find array-contains array-count array-shallow-copy array-deep-copy array-empty array-clear",
+    "Mapes": "map-new map-set map-at map-contains map-erase map-size map-empty map-keys map-values map-merge map-clear map-free",
     "Biti": "bit-and bit-or bit-xor bit-not bit-shl bit-shr bit-count bit-test bit-set bit-clear bit-toggle",
     "Sistēma": "time unix-time date variadic-size variadic-idx reg-size reg-idx reg-set return-reg-size return-reg-idx return-reg-set return-count stack-depth stack-name stack-line stack-trace func-arity func-variadic",
   };
@@ -276,7 +277,7 @@ loop:                    ; iezīme
    le $0, 5, $1          ; $1 = $0 < 5
    jmp $1, loop          ; lec, ja patiess (jmpn – ja nepatiess)`)}</pre>
 <h4>Ievade</h4>
-<code>readln $0</code> nolasa rindu no stdin (cilne „stdin”) kā virkni; <code>to-int $0, $1</code> pārvērš (null, ja neizdodas). Virknes, ko izveido <code>readln</code>, <code>string-new</code>, <code>array-new</code>, ir jāatbrīvo ar <code>string-free</code> / <code>array-free</code>, citādi beigās brīdina par noplūdi.
+<code>readln $0</code> nolasa rindu, ko ieraksti terminālī zem izvades (programma apstājas un gaida), kā virkni; <code>to-int $0, $1</code> pārvērš (null, ja neizdodas). Virknes, ko izveido <code>readln</code>, <code>string-new</code>, <code>array-new</code>, ir jāatbrīvo ar <code>string-free</code> / <code>array-free</code>, citādi beigās brīdina par noplūdi.
 <h4>Izteiksmes un formāti</h4>
 <code>[ 2 ** 10 + sqrt(16) ]</code> – matemātika kvadrātiekavās; to aprēķina pirms izpildes, tāpēc tajā drīkst būt tikai skaitļi un <code>const</code> (ne reģistri). Funkcijas: <code>sqrt</code>, <code>pi()</code>, <code>e()</code>, <code>if(c, a, b)</code> u.c. <code>printfln "x = {}", x</code> – <code>{}</code> aizvieto ar argumentiem. Konstantēs virknēs: <code>"${"$"}{NAME}"</code> un <code>"${"$"}[1 + 2]"</code>.
 <h4>Direktīvas</h4>
@@ -308,5 +309,6 @@ Citi: valtable ATSLĒGA, MĒRĶIS, k1, v1, k2, v2, … (uzmeklēšanas tabula); 
     "╚═╝     ╚═╝╚══════╝",
   ].join("\n");
 
-  return { BUILTINS, BUILTIN_SET, KEYWORDS, DIRECTIVES, MATH, SNIPPETS, EXAMPLES, DOC_HTML, DOC_TEXT, BANNER };
+  const TEMPLATE = EXAMPLES[0].code;
+  return { BUILTINS, BUILTIN_SET, KEYWORDS, DIRECTIVES, MATH, SNIPPETS, EXAMPLES, DOC_HTML, DOC_TEXT, BANNER, TEMPLATE };
 })();
