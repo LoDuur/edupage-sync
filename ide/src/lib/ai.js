@@ -1,30 +1,61 @@
 import { accessKey } from "./access.js";
-import i_deepseek_color from "@lobehub/icons-static-svg/icons/deepseek-color.svg";
-import i_gemma_color from "@lobehub/icons-static-svg/icons/gemma-color.svg";
-import i_google_color from "@lobehub/icons-static-svg/icons/google-color.svg";
-import i_qwen_color from "@lobehub/icons-static-svg/icons/qwen-color.svg";
-import i_mistral_color from "@lobehub/icons-static-svg/icons/mistral-color.svg";
-import i_meta_color from "@lobehub/icons-static-svg/icons/meta-color.svg";
-import i_cohere_color from "@lobehub/icons-static-svg/icons/cohere-color.svg";
-import i_nvidia_color from "@lobehub/icons-static-svg/icons/nvidia-color.svg";
-import i_microsoft_color from "@lobehub/icons-static-svg/icons/microsoft-color.svg";
-import i_openai from "@lobehub/icons-static-svg/icons/openai.svg";
-import i_moonshot from "@lobehub/icons-static-svg/icons/moonshot.svg";
-import i_zhipu_color from "@lobehub/icons-static-svg/icons/zhipu-color.svg";
-import i_xai from "@lobehub/icons-static-svg/icons/xai.svg";
-import i_grok from "@lobehub/icons-static-svg/icons/grok.svg";
-import i_anthropic from "@lobehub/icons-static-svg/icons/anthropic.svg";
-import i_groq from "@lobehub/icons-static-svg/icons/groq.svg";
-import i_openrouter_color from "@lobehub/icons-static-svg/icons/openrouter-color.svg";
-export const BRAND_ICONS = {"deepseek-color": i_deepseek_color, "gemma-color": i_gemma_color, "google-color": i_google_color, "qwen-color": i_qwen_color, "mistral-color": i_mistral_color, "meta-color": i_meta_color, "cohere-color": i_cohere_color, "nvidia-color": i_nvidia_color, "microsoft-color": i_microsoft_color, "openai": i_openai, "moonshot": i_moonshot, "zhipu-color": i_zhipu_color, "xai": i_xai, "grok": i_grok, "anthropic": i_anthropic, "groq": i_groq, "openrouter-color": i_openrouter_color};
+import { MODELS, DEFAULT_MODEL } from "./models.js";
+
 const AI_URL = "https://text.pollinations.ai/openai", AI_PROXY = "https://edupage-proxy.loduur.workers.dev/ai";
-export async function loadModels() { try { const r = await fetch(`${AI_PROXY}/models`, { headers: { "X-Access-Key": accessKey() } }); if (!r.ok) throw 0; const d = await r.json(); return d.models || []; } catch { return []; } }
-export async function chat(model, messages) {
-  try { const r = await fetch(`${AI_PROXY}/chat`, { method: "POST", headers: { "Content-Type": "text/plain", "X-Access-Key": accessKey() }, body: JSON.stringify({ model, messages }) }); const d = await r.json(); if (r.ok && d.content) return { content: d.content, model: d.model }; } catch {}
-  const body = JSON.stringify({ model: "openai", messages, temperature: 0.3 });
-  for (let a = 0; a < 2; a++) { try { const r = await fetch(AI_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body }); if (r.ok) { const d = await r.json(); const c = d.choices?.[0]?.message?.content; if (c) return { content: c, model: "pollinations" }; } } catch {} await new Promise(r => setTimeout(r, 1500)); }
+
+export async function loadModels() {
+  try { const r = await fetch(`${AI_PROXY}/models`, { headers: { "X-Access-Key": accessKey() } }); if (!r.ok) throw 0; const d = await r.json(); const ids = new Set((d.models || []).map(m => m.id)); const list = MODELS.filter(m => ids.has(m.id)); return list.length ? list : MODELS; } catch { return MODELS; }
+}
+
+const splitThink = raw => { const m = raw.match(/^\s*<think>([\s\S]*?)(?:<\/think>|$)([\s\S]*)$/); return m ? { reasoning: m[1].trim(), content: m[2].replace(/^\s+/, "") } : { reasoning: "", content: raw }; };
+
+// Streams one chat completion. onUpdate receives the full accumulated { content, reasoning } every time new tokens arrive.
+export async function chat(model, messages, { signal, onUpdate } = {}) {
+  const t0 = performance.now();
+  const st = { raw: "", reasoning: "", model: model || DEFAULT_MODEL, provider: "", usage: null, first: 0, streamed: false };
+  const emit = () => { const s = splitThink(st.raw); onUpdate?.({ content: s.content, reasoning: (st.reasoning + (st.reasoning && s.reasoning ? "\n" : "") + s.reasoning).trim(), model: st.model }); };
+  const push = (text, reasoning) => { if (!st.first && (text || reasoning)) st.first = performance.now(); if (text) st.raw += text; if (reasoning) st.reasoning += reasoning; emit(); };
+  const finish = () => {
+    const end = performance.now(), s = splitThink(st.raw);
+    const tokens = st.usage?.completion_tokens || 0, estimated = !tokens, count = tokens || Math.round((st.raw.length + st.reasoning.length) / 4);
+    const gen = Math.max(1, end - (st.streamed && st.first ? st.first : t0));
+    return { content: s.content, reasoning: (st.reasoning + (st.reasoning && s.reasoning ? "\n" : "") + s.reasoning).trim(), model: st.model, provider: st.provider, metrics: { ms: Math.round(end - t0), ttft: st.first ? Math.round(st.first - t0) : 0, tokens: count, estimated, tps: count / (gen / 1000) } };
+  };
+  const consume = async r => {
+    const type = r.headers.get("content-type") || "";
+    if (!type.includes("text/event-stream")) {
+      const d = await r.json(); if (d.error) throw new Error(typeof d.error === "string" ? d.error : d.error.message || "AI error");
+      const c = d.content ?? d.choices?.[0]?.message?.content; if (!c) throw new Error("empty");
+      if (d.model) st.model = d.model; if (d.provider) st.provider = d.provider; if (d.usage) st.usage = d.usage;
+      push(c, d.reasoning || d.choices?.[0]?.message?.reasoning || ""); return;
+    }
+    st.streamed = true;
+    const reader = r.body.getReader(), dec = new TextDecoder(); let buf = "", got = false;
+    for (;;) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue; const data = line.slice(5).trim(); if (!data || data === "[DONE]") continue;
+        let j; try { j = JSON.parse(data); } catch { continue; }
+        if (j.error) throw new Error(j.error.message || String(j.error));
+        if (j.model) st.model = j.model; if (j.provider) st.provider = j.provider; if (j.usage) st.usage = j.usage;
+        const d = j.choices?.[0]?.delta || {}; const c = d.content || "", re = d.reasoning || d.reasoning_content || "";
+        if (c || re) { got = true; push(c, re); }
+      }
+    }
+    if (!got) throw new Error("empty");
+  };
+  try {
+    const r = await fetch(`${AI_PROXY}/chat`, { method: "POST", headers: { "Content-Type": "text/plain", "X-Access-Key": accessKey(), Accept: "text/event-stream" }, body: JSON.stringify({ model: st.model, messages, stream: true }), signal });
+    if (!r.ok) throw new Error("proxy " + r.status);
+    await consume(r); return finish();
+  } catch (e) { if (e.name === "AbortError") return finish(); }
+  st.raw = ""; st.reasoning = ""; st.first = 0; st.streamed = false; st.provider = "pollinations"; st.model = "openai";
+  for (let a = 0; a < 2; a++) {
+    try { const r = await fetch(AI_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ model: "openai", messages, temperature: 0.3, stream: true }), signal }); if (r.ok) { await consume(r); return finish(); } }
+    catch (e) { if (e.name === "AbortError") return finish(); }
+    await new Promise(r => setTimeout(r, 1500));
+  }
   throw new Error("The AI service is not reachable right now.");
 }
-// brand icon for a model id (LobeHub static SVGs)
-const BRANDS = [["deepseek", "deepseek-color"], ["gemma", "gemma-color"], ["google", "google-color"], ["qwen", "qwen-color"], ["mistral", "mistral-color"], ["meta-llama", "meta-color"], ["llama", "meta-color"], ["cohere", "cohere-color"], ["nvidia", "nvidia-color"], ["microsoft", "microsoft-color"], ["openai", "openai"], ["gpt", "openai"], ["moonshot", "moonshot"], ["zhipu", "zhipu-color"], ["glm", "zhipu-color"], ["x-ai", "xai"], ["grok", "grok"], ["anthropic", "anthropic"], ["claude", "anthropic"], ["groq", "groq"]];
-export function brandOf(id = "") { const l = id.toLowerCase(); for (const [k, v] of BRANDS) if (l.includes(k)) return v; return l.includes("pollinations") ? "openai" : "openrouter-color"; }

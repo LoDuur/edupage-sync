@@ -13,19 +13,32 @@ export function mountEditor(el, opts) {
   if (editor) { if (container !== el) { el.appendChild(container); editor.layout(); } return editor; }
   container = document.createElement("div"); container.style.cssText = "position:absolute;inset:0"; el.appendChild(container);
   editor = monaco.editor.create(container, {
-    theme: "obsidian", fontFamily: '"JetBrains Mono","Fira Code",Menlo,monospace', fontSize: opts.fontSize, lineHeight: 22, fontLigatures: true, automaticLayout: true,
+    theme: "obsidian", fontFamily: '"Geist Mono","JetBrains Mono",ui-monospace,Menlo,monospace', fontSize: opts.fontSize, lineHeight: Math.round(opts.fontSize * 1.6), fontLigatures: false, automaticLayout: true, lineNumbers: gutterNumber,
     minimap: { enabled: opts.minimap, renderCharacters: false }, scrollBeyondLastLine: false, renderLineHighlight: "line", cursorBlinking: "smooth", cursorSmoothCaretAnimation: "on", smoothScrolling: true,
     padding: { top: 14, bottom: 80 }, wordWrap: opts.wrap ? "on" : "off", bracketPairColorization: { enabled: true }, tabSize: 4, insertSpaces: true, guides: { indentation: true, bracketPairs: false },
     suggest: { showWords: true, preview: true }, quickSuggestions: { other: true, comments: false, strings: false }, roundedSelection: true, scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8, useShadows: false },
     lineNumbersMinChars: 4, glyphMargin: false, folding: true, renderWhitespace: "none", overviewRulerBorder: false, hideCursorInOverviewRuler: true, stickyScroll: { enabled: false },
   });
-  editor.onDidChangeModelContent(() => { const s = useStore.getState(); const t = s.tabs.find(x => x.id === s.activeTab); if (t && t.kind === "file") saveDraft(t.lang, editor.getValue()); });
+  editor.onDidChangeModelContent(() => { const s = useStore.getState(); const t = s.tabs.find(x => x.id === s.activeTab); if (t && t.kind === "file") { saveDraft(t.lang, editor.getValue()); clearTimeout(saveTimer); saveTimer = setTimeout(() => useStore.getState().markSaved(), 600); } refreshGutter(); });
+  editor.onDidChangeModel(refreshGutter);
+  document.fonts?.ready.then(() => monaco.editor.remeasureFonts());
   for (const f of listeners) f(editor);
   return editor;
 }
+let saveTimer = 0, gutterLast = -1, gutterTimer = 0;
+const gutterNumber = n => n <= gutterLast + 8 ? String(n) : "";
+function refreshGutter() {
+  clearTimeout(gutterTimer);
+  gutterTimer = setTimeout(() => { const m = editor?.getModel(); if (!m) return; let last = m.getLineCount(); while (last > 1 && !m.getLineContent(last).trim()) last--; if (last !== gutterLast) { gutterLast = last; editor.updateOptions({ lineNumbers: n => gutterNumber(n) }); } }, 80);
+}
+export function applyIndent(lang) {
+  const d = LANGUAGES[lang], ind = useStore.getState().indents[lang] || { size: d.indent, tabs: false };
+  const m = models[lang]; if (m) m.updateOptions({ tabSize: ind.size, insertSpaces: !ind.tabs });
+  return ind;
+}
 export const getEditor = () => editor;
 export function fileModel(lang) {
-  if (!models[lang]) { const d = LANGUAGES[lang]; models[lang] = monaco.editor.createModel(loadDraft(lang), d.monaco, monaco.Uri.parse(`inmemory://28teh/${d.file}`)); models[lang].updateOptions({ tabSize: d.indent, insertSpaces: true }); }
+  if (!models[lang]) { const d = LANGUAGES[lang]; models[lang] = monaco.editor.createModel(loadDraft(lang), d.monaco, monaco.Uri.parse(`inmemory://28teh/${d.file}`)); applyIndent(lang); }
   return models[lang];
 }
 export function extraModel(id, code, lang) { if (!extraModels[id]) extraModels[id] = monaco.editor.createModel(code, LANGUAGES[lang].monaco); return extraModels[id]; }
