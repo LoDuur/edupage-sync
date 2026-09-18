@@ -1,5 +1,5 @@
 /* Live Coding: sesija tabulā live_sessions, kods (pēc izvēles šifrēts ar paroli) atjaunojas caur Supabase Realtime */
-const LIVE = (() => {
+export const LIVE = (() => {
   const URL = "https://jlxnlqkwdshhywdprrtq.supabase.co";
   const KEY = "sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
   const HEAD = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };

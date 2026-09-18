@@ -1,5 +1,5 @@
 /* PIL (github.com/Acerx-AMJ/PIL): completion data, examples, language reference for the AI */
-const PIL = (() => {
+export const PIL = (() => {
   const B = {
     "print": "VALUE, … · print without newline", "println": "VALUE, … · print with newline", "printf": "FORMAT, … · {} substituted", "printfln": "FORMAT, … · {} substituted + newline", "printch": "CHAR",
     "read": "DEST · read a word", "readln": "DEST · read a line", "readch": "DEST · read a char", "setecho": "0|1",

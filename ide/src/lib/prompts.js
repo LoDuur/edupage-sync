@@ -1,5 +1,5 @@
 /* AI assistant instructions: shared role + language specifics + quick actions */
-const PROMPTS = (() => {
+export const PROMPTS = (() => {
   const CORE = `# Role
 You are an experienced programming teacher for second-year students at Valmiera Technical School (group 28). They are beginners learning to think algorithmically; your goal is that the student understands AND the code works.
 

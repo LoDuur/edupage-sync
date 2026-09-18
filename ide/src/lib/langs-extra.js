@@ -1,5 +1,5 @@
 /* Extra languages (Wandbox): Python, C, C++, C#, Lua – templates, completion, EOF detection */
-const LANGS_EXTRA = (() => {
+export const LANGS_EXTRA = (() => {
   const NEED = "\x1e__NEED_INPUT__\x1e";
   const CSHIM = `#include <stdio.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
-const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123"];
+const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
 const OPENROUTER = "https://openrouter.ai/api/v1";
 const GROQ = "https://api.groq.com/openai/v1";
 const GROQ_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
