@@ -1,4 +1,4 @@
-/* Java: pabeigšanas dati, fragmenti, sagatave (izpilde – Wandbox OpenJDK 22) */
+/* Java: completion data, snippets, template (runs on Wandbox OpenJDK 22) */
 const JAVA = (() => {
   const KEYWORDS = "abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try var void volatile while true false null record sealed permits yield".split(" ");
   const API = "String Integer Double Boolean Character Long Math Object System Scanner ArrayList List HashMap Map HashSet Set Arrays Collections Random StringBuilder Exception RuntimeException IllegalArgumentException NumberFormatException InputMismatchException Thread Iterator Optional LocalDate BufferedReader InputStreamReader IOException Comparable Comparator Objects Stream IntStream".split(" ");
@@ -6,44 +6,44 @@ const JAVA = (() => {
   const SNIPPETS = {
     sout: { text: "System.out.println();", cur: -2, k: "System.out.println();" },
     souf: { text: "System.out.printf(\"%n\");", cur: -6, k: "printf" },
-    psvm: { text: "public static void main(String[] args) {\n    \n}", cur: { line: 1 }, k: "main metode" },
-    fori: { text: "for (int i = 0; i < n; i++) {\n    \n}", cur: { line: 1 }, k: "for cikls" },
+    psvm: { text: "public static void main(String[] args) {\n    \n}", cur: { line: 1 }, k: "main method" },
+    fori: { text: "for (int i = 0; i < n; i++) {\n    \n}", cur: { line: 1 }, k: "for loop" },
     foreach: { text: "for (int x : arr) {\n    \n}", cur: { line: 1 }, k: "for-each" },
-    whilel: { text: "while (true) {\n    \n}", cur: { line: 1 }, k: "while cikls" },
+    whilel: { text: "while (true) {\n    \n}", cur: { line: 1 }, k: "while loop" },
     ifel: { text: "if () {\n    \n} else {\n    \n}", cur: { line: 1 }, k: "if / else" },
     sc: { text: "Scanner in = new Scanner(System.in);", cur: 0, k: "Scanner" },
     trycatch: { text: "try {\n    \n} catch (Exception e) {\n    System.out.println(e.getMessage());\n}", cur: { line: 1 }, k: "try / catch" },
-    arr: { text: "int[] arr = new int[n];", cur: 0, k: "masīvs" },
+    arr: { text: "int[] arr = new int[n];", cur: 0, k: "array" },
     list: { text: "ArrayList<Integer> list = new ArrayList<>();", cur: 0, k: "ArrayList" },
     map: { text: "HashMap<String, Integer> map = new HashMap<>();", cur: 0, k: "HashMap" },
-    method: { text: "public static int name(int a) {\n    return a;\n}", cur: 0, k: "metode" },
-    cls: { text: "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}", cur: { line: 2 }, k: "klase" },
+    method: { text: "public static int name(int a) {\n    return a;\n}", cur: 0, k: "method" },
+    cls: { text: "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}", cur: { line: 2 }, k: "class" },
   };
   const TEMPLATE = `import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        System.out.println("Sveika, pasaule!");
+        System.out.println("Hello, world!");
     }
 }
 `;
   const EXAMPLES = [
-    { name: "Sveika, pasaule", code: TEMPLATE },
-    { name: "Ievade (Scanner)", code: `import java.util.*;
+    { name: "Hello, world", code: TEMPLATE },
+    { name: "Input (Scanner)", code: `import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        System.out.print("Tavs vārds: ");
+        System.out.print("Your name: ");
         String name = in.nextLine();
-        System.out.print("Vecums: ");
+        System.out.print("Age: ");
         int age = Integer.parseInt(in.nextLine().trim());
-        System.out.printf("Sveiks, %s! Nākamgad tev būs %d.%n", name, age + 1);
+        System.out.printf("Hello, %s! Next year you will be %d.%n", name, age + 1);
     }
 }
 ` },
-    { name: "Cikli un masīvi", code: `import java.util.*;
+    { name: "Loops and arrays", code: `import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -51,14 +51,14 @@ public class Main {
         Arrays.sort(arr);
         int sum = 0;
         for (int x : arr) sum += x;
-        System.out.println("masīvs " + Arrays.toString(arr));
-        System.out.println("summa = " + sum);
+        System.out.println("array " + Arrays.toString(arr));
+        System.out.println("sum = " + sum);
         for (int i = 1; i <= 5; i++) System.out.print(i * i + " ");
         System.out.println();
     }
 }
 ` },
-    { name: "Metodes un rekursija", code: `public class Main {
+    { name: "Methods and recursion", code: `public class Main {
     static long factorial(int n) {
         return n <= 1 ? 1 : n * factorial(n - 1);
     }
@@ -76,7 +76,7 @@ public class Main {
     }
 }
 ` },
-    { name: "Klase un objekti", code: `import java.util.*;
+    { name: "Class and objects", code: `import java.util.*;
 
 public class Main {
     static class Student {
