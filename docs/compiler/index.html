@@ -2,174 +2,179 @@
 <html lang="lv">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Kompilators</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
+<title>28teh</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230d1117'/><text x='16' y='21' font-family='monospace' font-size='13' font-weight='700' fill='%2358a6ff' text-anchor='middle'>28</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.css">
-<link rel="stylesheet" href="ui.css?v=3">
+<link rel="stylesheet" href="ui.css?v=4">
 <style>
-body{display:flex;flex-direction:column;min-height:100vh}
-main{position:relative;z-index:1;flex:1;max-width:1500px;width:100%;margin:0 auto;padding:.6rem 1.2rem 1rem;display:grid;grid-template-columns:minmax(0,3fr) minmax(320px,2fr);gap:.8rem;min-height:0}
-.CodeMirror{flex:1;height:auto;min-height:440px;font:14px/1.6 var(--mono);background:transparent;color:var(--ink)}
-.cm-s-material-darker.CodeMirror{background:transparent}
-.cm-s-material-darker .CodeMirror-gutters{background:rgba(255,255,255,.03);border-right:1px solid var(--line)}
-.cm-s-material-darker .CodeMirror-linenumber{color:var(--ink-3)}
-.cm-s-material-darker .CodeMirror-activeline-background{background:rgba(255,255,255,.035)}
-.cm-s-material-darker .cm-keyword{color:#c3a6ff}.cm-s-material-darker .cm-string,.cm-s-material-darker .cm-string-2{color:#dcf0c8}.cm-s-material-darker .cm-def{color:#9fe28a}.cm-s-material-darker .cm-variable-3,.cm-s-material-darker .cm-type,.cm-s-material-darker .cm-builtin{color:#f5c26b}.cm-s-material-darker .cm-comment{color:var(--ink-3)}.cm-s-material-darker .cm-number{color:#ffb86b}.cm-s-material-darker .cm-variable-2{color:#7fd4ff}.cm-s-material-darker .cm-atom{color:#ff9ecb}.cm-s-material-darker .cm-meta{color:#c3a6ff}
-.CodeMirror-hints{background:#070b08;border:1px solid var(--line-2);border-radius:0;box-shadow:0 12px 30px -12px rgba(0,0,0,.8);font:12.5px var(--mono);padding:.2rem;z-index:100}
-.CodeMirror-hint{color:var(--ink);padding:.15rem .5rem}
-li.CodeMirror-hint-active{background:var(--fern);color:var(--pine)}
-.CodeMirror-hint .k{opacity:.5;font-size:.75em;margin-left:.6em}
-.cm-err-line{background:rgba(255,107,107,.14)}
-.err-gutter{color:var(--red);font-weight:700;font-size:.8em}
-.CodeMirror-dialog{background:#070b08;color:var(--ink);border-bottom:1px solid var(--line);font:.8rem var(--mono)}
-.CodeMirror-dialog input{font:inherit;color:var(--ink);background:rgba(0,0,0,.4);border:1px solid var(--line-2);padding:.1rem .4rem}
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.top{display:flex;align-items:center;gap:.5rem;height:44px;padding:0 .75rem;border-bottom:1px solid var(--line);background:var(--bg);flex-shrink:0}
+.brand{font:600 14px var(--mono);color:var(--fg);letter-spacing:-.01em;padding-right:.25rem}
+.file{font:12.5px var(--mono);color:var(--fg-2);margin-left:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font:11px var(--mono);padding:1px 6px;border-radius:4px;border:1px solid var(--line-2);color:var(--fg-2)}
+.badge.live{border-color:var(--red);color:var(--red)}
+.badge.live.off{border-color:var(--line-2);color:var(--fg-3)}
+.sp{flex:1}
+.menu{position:relative}
+.menu-list{position:absolute;right:0;top:32px;min-width:200px;background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:.3rem;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.menu-list button,.menu-list a{display:flex;width:100%;align-items:center;gap:.5rem;padding:.38rem .6rem;border-radius:5px;font-size:12.5px;color:var(--fg);text-align:left}
+.menu-list button:hover,.menu-list a:hover{background:var(--bg-3)}
+.menu-list button:disabled{opacity:.4}
+.menu-list .k{margin-left:auto;font:11px var(--mono);color:var(--fg-3)}
+.menu-list hr{border:0;border-top:1px solid var(--line);margin:.3rem 0}
+.menu-list .h{padding:.3rem .6rem .1rem;font-size:11px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.06em}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,var(--split,58%)) 6px minmax(280px,1fr)}
+.editor{min-width:0;min-height:0;display:flex;flex-direction:column}
+.gutter{background:var(--bg);border-left:1px solid var(--line);cursor:col-resize}
+.gutter:hover,.gutter.on{background:var(--line)}
+.side{min-width:0;min-height:0;display:flex;flex-direction:column}
+.CodeMirror{flex:1;height:auto;font:var(--fs,13.5px)/1.6 var(--mono);background:var(--bg);color:var(--fg)}
+.CodeMirror-gutters{background:var(--bg);border-right:1px solid var(--line)}
+.CodeMirror-linenumber{color:var(--fg-3)}
+.CodeMirror-cursor{border-left:1.5px solid var(--fg)}
+.CodeMirror-activeline-background{background:rgba(255,255,255,.03)}
+.CodeMirror-selected{background:rgba(88,166,255,.18)!important}
+.CodeMirror-matchingbracket{color:var(--fg)!important;outline:1px solid var(--line-2)}
+.cm-keyword{color:#ff7b72}.cm-string,.cm-string-2{color:#a5d6ff}.cm-def{color:#d2a8ff}.cm-variable-3,.cm-type,.cm-builtin{color:#ffa657}.cm-comment{color:#8b949e}.cm-number{color:#79c0ff}.cm-variable-2{color:#7ee787}.cm-atom{color:#79c0ff}.cm-meta{color:#d2a8ff}.cm-operator{color:var(--fg)}
+.cm-err-line{background:rgba(248,81,73,.1)}
+.cm-warn-line{background:rgba(210,153,34,.08)}
+.err-gutter{color:var(--red);font-size:.75em;line-height:1}
+.warn-gutter{color:var(--amber);font-size:.75em;line-height:1}
+.lint{font:12px/1.4 var(--mono);color:var(--red);padding:2px 8px 4px 2.2rem;background:rgba(248,81,73,.06);border-top:1px solid rgba(248,81,73,.15);white-space:pre-wrap}
+.lint.w{color:var(--amber);background:rgba(210,153,34,.05);border-color:rgba(210,153,34,.15)}
+.CodeMirror-hints{background:var(--bg-2);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);font:12.5px var(--mono);padding:.2rem}
+.CodeMirror-hint{color:var(--fg);padding:.15rem .5rem;border-radius:4px}
+li.CodeMirror-hint-active{background:var(--accent);color:#0d1117}
+.CodeMirror-hint .k{opacity:.5;font-size:.8em;margin-left:.6em}
+.CodeMirror-dialog{background:var(--bg-2);color:var(--fg);border-bottom:1px solid var(--line);font:12.5px var(--mono)}
+.CodeMirror-dialog input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:.1rem .4rem}
+.tabs{display:flex;align-items:center;gap:.1rem;height:36px;padding:0 .5rem;border-bottom:1px solid var(--line);flex-shrink:0}
+.tab{height:36px;padding:0 .6rem;font-size:12.5px;color:var(--fg-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--fg)}
+.tab.on{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs .st{font:12px var(--mono);color:var(--fg-3);margin-left:auto;padding:0 .4rem;white-space:nowrap}
+.tabs .st.run{color:var(--amber)}.tabs .st.ok{color:var(--green)}.tabs .st.err{color:var(--red)}
+.tabs .x{width:26px;height:26px;border-radius:5px;color:var(--fg-3);font-size:14px}
+.tabs .x:hover{background:var(--bg-3);color:var(--fg)}
 .term{flex:1;display:flex;flex-direction:column;min-height:0}
-.out{flex:1;margin:0;padding:.8rem .9rem;font:13px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;overflow:auto;min-height:170px;color:var(--ink)}
-.out .e{color:var(--red)}.out .d{color:var(--ink-3)}.out .w{color:var(--amber)}.out .h{color:var(--sprout)}
-.out .in{color:#7fd4ff}
-.out .in::before{content:"❯ ";color:var(--ink-3)}
-.tin{display:flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-top:1px solid var(--line);font:13px var(--mono)}
-.tin .ps{color:var(--ink-3);white-space:nowrap;letter-spacing:.04em}
+.out{flex:1;margin:0;padding:.6rem .8rem;font:var(--fs,13px)/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;overflow:auto;color:var(--fg)}
+.out .e{color:var(--red)}.out .d{color:var(--fg-3)}.out .w{color:var(--amber)}.out .h{color:var(--fg-2)}
+.out .in{color:var(--blue)}
+.out .in::before{content:"› ";color:var(--fg-3)}
+.diag{margin:.3rem 0 .2rem;border-left:2px solid var(--red);padding:.15rem 0 .15rem .6rem;font-size:12.5px;white-space:normal}
+.diag.w{border-color:var(--amber)}
+.diag .dg{display:block;width:100%;text-align:left;font:12.5px/1.5 var(--mono);color:var(--fg);padding:.1rem .3rem;border-radius:4px}
+.diag .dg:hover{background:var(--bg-3)}
+.diag .dg b{color:var(--red);font-weight:600}
+.diag .dg.w b{color:var(--amber)}
+.diag .dg .ln{color:var(--fg-2)}
+.diag .dg .hint{display:block;color:var(--fg-2);font-size:12px;padding-left:1.1rem}
+.diag details{margin:.2rem .3rem 0;color:var(--fg-3);font-size:12px}
+.diag summary{cursor:pointer;user-select:none}
+.diag pre{margin:.3rem 0 0;color:var(--fg-3);font:12px/1.45 var(--mono);white-space:pre-wrap}
+.diag .ask{margin:.25rem .3rem 0;font-size:12px;color:var(--accent)}
+.tin{display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;border-top:1px solid var(--line);font:var(--fs,13px) var(--mono);flex-shrink:0}
+.tin .ps{color:var(--fg-3);white-space:nowrap}
 .tin.wait .ps{color:var(--amber)}
-.tin.wait .ps::after{content:"▏";animation:blink 1.4s steps(2) infinite}
-@keyframes blink{50%{opacity:0}}
-.tin input{flex:1;background:none;border:0;outline:0;font:inherit;color:#7fd4ff;min-width:0}
-.tin input::placeholder{color:var(--ink-3)}
+.tin input{flex:1;background:none;border:0;outline:0;font:inherit;color:var(--blue);min-width:0}
+.tin input::placeholder{color:var(--fg-3)}
 .tin input:disabled{opacity:.5}
 .list{flex:1;overflow:auto}
-.item{display:flex;flex-direction:column;gap:.1rem;padding:.6rem .9rem;border-bottom:1px solid var(--line);cursor:pointer;color:var(--ink)}
-.item::before{content:"› ";color:var(--ink-3);float:left}
-.item:hover{background:var(--panel-2)}
-.item b{font-size:.84rem;font-weight:600}
-.item small{color:var(--ink-3);font-size:.68rem;letter-spacing:.06em}
-.item.on{background:rgba(120,184,107,.12);border-left:2px solid var(--fern)}
-.empty{padding:1.5rem;color:var(--ink-3);text-align:center;font-size:.8rem;letter-spacing:.08em}
-.viewbar{display:flex;gap:.5rem;align-items:center;padding:.5rem .8rem;border-top:1px solid var(--line);font-size:.72rem;color:var(--ink-2);flex-wrap:wrap}
-.ro{background:var(--amber);color:#000;font-size:.58rem;font-weight:700;padding:.05rem .4rem;text-transform:uppercase;letter-spacing:.1em}
-.livebadge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,107,107,.22);border:1px solid var(--red);color:var(--ink);font-size:.58rem;font-weight:700;padding:.05rem .45rem;text-transform:uppercase;letter-spacing:.14em}
-.livebadge::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
-.livebadge.off{background:var(--line-2);color:var(--ink)}.livebadge.off::before{animation:none;opacity:.5}
-.btn.live-on{border-color:var(--red);color:#fff;background:rgba(255,107,107,.25)}
-.btn.live-on:hover{background:var(--red);color:#fff}
-.zoom{display:inline-flex;gap:.1rem}
-.zoom button{padding:.3rem .5rem;font-size:.72rem;color:var(--ink-2);border:1px solid transparent}
-.zoom button:hover{border-color:var(--line-2);color:var(--ink)}
-select.ex{background:rgba(0,0,0,.35);border:1px solid var(--line-2);color:var(--sprout);font:600 .68rem var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:.42rem .5rem;max-width:12rem;cursor:pointer}
-select.ex.lang{color:var(--ink);border-color:var(--fern)}
-.doc{flex:1;overflow:auto;padding:.7rem .9rem;font-size:.8rem;line-height:1.6;color:var(--ink-2)}
-.doc h4{margin:.9rem 0 .3rem;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--sprout)}
-.doc h4:first-child{margin-top:0}
-.doc code{color:var(--ink);background:rgba(0,0,0,.35);padding:0 .3rem}
-.doc pre{margin:.3rem 0 .6rem;padding:.5rem .6rem;background:rgba(0,0,0,.4);border:1px solid var(--line);font:12.5px/1.5 var(--mono);color:var(--ink);white-space:pre-wrap}
-.doc .fn{display:flex;flex-wrap:wrap;gap:.25rem .5rem}
-.doc .fn code{cursor:pointer}
-.doc .fn code:hover{background:var(--fern);color:var(--pine)}
+.item{display:flex;flex-direction:column;gap:.1rem;padding:.5rem .8rem;border-bottom:1px solid var(--line);cursor:pointer}
+.item:hover{background:var(--bg-2)}
+.item b{font-size:13px;font-weight:500}
+.item small{color:var(--fg-3);font-size:11.5px}
+.item.on{background:var(--bg-3)}
+.empty{padding:1.5rem;color:var(--fg-3);text-align:center;font-size:12.5px}
+.viewbar{display:flex;gap:.5rem;align-items:center;padding:.4rem .8rem;border-top:1px solid var(--line);font-size:12px;color:var(--fg-2);flex-wrap:wrap;flex-shrink:0}
 .ai{flex:1;display:flex;flex-direction:column;min-height:0}
-.ai-quick{display:flex;flex-wrap:wrap;gap:.35rem;padding:.55rem .8rem;border-bottom:1px solid var(--line)}
-.ai-quick button{padding:.25rem .6rem;border:1px solid var(--line-2);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
-.ai-quick button:hover{background:var(--ink);color:var(--bg)}
-.ai-quick select{max-width:15rem;background:rgba(0,0,0,.35);border:1px solid var(--line-2);color:var(--sprout);font:.66rem var(--mono);letter-spacing:.06em;padding:.25rem .4rem}
-.msg-a .prov{display:block;margin-top:.3rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
-.ai-log{flex:1;overflow:auto;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.6rem;font-size:.82rem}
-.msg-u{align-self:flex-end;border:1px solid var(--fern);color:var(--sprout);padding:.4rem .7rem;max-width:90%;white-space:pre-wrap}
-.msg-u::before{content:"❯ ";color:var(--fern)}
-.msg-a{align-self:flex-start;border-left:2px solid var(--line-2);padding:.2rem .75rem;max-width:95%;white-space:pre-wrap;line-height:1.55;color:var(--ink)}
-.msg-a pre{background:rgba(0,0,0,.4);border:1px solid var(--line);padding:.5rem .6rem;font:12.5px/1.5 var(--mono);white-space:pre-wrap;margin:.4rem 0;position:relative}
-.msg-a pre .ins{position:absolute;top:.3rem;right:.3rem;font-size:.6rem;padding:.15rem .45rem;border:1px solid var(--fern);color:var(--sprout);letter-spacing:.1em;text-transform:uppercase}
-.msg-a pre .ins:hover{background:var(--fern);color:var(--pine)}
-.msg-a .thinking{color:var(--ink-3)}
+.ai-quick{display:flex;flex-wrap:wrap;gap:.3rem;padding:.5rem .8rem;border-bottom:1px solid var(--line)}
+.ai-quick button{padding:.2rem .55rem;border:1px solid var(--line);border-radius:12px;font-size:12px;color:var(--fg-2)}
+.ai-quick button:hover{background:var(--bg-3);color:var(--fg)}
+.ai-quick select{max-width:14rem;height:24px;font-size:12px;padding:0 1.4rem 0 .5rem}
+.ai-log{flex:1;overflow:auto;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.6rem;font-size:13px}
+.msg-u{align-self:flex-end;background:var(--bg-3);border-radius:8px 8px 2px 8px;padding:.4rem .7rem;max-width:90%;white-space:pre-wrap}
+.msg-a{align-self:flex-start;max-width:96%;white-space:pre-wrap;line-height:1.55}
+.msg-a pre{background:var(--bg-2);border:1px solid var(--line);border-radius:6px;padding:.5rem .6rem;font:12.5px/1.5 var(--mono);white-space:pre-wrap;margin:.4rem 0;position:relative}
+.msg-a pre .ins{position:absolute;top:.3rem;right:.3rem;font-size:11px;padding:.1rem .45rem;border:1px solid var(--line-2);border-radius:4px;color:var(--fg-2);background:var(--bg-2)}
+.msg-a pre .ins:hover{color:var(--fg);border-color:var(--fg-3)}
+.msg-a code{background:var(--bg-2);padding:0 .25rem;border-radius:3px;font-family:var(--mono);font-size:12px}
+.msg-a .prov{display:block;margin-top:.25rem;font-size:11px;color:var(--fg-3)}
+.msg-a .thinking{color:var(--fg-3)}
 .ai-in{display:flex;gap:.4rem;padding:.5rem .8rem;border-top:1px solid var(--line)}
-.ai-in .field{flex:1;padding:.35rem .7rem}
-.ai-in textarea{resize:none;height:1.6rem;max-height:8rem;line-height:1.5}
-@media (max-width:900px){main{grid-template-columns:1fr;padding:.6rem .8rem}.CodeMirror{min-height:300px}}
+.ai-in .field{flex:1;height:auto;min-height:32px;padding:.25rem .6rem}
+.ai-in textarea{flex:1;resize:none;height:1.5rem;max-height:8rem;line-height:1.5;background:none;border:0;outline:0;color:var(--fg)}
+.status{display:flex;align-items:center;gap:1rem;height:24px;padding:0 .75rem;border-top:1px solid var(--line);font:11.5px var(--mono);color:var(--fg-3);flex-shrink:0;white-space:nowrap;overflow:hidden}
+.status .sp{flex:1}
+@media (max-width:820px){main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 6px minmax(0,1fr)}.gutter{cursor:row-resize;border-left:0;border-top:1px solid var(--line)}.top .hide-m{display:none}}
 </style>
 </head>
 <body>
-<div class="dither"><canvas id="dither"></canvas></div>
-<div class="frame"><i></i><i></i><i></i><i></i></div>
-
-<header class="strip"><div class="strip-in">
-  <a class="wordmark" href="../" title="Stundu saraksts"><b>VAL</b>TEH</a>
-  <span class="vbar"></span><span class="tag" id="strip-tag">2.k. 28.grupa · Kompilators</span>
+<header class="top">
+  <a class="brand" href="../" title="Stundu saraksts">28teh</a>
+  <select class="sel" id="lang" title="Valoda"><option value="java">Java</option><option value="python">Python</option><option value="c">C</option><option value="cpp">C++</option><option value="csharp">C#</option><option value="lua">Lua</option><option value="pil">PIL</option></select>
+  <span class="file" id="file">Main.java</span>
+  <span class="badge" id="ro" hidden>tikai lasāms</span>
+  <span class="badge live" id="livebadge" hidden>live</span>
   <span class="sp"></span>
-  <nav class="nav"><a class="on" href="./">Kompilators</a><a href="works/">Darbi</a><a href="../">Saraksts</a></nav>
-  <span class="dot"></span><span class="tag" id="clock">--:--:--</span>
-</div></header>
-
-<div class="banner">
-  <pre id="ascii"></pre>
-  <div class="meta" id="meta"></div>
-  <span class="sp"></span>
-  <div style="display:flex;gap:.45rem;flex-wrap:wrap;align-items:center">
-    <select class="ex lang" id="lang" title="Programmēšanas valoda"><option value="java">Java</option><option value="python">Python</option><option value="c">C</option><option value="cpp">C++</option><option value="csharp">C#</option><option value="lua">Lua</option><option value="pil">PIL</option></select>
-    <select class="ex" id="examples" title="Piemēri"><option value="">piemēri…</option></select>
-    <span class="zoom"><button id="zoom-out" title="Mazāks fonts (Ctrl+-)">A−</button><button id="zoom-in" title="Lielāks fonts (Ctrl+=)">A+</button></span>
-    <button class="btn" id="format" title="Pārkārtot atkāpes (Shift+Alt+F)">Formatēt</button>
-    <button class="btn" id="new" title="Jauns fails">Jauns</button>
-    <button class="btn" id="save">Saglabāt</button>
-    <button class="btn" id="live">● Live Coding</button>
-    <button class="btn pri" id="run">▶ Palaist <kbd>Ctrl+↵</kbd></button>
-  </div>
-</div>
+  <button class="btn pri" id="run">▶ Palaist <kbd class="hide-m">Ctrl+↵</kbd></button>
+  <button class="btn" id="save">Saglabāt</button>
+  <button class="btn hide-m" id="live">Live</button>
+  <a class="btn hide-m" href="works/">Darbi</a>
+  <span class="menu"><button class="btn" id="more" title="Vairāk">⋯</button><div class="menu-list" id="menu" hidden></div></span>
+</header>
 
 <main>
-  <section class="panel" id="editor-pane">
-    <div class="panel-h"><span class="file" id="file">Main.java</span><span id="ro" class="ro" hidden>tikai lasāms</span><span id="livebadge" class="livebadge" hidden>live</span><span class="status" id="status"></span></div>
+  <section class="editor">
     <textarea id="code"></textarea>
-    <div class="viewbar" id="viewbar" hidden><span id="viewmeta"></span><span class="sp"></span><button class="btn sm" id="copylink">Kopēt saiti</button><button class="btn sm" id="fork">Atvērt redaktorā</button><button class="btn sm" id="live-end" hidden>Beigt Live</button></div>
+    <div class="viewbar" id="viewbar" hidden><span id="viewmeta"></span><span class="sp"></span><button class="btn sm" id="copylink">Kopēt saiti</button><button class="btn sm" id="fork">Rediģēt kopiju</button><button class="btn sm danger" id="live-end" hidden>Beigt live</button></div>
   </section>
-  <section class="panel" id="side">
-    <div class="panel-h"><button class="tab on" data-tab="out">Terminālis</button><button class="tab" data-tab="doc" id="tab-doc">Valoda</button><button class="tab" data-tab="list">Saglabātie <span id="cnt"></span></button><button class="tab" data-tab="ai">AI</button><span class="status" id="time"></span><button class="tab" id="clear" title="Notīrīt termināli">✕</button></div>
+  <div class="gutter" id="gutter"></div>
+  <section class="side">
+    <div class="tabs"><button class="tab on" data-tab="out">Terminālis</button><button class="tab" data-tab="ai">AI</button><button class="tab" data-tab="list">Saglabātie <span id="cnt"></span></button><span class="st" id="st"></span><button class="x" id="clear" title="Notīrīt termināli">✕</button></div>
     <div class="term" id="term">
       <pre class="out" id="out"></pre>
-      <div class="tin" id="tin"><span class="ps" id="ps">stdin ❯</span><input id="term-in" autocomplete="off" spellcheck="false" placeholder="ievade programmai · Enter"></div>
+      <div class="tin" id="tin"><span class="ps" id="ps">›</span><input id="term-in" autocomplete="off" spellcheck="false" placeholder="stdin"></div>
     </div>
-    <div class="doc" id="doc" hidden></div>
     <div class="list" id="list" hidden></div>
     <div class="ai" id="ai" hidden>
-      <div class="ai-quick"><select id="ai-model" title="Modelis"><option value="">modelis…</option></select><button data-q="err">Paskaidro kļūdu</button><button data-q="explain">Paskaidro kodu</button><button data-q="review">Atrodi kļūdas</button><button data-q="complete">Pabeidz kodu</button><button data-q="tests">Piemēra ievade</button><button data-q="task">Jauns uzdevums</button></div>
-      <div class="ai-log" id="ai-log"><div class="msg-a">Sveiks! Es redzu tavu kodu, ievadi un pēdējo izvadi. Jautā, lūdz paskaidrot kļūdu, pabeigt kodu vai izdomāt uzdevumu. <span class="thinking">Bezmaksas modeļi – pārbaudi atbildes, palaižot kodu.</span></div></div>
-      <div class="ai-in"><span class="field"><textarea id="ai-q" placeholder="jautājums par kodu… (Enter sūta, Shift+Enter jauna rinda)"></textarea></span><button class="btn pri" id="ai-send">Sūtīt</button></div>
+      <div class="ai-quick"><select class="sel" id="ai-model" title="Modelis"><option value="">modelis…</option></select><button data-q="err">Kļūda</button><button data-q="explain">Paskaidro</button><button data-q="review">Pārbaudi</button><button data-q="complete">Pabeidz</button><button data-q="tests">Ievades</button><button data-q="task">Uzdevums</button></div>
+      <div class="ai-log" id="ai-log"></div>
+      <div class="ai-in"><span class="field"><textarea id="ai-q" placeholder="Jautājums par kodu…"></textarea></span><button class="btn" id="ai-send">Sūtīt</button></div>
     </div>
   </section>
 </main>
 
-<footer class="foot"><div class="foot-in">
-  <span>SYSTEM.ACTIVE</span><span class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></span><span>V2.0.0</span><span class="dot"></span><span id="foot-engine">WANDBOX · OPENJDK 22</span>
-  <span class="sp"></span>
-  <span>◐ RENDERING</span><span class="pulse"><i></i><i></i><i></i></span><span>FRAME: ∞</span>
-</div></footer>
+<footer class="status"><span id="s-lang"></span><span id="s-time"></span><span class="sp"></span><span id="s-pos">1:1</span></footer>
 
 <div class="modal-bg" id="modal-bg"><div class="modal" role="dialog">
-  <h3>Saglabāt kodu</h3>
-  <label>Nosaukums</label><div class="field"><input id="m-title" maxlength="80" placeholder="piem. Mājasdarbs 3 – masīvi"></div>
-  <label>Autors</label><div class="field"><input id="m-author" maxlength="40" placeholder="vārds vai segvārds"></div>
-  <label>Atslēga</label><div class="field"><input id="m-key" type="password" autocomplete="off" placeholder="klases kods"></div>
+  <h3>Saglabāt</h3>
+  <label>Nosaukums</label><div class="field"><input id="m-title" maxlength="80"></div>
+  <label>Autors</label><div class="field"><input id="m-author" maxlength="40"></div>
+  <label>Klases kods</label><div class="field"><input id="m-key" type="password" autocomplete="off"></div>
   <div class="msg" id="m-msg"></div>
   <div class="row"><button class="btn" id="m-cancel">Atcelt</button><button class="btn pri" id="m-ok">Saglabāt</button></div>
-  <div class="msg">Saglabātais kods būs publiski redzams un vairs nebūs maināms.</div>
+  <div class="msg">Saglabātais kods ir publisks un nemaināms.</div>
 </div></div>
 
 <div class="modal-bg" id="live-bg"><div class="modal" role="dialog">
-  <h3>● Live Coding</h3>
-  <label>Sesijas nosaukums</label><div class="field"><input id="l-title" maxlength="80" placeholder="piem. Stunda: cikli"></div>
-  <label>Tavs vārds</label><div class="field"><input id="l-author" maxlength="40" placeholder="vārds vai segvārds"></div>
-  <label>Parole skatītājiem (nav obligāta)</label><div class="field"><input id="l-pass" type="password" autocomplete="new-password" placeholder="tukšs = bez paroles"></div>
-  <label>Klases atslēga</label><div class="field"><input id="l-key" type="password" autocomplete="off" placeholder="klases kods"></div>
+  <h3>Live Coding</h3>
+  <label>Nosaukums</label><div class="field"><input id="l-title" maxlength="80"></div>
+  <label>Tavs vārds</label><div class="field"><input id="l-author" maxlength="40"></div>
+  <label>Parole skatītājiem (nav obligāta)</label><div class="field"><input id="l-pass" type="password" autocomplete="new-password"></div>
+  <label>Klases kods</label><div class="field"><input id="l-key" type="password" autocomplete="off"></div>
   <div class="msg" id="l-msg"></div>
   <div class="row"><button class="btn" id="l-cancel">Atcelt</button><button class="btn pri" id="l-ok">Sākt</button></div>
-  <div class="msg">Skatītāji redzēs tavu kodu tiešraidē sadaļā „Darbi” un caur saiti. Ar paroli kods tiek šifrēts – bez tās neviens to neredz.</div>
 </div></div>
 
 <div class="modal-bg" id="lock-bg"><div class="modal" role="dialog">
-  <h3>Aizsargāta live sesija</h3>
+  <h3>Aizsargāta sesija</h3>
   <div class="msg" id="lock-title"></div>
-  <label>Parole</label><div class="field"><input id="lock-pass" type="password" autocomplete="off" placeholder="parole no vadītāja"></div>
+  <label>Parole</label><div class="field"><input id="lock-pass" type="password" autocomplete="off"></div>
   <div class="msg" id="lock-msg"></div>
   <div class="row"><button class="btn" id="lock-cancel">Atcelt</button><button class="btn pri" id="lock-ok">Skatīties</button></div>
 </div></div>
@@ -187,30 +192,26 @@ select.ex.lang{color:var(--ink);border-color:var(--fern)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/searchcursor.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/search.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/jump-to-line.min.js"></script>
-<script src="java-lang.js"></script>
-<script src="pil/pil-lang.js"></script>
-<script src="langs.js"></script>
-<script src="prompts.js"></script>
-<script src="live.js"></script>
-<script src="ui.js?v=3"></script>
+<script src="java-lang.js?v=4"></script>
+<script src="pil/pil-lang.js?v=4"></script>
+<script src="langs.js?v=4"></script>
+<script src="prompts.js?v=4"></script>
+<script src="live.js?v=4"></script>
+<script src="ui.js?v=4"></script>
 <script>
 const SUPABASE_URL="https://jlxnlqkwdshhywdprrtq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ElHsgwQvJYfgjdV1yhZugw_aL4HGVaE";
 const HEAD={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
 const WANDBOX="https://wandbox.org/api/compile.json",JAVA_COMPILER="openjdk-jdk-22+36";
-const PIL_TIMEOUT=10000;
+const PIL_TIMEOUT=10000,WANDBOX_TIMEOUT=40000;
 const {esc,$,toast,accessKey}=UI;
 
 const LANGS={
-  java:{name:"Java",mode:"text/x-java",indent:4,comment:"//",engine:"WANDBOX · OPENJDK 22",banner:UI.BANNER,
-    meta:'∞ <b>KOMPILATORS</b> · OPENJDK 22 · UTF-8<br>TAB PABEIDZ · CTRL+↵ PALAIŽ · CTRL+S SAGLABĀ<br>IEVADE PROGRAMMAI – TERMINĀLĪ ZEM IZVADES',
-    fileOf:c=>JAVA.classNameOf(c)+".java",examples:JAVA.EXAMPLES,template:JAVA.TEMPLATE,snippets:JAVA.SNIPPETS,newFile:JAVA.TEMPLATE},
-  pil:{name:"PIL",mode:"pil",indent:3,comment:";",engine:"PIL · WEBASSEMBLY · LOKĀLI",banner:PIL.BANNER,
-    meta:'∞ <b>INTERPRETATORS</b> · PIL · PĀRLŪKĀ<br>TAB PABEIDZ · CTRL+↵ PALAIŽ · CTRL+S SAGLABĀ<br>IEVADE PROGRAMMAI – TERMINĀLĪ ZEM IZVADES',
-    fileOf:c=>{const m=c.match(/^\s*([A-Za-z_][\w-]*)\s*\(/m);return (m&&m[1]!=="main"?m[1]:"main")+".pil"},examples:PIL.EXAMPLES,template:PIL.TEMPLATE,snippets:PIL.SNIPPETS,newFile:'main()\n   println "Sveika, pasaule!"\n'},
+  java:{name:"Java",mode:"text/x-java",indent:4,comment:"//",engine:"OpenJDK 22",fileOf:c=>JAVA.classNameOf(c)+".java",examples:JAVA.EXAMPLES,template:JAVA.TEMPLATE,snippets:JAVA.SNIPPETS,
+    wandbox:{compiler:JAVA_COMPILER},need:/java\.util\.NoSuchElementException|NumberFormatException: Cannot parse null string/},
+  pil:{name:"PIL",mode:"pil",indent:3,comment:";",engine:"PIL · wasm",fileOf:c=>{const m=c.match(/^\s*([A-Za-z_][\w-]*)\s*\(/m);return (m&&m[1]!=="main"?m[1]:"main")+".pil"},examples:PIL.EXAMPLES,template:PIL.TEMPLATE,snippets:PIL.SNIPPETS,newFile:'main()\n   println "Sveika, pasaule!"\n'},
   ...LANGS_EXTRA.list,
 };
-LANGS.java.wandbox={compiler:JAVA_COMPILER};LANGS.java.need=/java\.util\.NoSuchElementException|NumberFormatException: Cannot parse null string/;
 for(const l of Object.values(LANGS))if(!l.newFile)l.newFile=l.template;
 let lang="java",pilVer="";
 fetch("pil/VERSION",{cache:"no-store"}).then(r=>r.ok?r.text():"").then(v=>{pilVer=v.trim()}).catch(()=>{});
@@ -279,7 +280,7 @@ function autoHint(cm,ev){
   if(/[\w.$@-]$/.test(ch)){const cur=cm.getCursor(),line=cm.getLine(cur.line).slice(0,cur.ch);if(/[A-Za-z_$@][\w$.-]{1,}$/.test(line))cm.showHint({hint:hinter(),completeSingle:false,closeOnUnfocus:true})}
 }
 
-const cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",theme:"material-darker",lineNumbers:true,indentUnit:4,tabSize:4,indentWithTabs:false,autoCloseBrackets:true,matchBrackets:true,styleActiveLine:true,gutters:["CodeMirror-linenumbers","err"],extraKeys:{
+const cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",lineNumbers:true,indentUnit:4,tabSize:4,indentWithTabs:false,autoCloseBrackets:true,matchBrackets:true,styleActiveLine:true,gutters:["CodeMirror-linenumbers","err"],extraKeys:{
   "Ctrl-Enter":()=>run(),"Cmd-Enter":()=>run(),"Ctrl-S":()=>openSave(),"Cmd-S":()=>openSave(),
   "Ctrl-Space":c=>c.showHint({hint:hinter(),completeSingle:true}),
   Tab:c=>{if(c.somethingSelected())return c.indentSelection("add");const cur=c.getCursor(),before=c.getLine(cur.line).slice(0,cur.ch);const w=before.match(wordRe());if(w&&w[0]){const r=hinter()(c);if(r&&r.list.length){const first=r.list[0].text,single=r.list.length===1||(L().snippets[first]!==undefined&&first===w[0])||(lang==="java"&&!L().snippets[first]&&first.toLowerCase().startsWith(w[0].toLowerCase()));return c.showHint({hint:hinter(),completeSingle:single})}}c.replaceSelection(" ".repeat(L().indent),"end")},
@@ -290,28 +291,51 @@ const cm=CodeMirror.fromTextArea($("code"),{mode:"text/x-java",theme:"material-d
   "Alt-Up":c=>moveLine(c,-1),"Alt-Down":c=>moveLine(c,1)
 }});
 cm.on("inputRead",autoHint);
-document.addEventListener("mousedown",e=>{if(cm.state.completionActive&&!e.target.closest(".CodeMirror-hints"))cm.state.completionActive.close()});
+cm.on("cursorActivity",()=>{const c=cm.getCursor();$("s-pos").textContent=`${c.line+1}:${c.ch+1}`});
+document.addEventListener("mousedown",e=>{if(cm.state.completionActive&&!e.target.closest(".CodeMirror-hints"))cm.state.completionActive.close();if(!e.target.closest(".menu"))$("menu").hidden=true});
 function dup(c){const cur=c.getCursor(),l=c.getLine(cur.line);c.replaceRange("\n"+l,{line:cur.line,ch:l.length});c.setCursor({line:cur.line+1,ch:cur.ch})}
 function moveLine(c,d){const cur=c.getCursor(),n=cur.line+d;if(n<0||n>=c.lineCount())return;const a=c.getLine(cur.line),b=c.getLine(n);c.operation(()=>{c.replaceRange(a,{line:n,ch:0},{line:n,ch:b.length});c.replaceRange(b,{line:cur.line,ch:0},{line:cur.line,ch:a.length});c.setCursor({line:n,ch:cur.ch})})}
-function formatCode(){if($("format").hidden)return;const cur=cm.getCursor();cm.operation(()=>{for(let i=0;i<cm.lineCount();i++)cm.indentLine(i,"smart")});cm.setCursor(cur);toast("Atkāpes sakārtotas")}
-$("format").onclick=formatCode;
-let fontSize=+localStorage.getItem("code-font")||+localStorage.getItem("java-font")||14;
-function zoom(d){fontSize=Math.max(10,Math.min(24,fontSize+d));localStorage.setItem("code-font",fontSize);document.querySelector(".CodeMirror").style.fontSize=fontSize+"px";cm.refresh()}
-zoom(0);$("zoom-in").onclick=()=>zoom(1);$("zoom-out").onclick=()=>zoom(-1);
-let errMarks=[];
-function clearErrors(){errMarks.forEach(l=>{cm.removeLineClass(l,"background","cm-err-line");cm.setGutterMarker(l,"err",null)});errMarks=[]}
-function markLines(pairs){clearErrors();for(const [n,msg] of pairs){const l=n-1;if(l>=0&&l<cm.lineCount()&&!errMarks.includes(l)){cm.addLineClass(l,"background","cm-err-line");const g=document.createElement("span");g.className="err-gutter";g.textContent="●";g.title=msg;cm.setGutterMarker(l,"err",g);errMarks.push(l)}}}
-cm.on("change",()=>{if(errMarks.length)clearErrors()});
+const FORMATTABLE=["java","c","cpp","csharp"];
+function formatCode(){if(!FORMATTABLE.includes(lang))return;const cur=cm.getCursor();cm.operation(()=>{for(let i=0;i<cm.lineCount();i++)cm.indentLine(i,"smart")});cm.setCursor(cur)}
+let fontSize=+localStorage.getItem("code-font")||13.5;
+function zoom(d){fontSize=Math.max(10,Math.min(24,fontSize+d));localStorage.setItem("code-font",fontSize);document.documentElement.style.setProperty("--fs",fontSize+"px");cm.refresh()}
+zoom(0);
+
+/* ---- kļūdu marķēšana redaktorā ---- */
+let marks=[];
+function clearMarks(){for(const m of marks){cm.removeLineClass(m.line,"background",m.cls);cm.setGutterMarker(m.line,"err",null);if(m.w)m.w.clear()}marks=[]}
+function markDiags(items){
+  clearMarks();const seen=new Set();
+  for(const d of items){
+    if(!d.line)continue;const l=d.line-1;if(l<0||l>=cm.lineCount()||seen.has(l))continue;seen.add(l);
+    const warn=d.kind==="warning",cls=warn?"cm-warn-line":"cm-err-line";
+    cm.addLineClass(l,"background",cls);
+    const g=document.createElement("span");g.className=warn?"warn-gutter":"err-gutter";g.textContent="●";g.title=d.msg;cm.setGutterMarker(l,"err",g);
+    const w=document.createElement("div");w.className="lint"+(warn?" w":"");w.textContent=d.msg;
+    marks.push({line:l,cls,w:cm.addLineWidget(l,w,{coverGutter:false,noHScroll:true})});
+  }
+}
+cm.on("change",()=>{if(marks.length)clearMarks()});
 const draftKey=l=>"draft-"+l;
-const loadDraft=l=>localStorage.getItem(draftKey(l))??(l==="java"?localStorage.getItem("java-draft"):l==="pil"?localStorage.getItem("pil-draft"):null)??LANGS[l].template;
+const loadDraft=l=>localStorage.getItem(draftKey(l))||(l==="java"?localStorage.getItem("java-draft"):l==="pil"?localStorage.getItem("pil-draft"):null)||LANGS[l].template;
 cm.on("change",()=>{if(!viewing){try{localStorage.setItem(draftKey(lang),cm.getValue())}catch(e){}updateFile();if(liveHost)liveHost.changed()}});
 function updateFile(){$("file").textContent=L().fileOf(cm.getValue())}
-function status(t,cls){const s=$("status");s.textContent=t;s.className="status "+(cls||"")}
-function showTab(name){document.querySelectorAll(".tab[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));$("term").hidden=name!=="out";$("doc").hidden=name!=="doc";$("list").hidden=name!=="list";$("ai").hidden=name!=="ai"}
+function status(t,cls){const s=$("st");s.textContent=t;s.className="st "+(cls||"")}
+function showTab(name){document.querySelectorAll(".tab[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));$("term").hidden=name!=="out";$("list").hidden=name!=="list";$("ai").hidden=name!=="ai"}
 document.querySelectorAll(".tab[data-tab]").forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);if(b.dataset.tab==="list")loadList()});
 
+/* ---- izvēlne ---- */
+function buildMenu(){
+  const ex=L().examples.map((e,i)=>`<button data-ex="${i}">${esc(e.name)}</button>`).join("");
+  $("menu").innerHTML=`<button data-a="new">Jauns fails</button><button data-a="format" ${FORMATTABLE.includes(lang)?"":"disabled"}>Formatēt<span class="k">⇧⌥F</span></button><button data-a="zin">Lielāks fonts<span class="k">Ctrl +</span></button><button data-a="zout">Mazāks fonts<span class="k">Ctrl −</span></button><hr><div class="h">Piemēri</div>${ex}<hr><button data-a="live">Live Coding</button><button data-a="list">Saglabātie</button><a href="works/">Darbi</a>`;
+  $("menu").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("menu").hidden=true;const a=b.dataset.a;if(b.dataset.ex!==undefined)return loadExample(+b.dataset.ex);if(a==="new")newFile();else if(a==="format")formatCode();else if(a==="zin")zoom(1);else if(a==="zout")zoom(-1);else if(a==="live")$("live").click();else if(a==="list"){showTab("list");loadList()}});
+}
+$("more").onclick=()=>{buildMenu();$("menu").hidden=!$("menu").hidden};
+function leaveView(){if(viewing){if(liveView)closeLiveView();else exitView()}}
+function loadExample(i){const e=L().examples[i];leaveView();if(cm.getValue().trim()&&cm.getValue()!==L().template&&!confirm(`Aizvietot kodu ar piemēru „${e.name}”?`))return;cm.setValue(e.code);resetTerm();cm.focus()}
+function newFile(){leaveView();if(cm.getValue().trim()&&cm.getValue()!==L().template&&!confirm("Notīrīt redaktoru?"))return;cm.setValue(L().newFile);resetTerm();cm.focus()}
+
 /* ---- valoda ---- */
-const exSel=$("examples");
 function setLang(l,{keepCode=false}={}){
   if(!LANGS[l])l="java";
   if(!keepCode&&!viewing)try{localStorage.setItem(draftKey(lang),cm.getValue())}catch(e){}
@@ -320,35 +344,42 @@ function setLang(l,{keepCode=false}={}){
   $("lang").value=l;
   cm.setOption("mode",d.mode);cm.setOption("indentUnit",d.indent);cm.setOption("tabSize",d.indent);
   if(!keepCode&&!viewing)cm.setValue(loadDraft(l));
-  $("ascii").textContent=d.banner;$("meta").innerHTML=d.meta;$("foot-engine").textContent=d.engine;
-  $("strip-tag").textContent=`2.k. 28.grupa · ${d.name} · EST. 2026`;
-  $("format").hidden=!["java","c","cpp","csharp"].includes(l);$("tab-doc").hidden=l!=="pil";
-  if(l!=="pil"&&!$("doc").hidden)showTab("out");
-  exSel.innerHTML='<option value="">piemēri…</option>'+d.examples.map((e,i)=>`<option value="${i}">${esc(e.name)}</option>`).join("");
-  if(!viewing)document.title=`${d.name} kompilators`;
+  $("s-lang").textContent=`${d.name} · ${d.engine}`;
   updateFile();
   const u=new URL(location.href);u.searchParams.set("lang",l);history.replaceState(null,"",u);
   resetTerm();
   if(liveHost)liveHost.setLang(l);
   $("cnt").textContent="";loadList();
 }
-$("lang").onchange=()=>{if(viewing){if(liveView)closeLiveView();else exitView()}setLang($("lang").value);cm.focus()};
-exSel.onchange=()=>{if(exSel.value==="")return;const e=L().examples[+exSel.value];if(viewing){if(liveView)closeLiveView();else exitView()}if(cm.getValue().trim()&&cm.getValue()!==L().template&&!confirm(`Aizvietot redaktora saturu ar piemēru „${e.name}”?`)){exSel.value="";return}cm.setValue(e.code);exSel.value="";resetTerm();cm.focus()};
-$("doc").innerHTML=PIL.DOC_HTML;
-$("doc").querySelectorAll(".fn code").forEach(c=>c.onclick=()=>{if(viewing)return;cm.replaceSelection(c.dataset.t||c.textContent);cm.focus()});
-$("new").onclick=()=>{if(viewing){if(liveView)closeLiveView();else exitView()}else if(cm.getValue().trim()&&cm.getValue()!==L().template&&!confirm("Notīrīt redaktoru?"))return;cm.setValue(L().newFile);resetTerm();cm.focus()};
+$("lang").onchange=()=>{leaveView();setLang($("lang").value);cm.focus()};
 
-/* ---- terminālis: izvade + ievade vienā logā ---- */
+/* ---- sadalītājs ---- */
+(()=>{const g=$("gutter"),main=document.querySelector("main");let drag=false;
+  const saved=localStorage.getItem("split");if(saved)main.style.setProperty("--split",saved);
+  g.addEventListener("mousedown",e=>{drag=true;g.classList.add("on");e.preventDefault()});
+  addEventListener("mousemove",e=>{if(!drag)return;const r=main.getBoundingClientRect();const p=Math.min(80,Math.max(20,(e.clientX-r.left)/r.width*100));main.style.setProperty("--split",p+"%")});
+  addEventListener("mouseup",()=>{if(!drag)return;drag=false;g.classList.remove("on");localStorage.setItem("split",main.style.getPropertyValue("--split"));cm.refresh()});
+})();
+
+/* ---- terminālis ---- */
 const out=$("out"),tin=$("tin"),termIn=$("term-in");
 let segs=[],consumed=0,stdinBuf="",waiting=false,busy=false,pendingIn=[],worker=null,runTimer=0,runSeq=0,eofMode=false;
 const ansi=s=>esc(s).replace(/\x1b\[0;31m/g,'<span class="e">').replace(/\x1b\[0;33m/g,'<span class="w">').replace(/\x1b\[0m/g,"</span>").replace(/\x1b\[[0-9;]*m/g,"");
-function renderTerm(){
-  let html=segs.map(s=>s.t==="in"?`<span class="in">${esc(s.s)}</span>\n`:s.t==="e"?`<span class="e">${esc(s.s)}</span>`:s.t==="w"?`<span class="w">${esc(s.s)}</span>`:s.t==="d"?`<span class="d">${esc(s.s)}</span>`:s.t==="h"?`<span class="h">${s.s}</span>`:ansi(s.s)).join("");
-  if(!html.trim())html='<span class="d">❯ gaida kodu…\n   uzraksti programmu un spied ▶ Palaist\n   ievadi programmai raksti šeit zemāk – tā apstāsies un gaidīs</span>';
-  out.innerHTML=html;out.scrollTop=out.scrollHeight;
+function diagHtml(d){
+  const items=d.items.map(it=>`<button class="dg${it.kind==="warning"?" w":""}" data-line="${it.line||""}"><b>${it.kind==="warning"?"⚠":"✕"}</b> ${it.line?`<span class="ln">${it.line}${it.col?":"+it.col:""}</span> `:""}${esc(it.msg)}${it.hint?`<span class="hint">${esc(it.hint)}</span>`:""}</button>`).join("");
+  const raw=d.raw&&d.raw.trim()?`<details><summary>pilns teksts</summary><pre>${esc(d.raw.trim())}</pre></details>`:"";
+  const hasErr=d.items.some(i=>i.kind!=="warning");
+  return `<div class="diag${hasErr?"":" w"}">${items}${raw}${hasErr?'<button class="ask">Paskaidrot ar AI →</button>':""}</div>`;
 }
-function setWaiting(on){waiting=on;tin.classList.toggle("wait",on);$("ps").textContent=on?"programma gaida ievadi":"stdin ❯";termIn.placeholder=on?"ieraksti rindu un spied Enter · Ctrl+D beidz ievadi":"ievade programmai · Enter";if(on){status("gaida ievadi","run");termIn.focus()}}
-function resetTerm(){abortRun();segs=[];consumed=0;stdinBuf="";pendingIn=[];eofMode=false;setWaiting(false);renderTerm();$("time").textContent="";status("")}
+function renderTerm(){
+  let html=segs.map(s=>s.t==="in"?`<span class="in">${esc(s.s)}</span>\n`:s.t==="e"?`<span class="e">${esc(s.s)}</span>`:s.t==="w"?`<span class="w">${esc(s.s)}</span>`:s.t==="d"?`<span class="d">${esc(s.s)}</span>`:s.t==="diag"?diagHtml(s):ansi(s.s)).join("");
+  if(!html.trim())html='<span class="d">Ctrl+↵ palaiž · ievadi programmai raksti šeit apakšā</span>';
+  out.innerHTML=html;out.scrollTop=out.scrollHeight;
+  out.querySelectorAll(".dg").forEach(b=>b.onclick=()=>{const l=+b.dataset.line;if(!l)return;cm.setCursor({line:l-1,ch:0});cm.scrollIntoView({line:l-1,ch:0},120);cm.focus()});
+  out.querySelectorAll(".ask").forEach(b=>b.onclick=()=>{showTab("ai");document.querySelector('.ai-quick [data-q="err"]').click()});
+}
+function setWaiting(on){waiting=on;tin.classList.toggle("wait",on);$("ps").textContent=on?"stdin ▸":"›";termIn.placeholder=on?"programma gaida ievadi · Enter · Ctrl+D beidz":"stdin";if(on){status("gaida ievadi","run");termIn.focus()}}
+function resetTerm(){abortRun();segs=[];consumed=0;stdinBuf="";pendingIn=[];eofMode=false;setWaiting(false);renderTerm();$("s-time").textContent="";status("")}
 $("clear").onclick=resetTerm;
 function abortRun(){runSeq++;clearTimeout(runTimer);if(worker){worker.terminate();worker=null}busy=false;termIn.disabled=false;$("run").disabled=false}
 termIn.addEventListener("keydown",e=>{
@@ -376,37 +407,77 @@ $("run").onclick=()=>run();
 async function execute(cont){
   const code=cm.getValue(),seq=++runSeq,t0=performance.now();
   busy=true;termIn.disabled=true;$("run").disabled=true;
-  status(cont?"turpina…":L().wandbox&&L().wandbox.ext!=="py"&&L().wandbox.ext!=="lua"?"kompilē…":"izpilda…","run");
-  if(!cont)$("time").textContent="";
-  out.innerHTML=out.innerHTML+'<span class="d">'+(cont?"…":"◐ izpilda…")+'</span>';out.scrollTop=out.scrollHeight;
+  status(cont?"turpina…":L().wandbox&&!["py","lua"].includes(L().wandbox.ext)?"kompilē…":"izpilda…","run");
+  if(!cont)$("s-time").textContent="";
+  out.innerHTML=out.innerHTML+'<span class="d">…</span>';out.scrollTop=out.scrollHeight;
   let r;
   try{r=await (lang==="pil"?runPil(code,stdinBuf):runWandbox(code,stdinBuf))}
-  catch(e){if(seq!==runSeq)return;r={out:"",err:"Neizdevās palaist: "+e.message,rc:-1,needAt:-1}}
+  catch(e){if(seq!==runSeq)return;r={out:"",err:"",rc:-1,needAt:-1,diag:{items:[{kind:"error",msg:e.message}],raw:""}}}
   if(seq!==runSeq)return;
   busy=false;termIn.disabled=false;$("run").disabled=false;
   const ms=Math.round(performance.now()-t0);
   const full=r.out||"",cut=r.needAt>=0?r.needAt:full.length;
   if(cut>consumed)segs.push({t:"o",s:full.slice(consumed,cut)});
   consumed=cut;
-  if(r.compileErr)segs.push({t:"e",s:r.compileErr});
-  if(r.warn)segs.push({t:"w",s:r.warn});
-  if(r.needAt>=0){renderTerm();setWaiting(true);$("time").textContent=`${ms} ms · gaida stdin`;lastOutput=full.slice(0,cut);lastError="";return}
-  if(r.err)segs.push({t:"e",s:(full&&!full.endsWith("\n")?"\n":"")+r.err});
-  if(r.hint)segs.push({t:"h",s:r.hint});
-  if(r.signal)segs.push({t:"e",s:`\nProcess pārtraukts: ${r.signal}`});
-  if(r.marks&&r.marks.length)markLines(r.marks);
+  if(r.needAt>=0){renderTerm();setWaiting(true);$("s-time").textContent=`${ms} ms`;lastOutput=full.slice(0,cut);lastError="";return}
+  const hasDiag=r.diag&&r.diag.items.length;
+  if(full&&!full.endsWith("\n")&&(r.err||hasDiag))segs.push({t:"d",s:"\n"});
+  if(r.err)segs.push({t:"e",s:r.err});
+  if(hasDiag){segs.push({t:"diag",items:r.diag.items,raw:r.diag.raw});markDiags(r.diag.items)}
   renderTerm();
-  lastOutput=full.replace(/\x1b\[[0-9;]*m/g,"");lastError=r.compileErr||r.err||(r.rc!==0?lastOutput:"");
-  $("time").textContent=`${ms} ms${r.runtime?" · izpilde "+r.runtime:""} · izeja ${r.rc}`;
-  const ok=r.rc===0&&!r.compileErr;
-  status(ok?"izpildīts":"kļūda",ok?"ok":"err");
+  lastOutput=full.replace(/\x1b\[[0-9;]*m/g,"");
+  lastError=hasDiag?r.diag.items.map(i=>`${i.kind}${i.line?" rinda "+i.line:""}: ${i.msg}`).join("\n")+(r.diag.raw?"\n"+r.diag.raw.slice(0,1200):""):(r.err||(r.rc!==0?lastOutput.slice(-600):""));
+  const ok=r.rc===0&&!(hasDiag&&r.diag.items.some(i=>i.kind!=="warning"));
+  $("s-time").textContent=`${ms} ms${r.runtime?" · "+r.runtime:""} · izeja ${r.rc}`;
+  status(ok?"gatavs":"kļūda",ok?"ok":"err");
+}
+
+/* ---- kļūdu analīze ---- */
+const HINTS=[
+  [/NoSuchElementException/,"programma gaida ievadi, bet tās vairs nav"],
+  [/ArithmeticException: \/ by zero|ZeroDivisionError|integer divide by zero|DivideByZeroException/,"dalīšana ar nulli"],
+  [/ArrayIndexOutOfBounds|IndexOutOfRangeException|IndexError: list index out of range|StringIndexOutOfBounds/,"indekss ārpus masīva robežām – pārbaudi ciklu robežas (< nevis <=)"],
+  [/NullPointerException|NullReferenceException/,"mainīgais ir null – tam nav piešķirta vērtība"],
+  [/NumberFormatException|ValueError: invalid literal for int|FormatException|InputMismatchException|could not convert string to float/,"teksts nav skaitlis – pārbaudi ievadi"],
+  [/StackOverflowError|RecursionError|stack overflow/,"bezgalīga rekursija – trūkst apstāšanās nosacījuma"],
+  [/Segmentation fault|SIGSEGV/i,"piekļuve nederīgai atmiņai – pārbaudi masīva indeksus un rādītājus"],
+  [/NameError: name '\w+' is not defined/,"mainīgais nav definēts (vai pareizrakstība)"],
+  [/cannot find symbol|was not declared in this scope|undeclared|does not exist in the current context/,"nosaukums nav deklarēts – pārbaudi pareizrakstību vai deklarē pirms lietošanas"],
+  [/';' expected|expected ';'|missing ';'|CS1002/,"trūkst semikola (parasti iepriekšējā rindā)"],
+  [/incompatible types|cannot convert|invalid conversion|TypeError:/,"tipu neatbilstība"],
+  [/attempt to (?:call|index|concatenate|perform arithmetic on) a nil value/,"vērtība ir nil – mainīgais nav piešķirts vai funkcija nav definēta"],
+  [/IndentationError|unexpected indent/,"nepareizas atkāpes"],
+  [/unterminated string|missing terminating|unclosed string/,"nav aizvērtas pēdiņas"],
+  [/expected '\)'|expected '}'|reached end of file while parsing|unexpected EOF|expected 'end'|'end' expected/,"trūkst aizverošās iekavas vai bloka beigu"],
+  [/undefined reference to `main'|no main method|does not contain a static 'Main'/,"programmai trūkst main"],
+];
+const hintFor=msg=>{for(const [re,h] of HINTS)if(re.test(msg))return h;return ""};
+function diagnose(cls,ce,perr,signal,rc){
+  const items=[];const add=(kind,line,col,msg)=>{msg=(msg||"").trim();if(!msg)return;line=+line||0;if(items.some(i=>i.line===line&&i.msg===msg))return;items.push({kind,line,col:+col||0,msg,hint:msg.includes("–")?"":hintFor(msg)})};
+  let m,re;
+  if(ce){
+    if(lang==="java"){re=new RegExp("(?:\\./)?"+cls+"\\.java:(\\d+): (error|warning): (.*)","g");while((m=re.exec(ce)))add(m[2],m[1],0,m[3])}
+    else if(lang==="c"||lang==="cpp"){re=/prog\.cc?:(\d+):(\d+): (?:fatal )?(error|warning): (.*)/g;while((m=re.exec(ce)))add(m[3],m[1],m[2],m[4]);if(!items.length&&/undefined reference/.test(ce))add("error",0,0,(ce.match(/undefined reference to [^\n]*/)||["linkera kļūda"])[0])}
+    else if(lang==="csharp"){re=/prog\.cs\((\d+),(\d+)\): (error|warning) (CS\d+: .*)/g;while((m=re.exec(ce)))add(m[3],m[1],m[2],m[4])}
+    if(!items.length&&/error/i.test(ce))add("error",0,0,ce.split("\n").find(l=>/error/i.test(l))||ce.split("\n")[0]);
+  }
+  if(perr){
+    if(lang==="java"){const ex=perr.match(/(?:Exception in thread "[^"]*" |Caused by: )?((?:[\w.]+\.)?(\w+(?:Exception|Error)))(?:: ([^\n]*))?/);const at=perr.match(new RegExp("at "+cls+"\\.\\w+\\("+cls+"\\.java:(\\d+)\\)"));if(ex)add("runtime",at?at[1]:0,0,ex[2]+(ex[3]?": "+ex[3]:""))}
+    else if(lang==="python"){const frames=[...perr.matchAll(/File "[^"]*prog\.py", line (\d+)/g)];const last=perr.trim().split("\n").pop();if(/\w+(?:Error|Exception|Interrupt|Exit)\b/.test(last))add("runtime",frames.length?frames[frames.length-1][1]:0,0,last)}
+    else if(lang==="lua"){m=perr.match(/prog\.lua:(\d+): ([^\n]*)/)||perr.match(/lua: [^\n]*?:(\d+): ([^\n]*)/);if(m)add("runtime",m[1],0,m[2]);else if(/^lua:/m.test(perr))add("runtime",0,0,perr.split("\n")[0].replace(/^lua: /,""))}
+    else if(lang==="csharp"){m=perr.match(/Unhandled Exception:\s*\n?\s*([\w.]+(?:Exception|Error))(?:: ([^\n]*))?/);if(m)add("runtime",0,0,m[1].split(".").pop()+(m[2]?": "+m[2]:""))}
+    else if(lang==="c"||lang==="cpp"){m=perr.match(/terminate called after throwing an instance of '([^']+)'\s*\n?\s*(?:what\(\):\s*(.*))?/);if(m)add("runtime",0,0,m[1]+(m[2]?": "+m[2]:""))}
+  }
+  const EXIT={137:"programma apturēta – pārsniegts laika vai atmiņas limits (bezgalīgs cikls?)",139:"Segmentation fault – piekļuve nederīgai atmiņai",134:"programma pārtraukta (abort)",136:"aritmētikas kļūda (SIGFPE) – dalīšana ar nulli?",124:"pārsniegts laika limits"};
+  if(signal)add("runtime",0,0,`programma pārtraukta: ${signal}`);
+  else if(rc!==0&&!items.some(i=>i.kind!=="warning")&&!perr)add("runtime",0,0,EXIT[rc]||`programma beidzās ar kodu ${rc}`);
+  return items.sort((a,b)=>(a.line||1e9)-(b.line||1e9));
 }
 async function runWandbox(code,stdin){
-  const d0=L(),wb=d0.wandbox,marker=LANGS_EXTRA.NEED;
+  const d0=L(),wb=d0.wandbox,marker=LANGS_EXTRA.NEED,cls=lang==="java"?JAVA.classNameOf(code):"prog";
   const trimmed=stdin.replace(/\n$/,"");
   let body;
   if(lang==="java"){
-    const cls=JAVA.classNameOf(code);
     body={compiler:wb.compiler,stdin:trimmed,"compiler-option-raw":"-encoding\nUTF-8","runtime-option-raw":"-Dfile.encoding=UTF-8\n-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8",
       code:`public class prog { public static void main(String[] a) throws Exception { ${cls}.main(a); } }`,codes:[{file:cls+".java",code}]};
   }else{
@@ -415,28 +486,25 @@ async function runWandbox(code,stdin){
     if(shim&&wb.options)body["compiler-option-raw"]=wb.options;else if(!shim&&wb.options)body["compiler-option-raw"]=wb.options.split("\n").filter(o=>o!=="-include"&&o!=="shim.h").join("\n");
     if(shim&&wb.codes)body.codes=wb.codes();
   }
-  const resp=await fetch(WANDBOX,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),WANDBOX_TIMEOUT);
+  let resp;
+  try{resp=await fetch(WANDBOX,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:ctl.signal})}
+  catch(e){throw new Error(e.name==="AbortError"?"kompilatora serviss neatbildēja 40 s – mēģini vēlreiz":"nav savienojuma ar kompilatora servisu (wandbox.org)")}
+  finally{clearTimeout(tm)}
+  if(resp.status===429)throw new Error("par daudz pieprasījumu – pagaidi brīdi");
   if(!resp.ok)throw new Error("kompilatora serviss atbildēja "+resp.status);
   const d=await resp.json();
-  let cmsg=(d.compiler_error||"").replace(/prog\.java:\d+: error:.*?\n.*?\n.*?\n/gs,"").replace(/^(?:In file included from )?shim\.h:.*(?:\n(?![^\s]).*)*\n?/gm,"").trim();
+  const cmsg=(d.compiler_error||"").replace(/prog\.java:\d+: error:.*?\n.*?\n.*?\n/gs,"").replace(/^(?:In file included from )?shim\.h:.*(?:\n(?![^\s]).*)*\n?/gm,"").trim();
   const failed=/(^|\n)[^\n]*\b(error|Error)\b[: (]/.test(cmsg)&&!(d.program_output||d.program_error);
-  let ce=failed?cmsg:"",cwarn=failed?"":cmsg;
-  let perr=d.program_error||"";
-  let need=false;
-  if(!eofMode&&!ce){
+  let perr=d.program_error||"",need=false;
+  if(!eofMode&&!failed){
     if(perr.includes(marker)){need=true;perr=perr.replace(marker,"").replace(/\n$/,"")}
     else if(d0.need&&d0.need.test(perr))need=true;
   }
-  const marks=[];
-  if(lang==="java"){
-    const cls=JAVA.classNameOf(code),e$=cls.replace(/\$/g,"\\$");
-    if(ce){const re=new RegExp("(?:\\./)?"+e$+"\\.java:(\\d+): error: (.*)","g");let m;while((m=re.exec(ce)))marks.push([+m[1],m[2]])}
-    else if(perr&&!need){const m=perr.match(new RegExp("at "+e$+"\\.\\w+\\("+e$+"\\.java:(\\d+)\\)"));if(m)marks.push([+m[1],perr.split("\n")[0]])}
-  }else if(d0.errLine){
-    const re=new RegExp(d0.errLine.source,"g");let m;
-    for(const text of [ce,need?"":perr]){while((m=re.exec(text)))marks.push([+m[1],m[2]||text.split("\n")[0]])}
-  }
-  return {out:d.program_output||"",err:need?"":perr,compileErr:ce,warn:[(d.compiler_output||"").trim(),cwarn].filter(Boolean).join("\n"),rc:ce?1:+(d.status??-1),signal:d.signal,needAt:need?(d.program_output||"").length:-1,marks};
+  const rc=failed?1:+(d.status??-1);
+  const items=need?[]:diagnose(cls.replace(/\$/g,"\\$"),cmsg,perr,d.signal,rc);
+  const raw=[cmsg,need?"":perr].filter(Boolean).join("\n");
+  return {out:d.program_output||"",err:need||items.length?"":perr,rc,needAt:need?(d.program_output||"").length:-1,diag:{items,raw:items.length?raw:""}};
 }
 const STALE={printn:"println",printfn:"printfln",readline:"readln",readchar:"readch",global:"const (faila līmenī)"};
 function runPil(code,stdin){
@@ -448,20 +516,21 @@ function runPil(code,stdin){
       const d=e.data;
       if(d.t==="out")raw+=d.s;
       else if(d.t==="need"){needAt=d.at;clearTimeout(runTimer);runTimer=setTimeout(()=>{if(worker){worker.terminate();worker=null}finish({rc:0})},400)}
-      else if(d.t==="crash"){clearTimeout(runTimer);resolve({out:raw,err:"Interpretators avarēja: "+d.s,rc:-1,needAt:-1})}
+      else if(d.t==="crash"){clearTimeout(runTimer);resolve({out:raw,err:"",rc:-1,needAt:-1,diag:{items:[{kind:"runtime",msg:"interpretators avarēja: "+d.s}],raw:""}})}
       else if(d.t==="done")finish(d);
     };
     function finish(d){
-        clearTimeout(runTimer);
-        let body=raw,runtime="";const cut=body.lastIndexOf("\nExecution time:\n");
-        if(cut>=0){const t=body.slice(cut+1).match(/Runtime: ([\d.]+ms)/);runtime=t?t[1]:"";body=body.slice(0,cut)}
-        const marks=[];const re=/(?:Error|Warning)\x1b\[0m: (.*?) at prog\.pil:(\d+)\./g;let m;while((m=re.exec(body)))marks.push([+m[2],m[1]]);
-        const stale=[...body.matchAll(/No such function '([\w-]+)'/g)].map(x=>x[1]).filter((k,i,a)=>STALE[k]&&a.indexOf(k)===i);
-        const hint=stale.map(k=>`→ „${esc(k)}” šajā PIL versijā saucas „${esc(STALE[k])}”`).join("\n");
-        resolve({out:body,err:"",rc:d.rc,needAt:needAt>=0&&needAt<=body.length?needAt:-1,marks,runtime,hint:hint?hint+"\n":""});
+      clearTimeout(runTimer);
+      let body=raw,runtime="";const cut=body.lastIndexOf("\nExecution time:\n");
+      if(cut>=0){const t=body.slice(cut+1).match(/Runtime: ([\d.]+ms)/);runtime=t?t[1]:"";body=body.slice(0,cut)}
+      const items=[];const re=/\x1b\[0;3[13]m(Error|Warning)\x1b\[0m: (.*?)(?: at prog\.pil:(\d+))?\.\n/g;
+      const clean=body.replace(re,(all,kind,msg,line)=>{items.push({kind:kind==="Error"?"error":"warning",line:line?+line:0,col:0,msg,hint:hintFor(msg)});return ""}).replace(/\x1b\[0;31mProgram exited with error code \d+\.\x1b\[0m\n?/,"");
+      for(const it of items){const s=it.msg.match(/No such function '([\w-]+)'/);if(s&&STALE[s[1]])it.hint=`šajā PIL versijā tas saucas „${STALE[s[1]]}”`}
+      const isNeed=needAt>=0&&needAt<=body.length;
+      resolve({out:isNeed?body:clean,err:"",rc:d.rc,needAt:isNeed?needAt:-1,runtime,diag:{items:isNeed?[]:items,raw:""}});
     }
     worker.onerror=e=>{clearTimeout(runTimer);reject(new Error(e.message||"worker kļūda"))};
-    runTimer=setTimeout(()=>{if(worker){worker.terminate();worker=null}resolve({out:raw,err:`Pārtraukts: programma darbojās ilgāk par ${PIL_TIMEOUT/1000} s (bezgalīgs cikls?)`,rc:-1,needAt:-1})},PIL_TIMEOUT);
+    runTimer=setTimeout(()=>{if(worker){worker.terminate();worker=null}resolve({out:raw,err:"",rc:-1,needAt:-1,diag:{items:[{kind:"runtime",msg:`pārtraukts pēc ${PIL_TIMEOUT/1000} s – bezgalīgs cikls?`}],raw:""}})},PIL_TIMEOUT);
     worker.postMessage({code,stdin,eof:eofMode});
   });
 }
@@ -472,13 +541,13 @@ $("save").onclick=openSave;
 $("m-cancel").onclick=()=>$("modal-bg").classList.remove("on");
 document.querySelectorAll(".modal-bg").forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove("on")});
 document.addEventListener("keydown",e=>{
-  if(e.key==="Escape")document.querySelectorAll(".modal-bg.on").forEach(m=>m.classList.remove("on"));
+  if(e.key==="Escape"){document.querySelectorAll(".modal-bg.on").forEach(m=>m.classList.remove("on"));$("menu").hidden=true}
   if(e.key==="Enter"&&e.target.tagName==="INPUT"){const m=e.target.closest(".modal-bg.on");if(m)m.querySelector(".btn.pri").click()}
 });
 $("m-ok").onclick=async()=>{
   const title=$("m-title").value.trim(),author=$("m-author").value.trim(),key=$("m-key").value,msg=$("m-msg");
   if(!title)return msg.textContent="Vajag nosaukumu",msg.className="msg err";
-  if(!key)return msg.textContent="Vajag atslēgu",msg.className="msg err";
+  if(!key)return msg.textContent="Vajag klases kodu",msg.className="msg err";
   $("m-ok").disabled=true;msg.textContent="Saglabā…";msg.className="msg";
   try{
     const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/save_snippet`,{method:"POST",headers:{...HEAD,"Content-Type":"application/json"},body:JSON.stringify({p_title:title,p_author:author,p_code:cm.getValue(),p_passkey:key,p_lang:lang})});
@@ -486,9 +555,9 @@ $("m-ok").onclick=async()=>{
     if(!r.ok)throw new Error(d.message||"kļūda");
     localStorage.setItem("java-author",author);sessionStorage.setItem("java-key",key);
     $("modal-bg").classList.remove("on");$("m-title").value="";
-    toast("Saglabāts · saite nokopējama ar „Kopēt saiti”");
+    toast("Saglabāts");
     await loadList();openSnippet(d);
-  }catch(e){msg.textContent=e.message==="Nepareiza atslēga"?"Nepareiza atslēga":"Neizdevās saglabāt: "+e.message;msg.className="msg err"}
+  }catch(e){msg.textContent=e.message==="Nepareiza atslēga"?"Nepareizs kods":"Neizdevās: "+e.message;msg.className="msg err"}
   $("m-ok").disabled=false;
 };
 
@@ -498,10 +567,10 @@ async function loadList(){
   try{
     const r=await fetch(`${SUPABASE_URL}/rest/v1/snippets?select=id,title,author,created_at&lang=eq.${lang}&order=created_at.desc&limit=200`,{headers:HEAD});
     current=await r.json();
-    $("cnt").textContent=current.length?`(${current.length})`:"";
-    list.innerHTML=current.length?current.map(s=>`<div class="item${viewing&&viewing.id===s.id?" on":""}" data-id="${s.id}"><b>${esc(s.title)}</b><small>${esc(s.author||"anonīms")} · ${new Date(s.created_at).toLocaleString("lv-LV",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join(""):`<div class="empty">Vēl nekas nav saglabāts (${L().name})</div>`;
+    $("cnt").textContent=current.length?`${current.length}`:"";
+    list.innerHTML=current.length?current.map(s=>`<div class="item${viewing&&viewing.id===s.id?" on":""}" data-id="${s.id}"><b>${esc(s.title)}</b><small>${esc(s.author||"anonīms")} · ${new Date(s.created_at).toLocaleString("lv-LV",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`).join(""):`<div class="empty">Nav saglabātu ${L().name} darbu</div>`;
     list.querySelectorAll(".item").forEach(el=>el.onclick=()=>openSnippet(el.dataset.id));
-  }catch(e){list.innerHTML=`<div class="empty">Neizdevās ielādēt: ${esc(e.message)}</div>`}
+  }catch(e){list.innerHTML=`<div class="empty">Neizdevās ielādēt</div>`}
 }
 async function openSnippet(id){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/snippets?id=eq.${encodeURIComponent(id)}&select=*`,{headers:HEAD});
@@ -514,19 +583,19 @@ async function openSnippet(id){
   cm.setValue(s.code);cm.setOption("readOnly",true);
   $("ro").hidden=false;$("viewbar").hidden=false;$("fork").hidden=false;$("live-end").hidden=true;updateFile();
   $("viewmeta").innerHTML=`<b>${esc(s.title)}</b> · ${esc(s.author||"anonīms")} · ${new Date(s.created_at).toLocaleString("lv-LV")}`;
-  history.replaceState(null,"",`./?lang=${lang}&id=${s.id}`);document.title=s.title+" · "+L().name;
+  history.replaceState(null,"",`./?lang=${lang}&id=${s.id}`);
   document.querySelectorAll(".item").forEach(el=>el.classList.toggle("on",el.dataset.id===s.id));
   showTab("out");
 }
-function exitView(){viewing=null;cm.setOption("readOnly",false);$("ro").hidden=true;$("viewbar").hidden=true;history.replaceState(null,"",`./?lang=${lang}`);document.title=`${L().name} kompilators`;document.querySelectorAll(".item").forEach(el=>el.classList.remove("on"))}
-$("fork").onclick=()=>{const code=cm.getValue();if(liveView)closeLiveView();exitView();cm.setValue(code);toast("Kopija atvērta rediģēšanai");cm.focus()};
+function exitView(){viewing=null;cm.setOption("readOnly",false);$("ro").hidden=true;$("viewbar").hidden=true;history.replaceState(null,"",`./?lang=${lang}`);document.querySelectorAll(".item").forEach(el=>el.classList.remove("on"))}
+$("fork").onclick=()=>{const code=cm.getValue();if(liveView)closeLiveView();exitView();cm.setValue(code);cm.focus()};
 $("copylink").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast("Saite nokopēta")}catch(e){prompt("Saite:",location.href)}};
 
 /* ---- Live Coding ---- */
 let liveHost=null,liveView=null;
 $("live").onclick=()=>{
   if(liveHost)return endLive();
-  if(viewing){if(liveView)closeLiveView();else exitView()}
+  leaveView();
   $("l-title").value=$("l-title").value||L().fileOf(cm.getValue()).replace(/\.\w+$/,"");$("l-author").value=localStorage.getItem("java-author")||"";$("l-pass").value="";$("l-key").value=sessionStorage.getItem("java-key")||accessKey()||"";$("l-msg").textContent="";
   $("live-bg").classList.add("on");$("l-title").focus();
 };
@@ -534,7 +603,7 @@ $("l-cancel").onclick=()=>$("live-bg").classList.remove("on");
 $("l-ok").onclick=async()=>{
   const title=$("l-title").value.trim(),author=$("l-author").value.trim(),password=$("l-pass").value,passkey=$("l-key").value,msg=$("l-msg");
   if(!title)return msg.textContent="Vajag nosaukumu",msg.className="msg err";
-  if(!passkey)return msg.textContent="Vajag klases atslēgu",msg.className="msg err";
+  if(!passkey)return msg.textContent="Vajag klases kodu",msg.className="msg err";
   $("l-ok").disabled=true;msg.textContent="Sāk…";msg.className="msg";
   try{
     const h=LIVE.host({title,author,lang,password,passkey,getCode:()=>cm.getValue()});
@@ -542,25 +611,24 @@ $("l-ok").onclick=async()=>{
     const id=await h.start();
     liveHost=h;localStorage.setItem("java-author",author);sessionStorage.setItem("java-key",passkey);
     $("live-bg").classList.remove("on");
-    $("live").textContent="● LIVE · beigt";$("live").classList.add("live-on");
-    $("livebadge").hidden=false;$("livebadge").classList.remove("off");$("livebadge").textContent=password?"live · 🔒":"live";
+    $("live").textContent="Beigt live";$("live").classList.add("danger");
+    $("livebadge").hidden=false;$("livebadge").classList.remove("off");$("livebadge").textContent=password?"live 🔒":"live";
     $("viewbar").hidden=false;$("fork").hidden=true;$("live-end").hidden=false;
-    $("viewmeta").innerHTML=`<b>${esc(title)}</b> · tiešraide · skatītāji atrod sadaļā <a href="works/">Darbi</a> vai caur saiti`;
+    $("viewmeta").innerHTML=`<b>${esc(title)}</b> · tiešraide · skatītāji: <a href="works/">Darbi</a> vai saite`;
     history.replaceState(null,"",`./?live=${id}`);
     try{await navigator.clipboard.writeText(location.href);toast("Live sākts · saite nokopēta")}catch(e){toast("Live sākts")}
-  }catch(e){msg.textContent=e.message==="Nepareiza atslēga"?"Nepareiza atslēga":"Neizdevās: "+e.message;msg.className="msg err"}
+  }catch(e){msg.textContent=e.message==="Nepareiza atslēga"?"Nepareizs kods":"Neizdevās: "+e.message;msg.className="msg err"}
   $("l-ok").disabled=false;
 };
 async function endLive(){
   if(!liveHost)return;const h=liveHost;liveHost=null;
   await h.end();
-  $("live").textContent="● Live Coding";$("live").classList.remove("live-on");$("livebadge").hidden=true;
+  $("live").textContent="Live";$("live").classList.remove("danger");$("livebadge").hidden=true;
   $("viewbar").hidden=true;$("live-end").hidden=true;$("fork").hidden=false;
-  history.replaceState(null,"",`./?lang=${lang}`);toast("Live sesija beigta");
+  history.replaceState(null,"",`./?lang=${lang}`);toast("Live beigts");
 }
 $("live-end").onclick=endLive;
 addEventListener("pagehide",()=>{if(liveHost)liveHost.end(true)});
-
 async function openLive(id){
   const meta=s=>{const on=LIVE.active(s);$("viewmeta").innerHTML=`<b>${esc(s.title)}</b> · ${esc(s.author||"anonīms")} · ${on?"tiešraide":"beidzies"}${s.protected?" · 🔒":""}`;$("livebadge").textContent=on?"live":"beidzies";$("livebadge").classList.toggle("off",!on)};
   const v=LIVE.view(id,{
@@ -574,16 +642,15 @@ async function openLive(id){
     viewing={id:"live"};liveView=v;
     cm.setOption("readOnly",true);$("ro").hidden=false;$("livebadge").hidden=false;$("viewbar").hidden=false;$("fork").hidden=false;$("live-end").hidden=true;
     const s=await v.open();
-    document.title=s.title+" · LIVE";
     if(!LIVE.active(s)&&!s.protected)cm.setValue(s.code||"");
     showTab("out");
   }catch(e){toast(e.message);closeLiveView();cm.setValue(loadDraft(lang))}
 }
-function closeLiveView(){if(liveView)liveView.close();liveView=null;viewing=null;cm.setOption("readOnly",false);$("ro").hidden=true;$("livebadge").hidden=true;$("livebadge").classList.remove("off");$("viewbar").hidden=true;$("lock-bg").classList.remove("on");history.replaceState(null,"",`./?lang=${lang}`);document.title=`${L().name} kompilators`}
+function closeLiveView(){if(liveView)liveView.close();liveView=null;viewing=null;cm.setOption("readOnly",false);$("ro").hidden=true;$("livebadge").hidden=true;$("livebadge").classList.remove("off");$("viewbar").hidden=true;$("lock-bg").classList.remove("on");history.replaceState(null,"",`./?lang=${lang}`)}
 $("lock-cancel").onclick=()=>{closeLiveView();cm.setValue(loadDraft(lang))};
 $("lock-ok").onclick=async()=>{const p=$("lock-pass").value;if(!p||!liveView)return;$("lock-msg").textContent="Pārbauda…";$("lock-msg").className="msg";const ok=await liveView.unlock(p);if(ok)$("lock-bg").classList.remove("on")};
 
-/* ---- AI palīgs ---- */
+/* ---- AI ---- */
 const AI_URL="https://text.pollinations.ai/openai";
 const AI_PROXY="https://edupage-proxy.loduur.workers.dev/ai";
 let aiModels=[];
@@ -593,10 +660,10 @@ async function loadModels(){
     if(!r.ok)throw 0;
     const info=await r.json();aiModels=info.models||[];
     const sel=$("ai-model"),saved=localStorage.getItem("java-ai-model");
-    sel.innerHTML=aiModels.length?aiModels.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(""):'<option value="">pollinations (openai)</option>';
+    sel.innerHTML=aiModels.length?aiModels.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(""):'<option value="">pollinations</option>';
     if(saved&&aiModels.some(m=>m.id===saved))sel.value=saved;
     sel.onchange=()=>localStorage.setItem("java-ai-model",sel.value);
-  }catch(e){$("ai-model").innerHTML='<option value="">pollinations (openai)</option>'}
+  }catch(e){$("ai-model").innerHTML='<option value="">pollinations</option>'}
 }
 const aiLog=$("ai-log");let aiBusy=false,aiHistory=[];
 async function aiChat(messages){
@@ -604,8 +671,7 @@ async function aiChat(messages){
     const r=await fetch(`${AI_PROXY}/chat`,{method:"POST",headers:{"Content-Type":"text/plain","X-Access-Key":accessKey()},body:JSON.stringify({model:$("ai-model").value,messages})});
     const d=await r.json();
     if(r.ok&&d.content)return {content:d.content,provider:d.provider,model:d.model};
-    console.warn("ai proxy",d);
-  }catch(e){console.warn("ai proxy",e)}
+  }catch(e){}
   const body=JSON.stringify({model:"openai",messages,temperature:0.3});
   for(let attempt=0;attempt<2;attempt++){
     try{const r=await fetch(AI_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body});if(r.ok){const d=await r.json();const c=d.choices?.[0]?.message?.content;if(c)return {content:c,provider:"pollinations",model:"openai"}}}catch(e){}
@@ -615,36 +681,34 @@ async function aiChat(messages){
 }
 function ctx(){
   const stdin=segs.filter(s=>s.t==="in").map(s=>s.s).join("\n");
-  return `Valoda: ${L().name}. Pašreizējais kods (${L().fileOf(cm.getValue())}):\n\`\`\`${lang}\n${cm.getValue()}\n\`\`\`${stdin?`\nIevade (stdin), ko lietotājs ierakstīja:\n${stdin}`:""}${lastError?`\nPēdējā kļūda:\n${lastError.slice(0,1500)}`:""}${lastOutput&&!lastError?`\nPēdējā izvade:\n${lastOutput.slice(0,800)}`:""}${waiting?"\nProgramma šobrīd gaida ievadi terminālī.":""}`;
+  return `Valoda: ${L().name}. Pašreizējais kods (${L().fileOf(cm.getValue())}):\n\`\`\`${lang}\n${cm.getValue()}\n\`\`\`${stdin?`\nIevade (stdin):\n${stdin}`:""}${lastError?`\nPēdējā kļūda:\n${lastError.slice(0,1500)}`:""}${lastOutput&&!lastError?`\nPēdējā izvade:\n${lastOutput.slice(0,800)}`:""}${waiting?"\nProgramma šobrīd gaida ievadi.":""}`;
 }
 function renderMd(s){
-  const parts=s.split(/```(?:java|Java|pil|PIL|txt|text)?\n?([\s\S]*?)```/g);
+  const parts=s.split(/```[a-zA-Z#+]*\n?([\s\S]*?)```/g);
   return parts.map((p,i)=>i%2?`<pre>${esc(p.trim())}<button class="ins" data-code="${encodeURIComponent(p.trim())}">Ievietot</button></pre>`:esc(p).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>")).join("");
 }
-const isWholeFile=code=>lang==="java"?/class\s+\w+/.test(code)&&code.includes("main("):/^\s*main\s*\(\s*\)/m.test(code);
+const isWholeFile=code=>lang==="java"?/class\s+\w+/.test(code)&&code.includes("main("):lang==="pil"?/^\s*main\s*\(\s*\)/m.test(code):lang==="python"||lang==="lua"?code.split("\n").length>3:/\bmain\b/.test(code);
 async function ask(userText,shown){
   if(aiBusy)return;aiBusy=true;
   const u=document.createElement("div");u.className="msg-u";u.textContent=shown||userText;aiLog.appendChild(u);
-  const a=document.createElement("div");a.className="msg-a";a.innerHTML='<span class="thinking">Domā…</span>';aiLog.appendChild(a);aiLog.scrollTop=aiLog.scrollHeight;
+  const a=document.createElement("div");a.className="msg-a";a.innerHTML='<span class="thinking">…</span>';aiLog.appendChild(a);aiLog.scrollTop=aiLog.scrollHeight;
   try{
     const messages=[{role:"system",content:PROMPTS.system(lang,PIL.DOC_TEXT)},...aiHistory.slice(-6),{role:"user",content:userText+"\n\n"+ctx()}];
     const res=await aiChat(messages);const text=res.content;
     aiHistory.push({role:"user",content:shown||userText},{role:"assistant",content:text});
-    a.innerHTML=renderMd(text)+`<span class="prov">${esc(res.provider)} · ${esc(res.model)}</span>`;
-    a.querySelectorAll(".ins").forEach(b=>b.onclick=()=>{const code=decodeURIComponent(b.dataset.code);if(viewing){if(liveView)closeLiveView();else exitView()}if(isWholeFile(code)){if(confirm("Aizvietot visu kodu redaktorā?"))cm.setValue(code)}else cm.replaceSelection(code);cm.focus();toast("Ievietots")});
-  }catch(e){a.innerHTML=`<span style="color:var(--red)">Neizdevās: ${esc(e.message)}. Pamēģini vēlreiz pēc brīža.</span>`}
+    a.innerHTML=renderMd(text)+`<span class="prov">${esc(res.model)}</span>`;
+    a.querySelectorAll(".ins").forEach(b=>b.onclick=()=>{const code=decodeURIComponent(b.dataset.code);leaveView();if(isWholeFile(code)){if(confirm("Aizvietot visu kodu?"))cm.setValue(code)}else cm.replaceSelection(code);cm.focus()});
+  }catch(e){a.innerHTML=`<span style="color:var(--red)">${esc(e.message)}</span>`}
   aiBusy=false;aiLog.scrollTop=aiLog.scrollHeight;
 }
-document.querySelectorAll(".ai-quick button").forEach(b=>b.onclick=()=>{const [q,label]=PROMPTS.QUICK[b.dataset.q];if(b.dataset.q==="err"&&!lastError)return toast("Vispirms palaid kodu – nav kļūdas, ko skaidrot");ask(q,label)});
+document.querySelectorAll(".ai-quick button").forEach(b=>b.onclick=()=>{const [q,label]=PROMPTS.QUICK[b.dataset.q];if(b.dataset.q==="err"&&!lastError)return toast("Nav kļūdas – vispirms palaid kodu");ask(q,label)});
 $("ai-send").onclick=()=>{const v=$("ai-q").value.trim();if(!v)return;$("ai-q").value="";ask(v)};
 $("ai-q").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("ai-send").click()}});
 
 /* ---- starts ---- */
 const params=new URLSearchParams(location.search);
 setLang(params.get("lang")||localStorage.getItem("code-lang")||"java");
-UI.clock($("clock"));
-UI.initDither($("dither"));
-UI.requireAccess(()=>{cm.refresh();cm.focus();loadModels()},{sub:"2.k. 28.grupa · Kompilators"});
+UI.requireAccess(()=>{cm.refresh();cm.focus();loadModels()},{sub:"2.k. 28.grupa · piekļuves kods"});
 if(params.has("list"))showTab("list");
 if(params.get("id"))openSnippet(params.get("id"));
 else if(params.get("live"))openLive(params.get("live"));

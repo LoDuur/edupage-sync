@@ -239,54 +239,6 @@ row:
 ` },
   ];
 
-  const SIG = (n) => `<code data-t="${n} ">${n}</code>`;
-  const group = (names) => `<div class="fn">${names.map(SIG).join("")}</div>`;
-  const G = {
-    "Izvade / ievade": "print println printf printfln printch read readln readch",
-    "Vērtības": "set swap incr decr typeof to-int to-float to-char is-null is-num is-int is-float is-char is-string is-array",
-    "Aritmētika": "add sub mul div mod floor-mod pow neg abs sign min max clamp sqrt cbrt trunc ceil floor round exp ln log log2 log10 lerp hypot gcd lcm random randi-range randf-range seed-random",
-    "Trigonometrija": "sin cos tan asin acos atan atan2 sinh cosh tanh asinh acosh atanh",
-    "Salīdzināšana": "eq neq le gr leeq greq and or not",
-    "Plūsma": "goto jmp jmpn jmptable call func-call return catch assert warn error exit sleep valtable table-contains",
-    "Virknes": "string-new string-fmt string-free string-size string-idx string-set string-push string-pop string-concat string-substr string-split string-find string-contains string-replace string-replace-all string-starts-with string-ends-with string-trim string-to-lower string-to-upper string-reverse string-count string-copy string-repeat string-insert string-erase string-clear string-empty",
-    "Masīvi": "array-new array-fill array-iota array-free array-size array-idx array-set array-push array-pop array-insert array-erase array-back array-front array-join array-concat array-slice array-sort array-reverse array-shuffle array-find array-contains array-count array-shallow-copy array-deep-copy array-empty array-clear",
-    "Mapes": "map-new map-set map-at map-contains map-erase map-size map-empty map-keys map-values map-merge map-clear map-free",
-    "Biti": "bit-and bit-or bit-xor bit-not bit-shl bit-shr bit-count bit-test bit-set bit-clear bit-toggle",
-    "Sistēma": "time unix-time date variadic-size variadic-idx reg-size reg-idx reg-set return-reg-size return-reg-idx return-reg-set return-count stack-depth stack-name stack-line stack-trace func-arity func-variadic",
-  };
-  const e = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  const DOC_HTML = `
-<h4>Uzbūve</h4>
-Fails → funkcijas → komandas. Katra komanda savā rindā: <code>komanda arg1, arg2, …</code>. Programma sākas funkcijā <code>main()</code>. Komentāri: <code>; teksts</code>.
-<pre>${e(`saskaiti(a, b) let rezultats      ; funkcija ar 2 parametriem un 1 lokālo
-   add a, b, rezultats
-   return rezultats
-
-main()
-   saskaiti 2, 3                  ; rezultāts nonāk R$0
-   println R$0
-   call $1, saskaiti, 10, 5       ; vai uzreiz saglabā $1`)}</pre>
-<h4>Kur glabā vērtības</h4>
-<code>$0…$15</code> reģistri · <code>R$0…R$3</code> atgriešanas reģistri · parametri un <code>let</code> lokālie mainīgie · <code>const NAME vērtība</code> konstantes faila līmenī. Vērtību tipi: int, float, char <code>'a'</code>, string <code>"…"</code>, masīvs, null. Gandrīz katra komanda pēdējo argumentu izmanto kā MĒRĶI, kur ielikt rezultātu.
-<h4>Cikli un nosacījumi</h4>
-Nav <code>if</code>/<code>while</code> – ir iezīmes un lēcieni:
-<pre>${e(`   set 0, $0
-loop:                    ; iezīme
-   println $0
-   incr $0
-   le $0, 5, $1          ; $1 = $0 < 5
-   jmp $1, loop          ; lec, ja patiess (jmpn – ja nepatiess)`)}</pre>
-<h4>Ievade</h4>
-<code>readln $0</code> nolasa rindu, ko ieraksti terminālī zem izvades (programma apstājas un gaida), kā virkni; <code>to-int $0, $1</code> pārvērš (null, ja neizdodas). Virknes, ko izveido <code>readln</code>, <code>string-new</code>, <code>array-new</code>, ir jāatbrīvo ar <code>string-free</code> / <code>array-free</code>, citādi beigās brīdina par noplūdi.
-<h4>Izteiksmes un formāti</h4>
-<code>[ 2 ** 10 + sqrt(16) ]</code> – matemātika kvadrātiekavās; to aprēķina pirms izpildes, tāpēc tajā drīkst būt tikai skaitļi un <code>const</code> (ne reģistri). Funkcijas: <code>sqrt</code>, <code>pi()</code>, <code>e()</code>, <code>if(c, a, b)</code> u.c. <code>printfln "x = {}", x</code> – <code>{}</code> aizvieto ar argumentiem. Konstantēs virknēs: <code>"${"$"}{NAME}"</code> un <code>"${"$"}[1 + 2]"</code>.
-<h4>Direktīvas</h4>
-<code>@reg-size 32</code> (reģistru skaits, noklusēti 16) · <code>@return-reg-size 8</code> (noklusēti 4).
-<h4>Funkcijas (klikšķis ievieto)</h4>
-${Object.entries(G).map(([t, names]) => `<div style="margin:.35rem 0 .15rem;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)">${t}</div>${group(names.split(" "))}`).join("")}
-<h4>Avots</h4>
-Interpretators: <a href="https://github.com/Acerx-AMJ/PIL" target="_blank" rel="noopener" style="color:var(--sprout)">github.com/Acerx-AMJ/PIL</a> (MIT), kompilēts uz WebAssembly – kods tiek izpildīts tavā pārlūkā. Ierobežojums: 10 s uz palaišanu.`;
-
   const DOC_TEXT = `PIL sintakse: fails sastāv no funkcijām, funkcija – no komandām (katra savā rindā, argumenti atdalīti ar komatu). Programma sākas funkcijā main(). Komentāri sākas ar ;.
 Funkcijas definīcija: name(a, b) let lok1, lok2  (let – lokālie mainīgie, tajā pašā rindā). Iezīme: name: (savā rindā). Lēcieni: goto IEZĪME; jmp NOSACĪJUMS, IEZĪME (ja patiess); jmpn NOSACĪJUMS, IEZĪME (ja nepatiess). Nav if/while/for – tikai iezīmes un lēcieni.
 Vērtību glabāšana: reģistri $0..$15, atgriešanas reģistri R$0..R$3 (return VĒRTĪBA tur ieliek), parametri, let lokālie, const NAME VĒRTĪBA faila līmenī (nav mainīgu globālo). Gandrīz visām komandām PĒDĒJAIS arguments ir MĒRĶIS, kur ielikt rezultātu: add 2, 3, $0 nozīmē $0 = 2 + 3.
@@ -300,15 +252,6 @@ Masīvi: array-new MĒRĶIS, v, …; array-size A, MĒRĶIS; array-idx A, I, MĒ
 Citi: valtable ATSLĒGA, MĒRĶIS, k1, v1, k2, v2, … (uzmeklēšanas tabula); func-call FUNKCIJA, arg…, MĒRĶIS; typeof V, MĒRĶIS; exit KODS; sleep MS; assert NOSACĪJUMS, ZIŅA; error ZIŅA. Direktīvas: @reg-size N, @return-reg-size N.
 Šajā versijā NAV printn/printfn/readline/readchar/global – lieto println/printfln/readln/readch/const. Atkāpes ir 3 atstarpes, bet tās nav obligātas.`;
 
-  const BANNER = [
-    "██████╗ ██╗██╗     ",
-    "██╔══██╗██║██║     ",
-    "██████╔╝██║██║     ",
-    "██╔═══╝ ██║██║     ",
-    "██║     ██║███████╗",
-    "╚═╝     ╚═╝╚══════╝",
-  ].join("\n");
-
   const TEMPLATE = EXAMPLES[0].code;
-  return { BUILTINS, BUILTIN_SET, KEYWORDS, DIRECTIVES, MATH, SNIPPETS, EXAMPLES, DOC_HTML, DOC_TEXT, BANNER, TEMPLATE };
+  return { BUILTINS, BUILTIN_SET, KEYWORDS, DIRECTIVES, MATH, SNIPPETS, EXAMPLES, DOC_TEXT, TEMPLATE };
 })();
