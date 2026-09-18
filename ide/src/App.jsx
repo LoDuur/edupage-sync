@@ -17,6 +17,8 @@ import AIPanel from "./components/AIPanel.jsx";
 import StatusBar from "./components/StatusBar.jsx";
 import { Modal } from "./components/Modal.jsx";
 import { useMenu } from "./components/Menu.jsx";
+import CommandPalette from "./components/CommandPalette.jsx";
+import { executorInfo } from "./components/TabBar.jsx";
 
 export default function App() {
   const [access, setAccess] = useState(null);
@@ -61,7 +63,7 @@ function IDE() {
       if (p.get("view") === "saved") useStore.setState({ view: "saved", sidebarOpen: true });
     });
     probeServer().then(s => useStore.setState({ server: s }));
-    LIVE.listActive().then(l => useStore.setState({ liveActive: l.length > 0 })).catch(() => {});
+    LIVE.listActive().then(l => useStore.setState({ liveActive: l.length > 0, liveCount: l.length })).catch(() => {});
     return off;
   }, []);
 
@@ -69,8 +71,7 @@ function IDE() {
   const run = useCallback(() => {
     const st = useStore.getState(); const t = st.tabs.find(x => x.id === st.activeTab); if (!t) return;
     const code = t.model.getValue(); if (!code.trim()) return st.notify("Nothing to run.", "error");
-    const rt = st.server?.runtimes?.[t.lang]; const provider = st.server && rt?.available ? "sandbox" : "fallback";
-    session.run({ lang: t.lang, code, provider });
+    session.run({ lang: t.lang, code, provider: executorInfo(st.server, t.lang, st.executor).provider });
   }, []);
   const stop = () => session.stop();
   const format = () => getEditor()?.getAction("editor.action.formatDocument")?.run();
@@ -106,15 +107,18 @@ function IDE() {
   useEffect(() => { const h = () => { const host = useStore.getState().liveHost; if (host) host.end(true); }; addEventListener("pagehide", h); return () => removeEventListener("pagehide", h); }, []);
 
   /* ---- misc actions ---- */
-  const insertCode = code => { const t = tabs.find(x => x.id === activeTab); const ed = getEditor(); if (!ed) return; if (!t || t.kind !== "file") openFile(lang); const whole = lang === "java" ? /class\s+\w+/.test(code) && code.includes("main(") : lang === "pil" ? /^\s*main\s*\(\s*\)/m.test(code) : code.split("\n").length > 3; if (whole) { if (confirm("Replace the whole file with this code?")) ed.setValue(code); } else ed.executeEdits("ai", [{ range: ed.getSelection(), text: code }]); ed.focus(); };
+  const isWholeFile = (code, blockLang = "") => { const l = useStore.getState().lang; if (blockLang && blockLang.toLowerCase() !== l && !(l === "cpp" && /^c\+\+$/i.test(blockLang)) && !(l === "csharp" && /^(cs|c#)$/i.test(blockLang)) && !(l === "python" && /^py$/i.test(blockLang))) return false; return l === "java" ? /class\s+\w+/.test(code) && code.includes("main(") : l === "pil" ? /^\s*main\s*\(\s*\)/m.test(code) : code.split("\n").length > 3; };
+  const currentCode = () => { const st = useStore.getState(); const t = st.tabs.find(x => x.id === st.activeTab); return t ? t.model.getValue() : ""; };
+  const applyCode = code => { const st = useStore.getState(); const t = st.tabs.find(x => x.id === st.activeTab); if (!t || t.kind !== "file") openFile(st.lang); const ed = getEditor(); if (!ed) return; const m = ed.getModel(); ed.pushUndoStop(); ed.executeEdits("ai", [{ range: m.getFullModelRange(), text: code }]); ed.pushUndoStop(); ed.focus(); S.notify("Change applied to " + LANGUAGES[st.lang].file, "ok"); };
+  const insertCode = code => { const st = useStore.getState(); const t = st.tabs.find(x => x.id === st.activeTab); const ed = getEditor(); if (!ed) return; if (!t || t.kind !== "file") openFile(st.lang); ed.executeEdits("ai", [{ range: ed.getSelection(), text: code }]); ed.focus(); };
   const pickLanguage = anchor => menu.open(anchor, ORDER.map(k => ({ label: LANGUAGES[k].name, dot: LANGUAGES[k].color, selected: k === lang, k: LANGUAGES[k].file, run: () => openFile(k) })), { align: "right", width: 210 });
   const context = () => { const t = tabs.find(x => x.id === activeTab); const st = useStore.getState(); const probs = st.problems.map(p => `${p.kind}${p.line ? " line " + p.line : ""}: ${p.msg}`).join("\n"); return `Language: ${LANGUAGES[lang].name}. Current code (${LANGUAGES[lang].file}):\n\`\`\`${lang}\n${t ? t.model.getValue() : ""}\n\`\`\`${probs ? `\nLast error:\n${probs}\n${st.output.slice(0, 1200)}` : st.output ? `\nLast output:\n${st.output.slice(0, 800)}` : ""}`; };
-  const actions = { openFile, resetFile, activate, closeTab, run, stop, save, format, openSnippet, openLive, startLive, endLive, copyLiveLink, pickLanguage, insertCode, notify: S.notify, showLive: () => useStore.setState({ view: "live", sidebarOpen: true }) };
+  const actions = { openFile, resetFile, activate, closeTab, run, stop, save, format, openSnippet, openLive, startLive, endLive, copyLiveLink, pickLanguage, insertCode, applyCode, isWholeFile, currentCode, notify: S.notify, showLive: () => useStore.setState({ view: "live", sidebarOpen: true }) };
 
   /* ---- shortcuts ---- */
   useEffect(() => {
     const k = e => { const mod = e.metaKey || e.ctrlKey; if (!mod) return; const key = e.key.toLowerCase();
-      if (e.key === "Enter") { e.preventDefault(); run(); } else if (key === "s") { e.preventDefault(); save(); } else if (key === "i") { e.preventDefault(); S.toggleAI(); } else if (key === "j") { e.preventDefault(); S.setDock({ open: !useStore.getState().dock.open }); } else if (key === "b") { e.preventDefault(); S.toggleSidebar(); } else if (key === "`") { e.preventDefault(); S.setDock({ view: "terminal", open: true }); session.focus(); } else if (key === "=" || key === "+") { e.preventDefault(); S.setFontSize(Math.min(24, useStore.getState().fontSize + 1)); } else if (key === "-") { e.preventDefault(); S.setFontSize(Math.max(10, useStore.getState().fontSize - 1)); } };
+      if (e.key === "Enter") { e.preventDefault(); run(); } else if (key === "k") { e.preventDefault(); S.setPalette(!useStore.getState().palette); } else if (key === "s") { e.preventDefault(); save(); } else if (key === "i") { e.preventDefault(); S.toggleAI(); } else if (key === "j") { e.preventDefault(); S.setDock({ open: !useStore.getState().dock.open }); } else if (key === "b") { e.preventDefault(); S.toggleSidebar(); } else if (key === "`") { e.preventDefault(); S.setDock({ view: "terminal", open: true }); session.focus(); } else if (key === "=" || key === "+") { e.preventDefault(); S.setFontSize(Math.min(24, useStore.getState().fontSize + 1)); } else if (key === "-") { e.preventDefault(); S.setFontSize(Math.max(10, useStore.getState().fontSize - 1)); } };
     addEventListener("keydown", k); return () => removeEventListener("keydown", k);
   }, [run]);
 
@@ -123,12 +127,14 @@ function IDE() {
       <Sidebar actions={actions} />
       <main className="stage">
         <TabBar actions={actions} />
-        <EditorPane actions={actions} />
+        <EditorPane />
         <Dock />
       </main>
+      {S.aiOpen && <Resizer />}
       <AIPanel actions={actions} context={context} />
     </div>
     <StatusBar actions={actions} />
+    <CommandPalette actions={actions} />
     {menu.el}
     {modal?.kind === "save" && <SaveModal m={modal} onClose={() => setModal(null)} onSaved={id => { setModal(null); S.notify("Saved to the class archive.", "ok"); openSnippet(id); }} />}
     {modal?.kind === "live" && <LiveModal m={modal} onClose={() => setModal(null)} onStarted={h => { setModal(null); useStore.setState({ liveHost: h, view: "live", sidebarOpen: true }); navigator.clipboard.writeText(`${location.origin}${location.pathname}?live=${h.state.id}`).then(() => S.notify("Live session started · viewer link copied.", "ok"), () => S.notify("Live session started.", "ok")); }} />}
@@ -137,7 +143,25 @@ function IDE() {
   </div>;
 }
 
-function Toast() { const t = useStore(s => s.toast); if (!t) return null; return <div className={"toast " + t.kind}>{t.kind === "ok" ? <CircleCheck size={14} /> : t.kind === "error" ? <CircleX size={14} /> : <Info size={14} />}{t.text}</div>; }
+function Toast() {
+  const t = useStore(s => s.toast); const [shown, setShown] = useState(null);
+  useEffect(() => { if (t) { setShown(t); return; } const tm = setTimeout(() => setShown(null), 150); return () => clearTimeout(tm); }, [t]);
+  if (!shown) return null;
+  return <div className={"toast " + shown.kind + (t ? "" : " out")} role="status">{shown.kind === "ok" ? <CircleCheck size={14} /> : shown.kind === "error" ? <CircleX size={14} /> : <Info size={14} />}{shown.text}</div>;
+}
+function Resizer() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const g = ref.current; let drag = false;
+    const down = e => { drag = true; g.classList.add("on"); document.body.style.cursor = "col-resize"; e.preventDefault(); };
+    const move = e => { if (drag) useStore.getState().setAiWidth(innerWidth - e.clientX); };
+    const up = () => { if (!drag) return; drag = false; g.classList.remove("on"); document.body.style.cursor = ""; };
+    g.addEventListener("mousedown", down); addEventListener("mousemove", move); addEventListener("mouseup", up);
+    return () => { g.removeEventListener("mousedown", down); removeEventListener("mousemove", move); removeEventListener("mouseup", up); };
+  }, []);
+  const w = useStore(s => s.aiWidth);
+  return <div className="vsplit" ref={ref} role="separator" tabIndex={0} aria-orientation="vertical" aria-label="Resize assistant panel" aria-valuenow={w} aria-valuemin={280} onKeyDown={e => { if (e.key === "ArrowLeft") { e.preventDefault(); useStore.getState().setAiWidth(w + 16); } else if (e.key === "ArrowRight") { e.preventDefault(); useStore.getState().setAiWidth(w - 16); } }} />;
+}
 
 function SaveModal({ m, onClose, onSaved }) {
   const [title, setTitle] = useState(m.title), [author, setAuthor] = useState(localStorage.getItem("java-author") || ""), [key, setKey] = useState(sessionStorage.getItem("java-key") || accessKey()), [msg, setMsg] = useState(""), [busy, setBusy] = useState(false);

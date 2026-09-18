@@ -8,24 +8,26 @@ import { runOnServer, runOnWandbox, runPilWasm } from "./exec.js";
 import { diagnose, stripAnsi } from "./diagnose.js";
 import { setMarkers } from "./editor.js";
 
-const A = { dim: "\x1b[38;5;243m", red: "\x1b[38;5;203m", yellow: "\x1b[38;5;221m", green: "\x1b[38;5;114m", cyan: "\x1b[38;5;117m", violet: "\x1b[38;5;147m", reset: "\x1b[0m" };
+const A = { dim: "\x1b[3;38;2;107;107;112m", red: "\x1b[38;2;248;81;73m", reset: "\x1b[0m" };
 const S = useStore;
 let term, fit, container;
 let conn = null, mode = "idle", transcript = "", lineBuf = "", runId = 0, t0 = 0, currentLang = null, currentCode = "";
 let fb = null; // fallback (batch) state: { stdin, consumed, waiting, eof }
 const onDataHandlers = [];
+const history = []; let histPos = 0, idleBuf = "";
 const tw = s => term && term.write(String(s).replace(/\r?\n/g, "\r\n"));
 
 export function attach(el) {
   if (term) { if (container !== el) { el.appendChild(container); } fit.fit(); return term; }
-  container = document.createElement("div"); container.style.cssText = "position:absolute;inset:0"; el.appendChild(container);
-  term = new Terminal({ fontFamily: '"JetBrains Mono","Fira Code",Menlo,monospace', fontSize: 13, lineHeight: 1.3, letterSpacing: 0, cursorBlink: true, cursorStyle: "bar", cursorWidth: 2, scrollback: 4000, allowProposedApi: true,
-    theme: { background: "#0f0f0f", foreground: "#d6d6d6", cursor: "#c7c9ff", cursorAccent: "#0f0f0f", selectionBackground: "#2b305066", black: "#1a1a1a", red: "#ff6b6b", green: "#7ed4a0", yellow: "#f5b74f", blue: "#82aaff", magenta: "#c3a6ff", cyan: "#7fd1c7", white: "#d6d6d6", brightBlack: "#5c5f6a", brightRed: "#ff8080", brightGreen: "#96e6b3", brightYellow: "#ffd07a", brightBlue: "#9dbcff", brightMagenta: "#d7c3ff", brightCyan: "#9fe0d8", brightWhite: "#ffffff" } });
+  container = document.createElement("div"); container.style.cssText = "position:absolute;inset:6px 0 0 12px"; el.appendChild(container);
+  term = new Terminal({ fontFamily: '"Geist Mono","JetBrains Mono",ui-monospace,Menlo,monospace', fontSize: 13, lineHeight: 1.6, letterSpacing: 0, cursorBlink: true, cursorStyle: "bar", cursorWidth: 1, scrollback: 4000, allowProposedApi: true,
+    theme: { background: "#0a0a0a", foreground: "#ededed", cursor: "#3291ff", cursorAccent: "#0a0a0a", selectionBackground: "#3291ff1f", black: "#18181b", red: "#f85149", green: "#3fb950", yellow: "#e3a008", blue: "#82aaff", magenta: "#c792ea", cyan: "#82aaff", white: "#ededed", brightBlack: "#6b6b70", brightRed: "#f85149", brightGreen: "#a3e6a3", brightYellow: "#f0c674", brightBlue: "#82aaff", brightMagenta: "#c792ea", brightCyan: "#82aaff", brightWhite: "#ffffff" } });
   fit = new FitAddon(); term.loadAddon(fit); term.open(container); fit.fit();
+  document.fonts?.ready.then(() => { term.options.fontFamily = term.options.fontFamily; fit.fit(); });
   term.parser.registerOscHandler(7777, data => { if (data === "run") { S.getState().setRun({ phase: "running", state: "running" }); } return true; });
-  term.onData(d => { for (const h of onDataHandlers) h(d); if (mode === "server" && conn) conn.write(d); else if (mode === "fallback") for (const ch of d.replace(/\r\n/g, "\r")) localKey(ch); else for (const ch of d) idleKey(ch); });
+  term.onData(d => { for (const h of onDataHandlers) h(d); if (mode === "server" && conn) conn.write(d); else if (mode === "fallback") for (const ch of d.replace(/\r\n/g, "\r")) localKey(ch); else idleInput(d); });
   new ResizeObserver(() => { try { fit.fit(); if (conn) conn.resize(term.cols, term.rows); } catch {} }).observe(el);
-  tw(`${A.dim}28teh · program input and output appear here. Press ⌘/Ctrl+Enter to run.${A.reset}\n`);
+  tw(`${A.dim}Program input and output appear here. Press ⌘/Ctrl+Enter to run; type clear to empty the panel.${A.reset}\n`); prompt();
   if (import.meta.env.DEV) window.__28 = { term, run, stop };
   return term;
 }
@@ -34,9 +36,29 @@ export const clear = () => { if (term) { term.clear(); } };
 export const resize = () => { try { fit && fit.fit(); } catch {} };
 export const onData = h => { onDataHandlers.push(h); return () => onDataHandlers.splice(onDataHandlers.indexOf(h), 1); };
 
-function idleKey(ch) { if (ch === "\x0c") term.clear(); }
-function header(lang) { const d = LANGUAGES[lang]; tw(`${A.violet}❯${A.reset} ${A.dim}${d.cmd}${A.reset}\n`); }
-function footer(rc, ms, ok, extra = "") { const t = ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`; tw(`\n${ok ? A.dim : A.red}⏎ exited with code ${rc}${extra} · ${t}${A.reset}\n\n`); }
+/* ---------- idle shell: local line editor with history; nothing runs outside Run ---------- */
+const PROMPT = "\x1b[38;2;160;160;166m❯\x1b[0m ";
+function prompt() { idleBuf = ""; histPos = history.length; term.write(PROMPT); }
+function redrawIdle(text) { term.write("\r\x1b[2K" + PROMPT + text); idleBuf = text; }
+function idleInput(d) {
+  if (d === "\x1b[A" || d === "\x1b[B") { if (!history.length) return; histPos = d === "\x1b[A" ? Math.max(0, histPos - 1) : Math.min(history.length, histPos + 1); redrawIdle(histPos === history.length ? "" : history[histPos]); return; }
+  if (d.startsWith("\x1b")) return;
+  for (const ch of d.replace(/\r\n/g, "\r")) {
+    if (ch === "\x0c") { term.clear(); continue; }
+    if (ch === "\x03") { term.write("^C"); tw("\n"); prompt(); continue; }
+    if (ch === "\r" || ch === "\n") { const line = idleBuf.trim(); if (line && history[history.length - 1] !== line) history.push(line); term.write("\r\n", () => { runIdle(line); prompt(); }); continue; }
+    if (ch === "\x7f" || ch === "\b") { if (idleBuf) { idleBuf = idleBuf.slice(0, -1); term.write("\b \b"); } continue; }
+    if (ch >= " ") { idleBuf += ch; term.write(ch); }
+  }
+}
+function runIdle(line) {
+  if (!line) return;
+  const cmd = line.split(/\s+/)[0].toLowerCase();
+  if (cmd === "clear" || cmd === "cls") { term.clear(); return; }
+  tw(`${A.dim}${line}: not available outside Run in this environment${A.reset}\n`);
+}
+function header(lang) { const d = LANGUAGES[lang]; term.write("\r\x1b[2K"); tw(`${PROMPT}${A.dim}${d.cmd}${A.reset}\n`); }
+function footer() { term.write("", () => term.write(term.buffer.active.cursorX === 0 ? "" : "\r\n", prompt)); }
 function finishDiag(lang, text, rc, signal, cls) {
   const items = diagnose(lang, text, { rc, signal, file: LANGUAGES[lang].file, cls });
   S.getState().setProblems(items); setMarkers(items);
@@ -50,7 +72,7 @@ export async function run({ lang, code, provider }) {
   if (mode !== "idle") stop();
   const id = ++runId; currentLang = lang; currentCode = code; transcript = ""; lineBuf = ""; t0 = performance.now();
   const st = S.getState(); st.setProblems([]); setMarkers([]); st.setOutput(""); st.setDock({ view: st.dock.view === "problems" ? "terminal" : st.dock.view, open: true });
-  st.setRun({ state: "starting", rc: null, ms: 0, provider, phase: LANGUAGES[lang].wandbox || ["c", "cpp", "java", "csharp"].includes(lang) ? "compiling" : "running" });
+  st.setRun({ state: "starting", rc: null, ms: 0, provider, note: "", phase: LANGUAGES[lang].wandbox || ["c", "cpp", "java", "csharp"].includes(lang) ? "compiling" : "running" });
   header(lang); term.focus();
   if (provider === "sandbox") return runServer(id, lang, code);
   return runFallback(id, lang, code);
@@ -59,7 +81,7 @@ export function stop() {
   if (mode === "server" && conn) { conn.kill(); conn.close(); }
   const wasActive = mode !== "idle";
   mode = "idle"; conn = null; fb = null; runId++;
-  if (wasActive) { tw(`\n${A.red}^C interrupted${A.reset}\n\n`); S.getState().setRun({ state: "interrupted", phase: "" }); }
+  if (wasActive) { tw(`\n${A.red}^C interrupted${A.reset}\n`); prompt(); S.getState().setRun({ state: "interrupted", phase: "" }); }
 }
 
 function runServer(id, lang, code) {
@@ -72,10 +94,10 @@ function runServer(id, lang, code) {
       const text = stripAnsi(transcript);
       const hasErr = finishDiag(lang, text, rc, reason === "timeout" ? "time limit" : "", LANGUAGES[lang].classOf ? LANGUAGES[lang].classOf(code) : "Main");
       S.getState().setOutput(text);
-      const ok = rc === 0 && !hasErr; footer(rc, ms, ok, reason && reason !== "killed" ? ` (${reason})` : "");
-      S.getState().setRun({ state: ok ? "done" : "failed", rc, ms, phase: "" });
+      const ok = rc === 0 && !hasErr; footer();
+      S.getState().setRun({ state: ok ? "done" : "failed", rc, ms, phase: "", note: reason && reason !== "killed" ? reason : "" });
     },
-    onError: message => { if (id !== runId) return; mode = "idle"; conn = null; tw(`${A.red}${message}${A.reset}\n\n`); S.getState().setRun({ state: "failed", rc: -1, phase: "" }); S.getState().setProblems([{ kind: "error", line: 0, col: 0, msg: message, hint: "" }]); },
+    onError: message => { if (id !== runId) return; mode = "idle"; conn = null; tw(`${A.red}${message}${A.reset}\n`); prompt(); S.getState().setRun({ state: "failed", rc: -1, phase: "" }); S.getState().setProblems([{ kind: "error", line: 0, col: 0, msg: message, hint: "" }]); },
   });
 }
 
@@ -112,8 +134,8 @@ async function fallbackStep(id, lang, code, cont) {
   const text = [r.compiler, r.err, r.out].filter(Boolean).join("\n");
   st.setOutput([r.compiler, r.err].filter(Boolean).join("\n") || (r.out ? r.out : ""));
   const hasErr = finishDiag(lang, text.replace(/prog\.(cc|c|cs|py|lua|pil)/g, LANGUAGES[lang].file), r.rc, r.signal, r.cls || "Main");
-  const ok = r.rc === 0 && !hasErr; footer(r.rc, ms, ok, r.runtime ? ` · ${r.runtime}` : "");
+  const ok = r.rc === 0 && !hasErr; footer();
   mode = "idle"; fb = null;
-  st.setRun({ state: ok ? "done" : "failed", rc: r.rc, ms, phase: "" });
+  st.setRun({ state: ok ? "done" : "failed", rc: r.rc, ms, phase: "", note: r.runtime || "" });
 }
 export const isRunning = () => mode !== "idle";

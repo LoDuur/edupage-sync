@@ -1,56 +1,94 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, X, ChevronDown, ArrowUp, User, FileInput } from "lucide-react";
+import { X, ChevronDown, ArrowUp, Square, BookOpen, CircleAlert, SearchCheck, SquarePen, FlaskConical, GraduationCap, CircleHelp, TriangleAlert, Wrench } from "lucide-react";
 import { useStore } from "../store.js";
-import { loadModels, chat, brandOf, BRAND_ICONS } from "../lib/ai.js";
+import { loadModels, chat } from "../lib/ai.js";
+import { MODELS, modelOf, providerOf } from "../lib/models.js";
 import { PROMPTS } from "../lib/prompts.js";
 import { PIL, LANGUAGES } from "../lib/languages.js";
-import { getEditor } from "../lib/editor.js";
 import { useMenu } from "./Menu.jsx";
+import Markdown, { Thinking } from "./Markdown.jsx";
+import { AiMessageBubble } from "@/components/ui/message-bubble";
+import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 
-const brandUrl = id => BRAND_ICONS[brandOf(id)] || BRAND_ICONS["openrouter-color"];
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-function md(s) { const parts = s.split(/```[a-zA-Z#+]*\n?([\s\S]*?)```/g); return parts.map((p, i) => i % 2 ? `<pre>${esc(p.trim())}<button class="ins" data-code="${encodeURIComponent(p.trim())}">Insert</button></pre>` : esc(p).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")).join(""); }
+const PHASE = { err: ["shaping", "Shaping…"], complete: ["shaping", "Shaping…"], explain: ["composing", "Composing…"], review: ["composing", "Composing…"], task: ["composing", "Composing…"], tests: ["solving", "Solving…"], chat: ["solving", "Solving…"] };
+const QA = [["Understand", [["explain", BookOpen], ["err", CircleAlert]]], ["Practice", [["review", SearchCheck], ["complete", SquarePen], ["tests", FlaskConical], ["task", GraduationCap]]]];
+const fmtMs = v => v < 1000 ? `${v} ms` : `${(v / 1000).toFixed(1)} s`;
+
+function suggest(lang, code, hasError) {
+  const out = [];
+  if (hasError) out.push({ icon: TriangleAlert, label: "Explain the last error", text: PROMPTS.QUICK.err[0], intent: "err" });
+  if (/Scanner|input\(|cin\s*>>|scanf|Console\.Read|io\.read|readln|readch/.test(code)) out.push({ icon: CircleHelp, label: "Explain the input handling", text: "Explain how this program reads and validates its input, and what happens with unexpected input.", intent: "explain" });
+  if (/\b(for|while)\b/.test(code)) out.push({ icon: CircleHelp, label: "Walk me through the loop", text: "Walk me through what the loop in this code does, iteration by iteration, for one small example input.", intent: "explain" });
+  out.push({ icon: Wrench, label: "Suggest error handling", text: "Suggest how to add error handling to this program without changing its behaviour for valid input. Return the full file.", intent: "complete" });
+  out.push({ icon: CircleHelp, label: "Explain this code", text: PROMPTS.QUICK.explain[0], intent: "explain" });
+  out.push({ icon: FlaskConical, label: "Give me test inputs", text: PROMPTS.QUICK.tests[0], intent: "tests" });
+  return out.slice(0, 3);
+}
 
 export default function AIPanel({ actions, context }) {
-  const { aiOpen, toggleAI, lang } = useStore();
-  const [models, setModels] = useState([]), [model, setModel] = useState(localStorage.getItem("java-ai-model") || "");
-  const [msgs, setMsgs] = useState([{ role: "a", html: "Hi! I can see your code, what you typed into the terminal and the last output. Ask me anything about it or use a quick action below." }]);
-  const [busy, setBusy] = useState(false), [q, setQ] = useState("");
-  const log = useRef(null), ta = useRef(null), hist = useRef([]), pickRef = useRef(null);
+  const { aiOpen, toggleAI, lang, model, setModel, problems, aiWidth } = useStore();
+  const [models, setModels] = useState(MODELS);
+  const [msgs, setMsgs] = useState([]);
+  const [busy, setBusy] = useState(false), [phase, setPhase] = useState(null), [q, setQ] = useState("");
+  const log = useRef(null), ta = useRef(null), hist = useRef([]), pickRef = useRef(null), abort = useRef(null), seq = useRef(0);
   const menu = useMenu();
-  useEffect(() => { loadModels().then(ms => { setModels(ms); if (!ms.some(m => m.id === model)) setModel(ms[0]?.id || ""); }); }, []);
-  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [msgs, busy]);
+  useEffect(() => { loadModels().then(ms => { setModels(ms); if (!ms.some(m => m.id === useStore.getState().model)) setModel(ms[0].id); }); }, []);
+  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [msgs, phase]);
   useEffect(() => { if (aiOpen) setTimeout(() => ta.current?.focus(), 250); }, [aiOpen]);
-  const pick = id => { setModel(id); localStorage.setItem("java-ai-model", id); };
-  async function ask(text, shown) {
-    if (busy || !text.trim()) return; setBusy(true); toggleAI(true);
-    setMsgs(m => [...m, { role: "u", text: shown || text }]);
+
+  async function ask(text, shown, intent = "chat") {
+    if (busy || !text.trim()) return;
+    setBusy(true); toggleAI(true);
+    const aid = ++seq.current;
+    setMsgs(m => [...m, { id: "u" + aid, role: "user", text: shown || text }, { id: "a" + aid, role: "assistant", content: "", reasoning: "", streaming: true, model }]);
+    const [state, label] = PHASE[intent] || PHASE.chat; setPhase({ state, label });
+    const ctl = new AbortController(); abort.current = ctl;
+    let pending = null, raf = 0;
+    const patch = p => setMsgs(ms => ms.map(m => m.id === "a" + aid ? { ...m, ...p } : m));
+    const flush = () => { raf = 0; if (!pending) return; const u = pending; pending = null; patch({ content: u.content, reasoning: u.reasoning, model: u.model }); if (u.content) setPhase(null); };
     try {
       const c = context();
-      const res = await chat(model, [{ role: "system", content: PROMPTS.system(lang, PIL.DOC_TEXT) }, ...hist.current.slice(-6), { role: "user", content: text + "\n\n" + c }]);
+      const res = await chat(model, [{ role: "system", content: PROMPTS.system(lang, PIL.DOC_TEXT) }, ...hist.current.slice(-6), { role: "user", content: text + "\n\n" + c }], { signal: ctl.signal, onUpdate: u => { pending = u; if (!raf) raf = requestAnimationFrame(flush); } });
+      cancelAnimationFrame(raf); pending = null;
+      patch({ content: res.content, reasoning: res.reasoning, model: res.model, metrics: res.metrics, streaming: false });
       hist.current.push({ role: "user", content: shown || text }, { role: "assistant", content: res.content });
-      setMsgs(m => [...m, { role: "a", html: md(res.content), model: res.model }]);
-    } catch (e) { setMsgs(m => [...m, { role: "a", html: `<span style="color:var(--err)">${esc(e.message)}</span>` }]); }
-    setBusy(false);
+    } catch (e) { cancelAnimationFrame(raf); patch({ streaming: false, error: e.message }); }
+    setPhase(null); setBusy(false); abort.current = null;
   }
-  const onLogClick = e => { const b = e.target.closest(".ins"); if (!b) return; const code = decodeURIComponent(b.dataset.code); actions.insertCode(code); };
-  const modelName = models.find(m => m.id === model)?.name || (models.length ? "Model" : "pollinations");
-  return <aside className={"ai" + (aiOpen ? " open" : "")} aria-hidden={!aiOpen}><div className="ai-inner">
-    <div className="ai-h"><span className="t"><span className="g"><Sparkles size={13} strokeWidth={2.2} /></span>Assistant</span><span className="sp" />
-      <button className="mpick" ref={pickRef} title="Model" onClick={() => menu.open(pickRef.current, models.length ? models.map(m => ({ label: m.name, img: brandUrl(m.id), selected: m.id === model, run: () => pick(m.id) })) : [{ label: "pollinations (fallback)", selected: true }], { align: "right", width: 260 })}><img src={brandUrl(model || "openai")} alt="" /><span>{modelName}</span><ChevronDown size={13} /></button>
-      <button className="ibtn" title="Close" onClick={() => toggleAI(false)}><X size={16} strokeWidth={1.8} /></button></div>
-    <div className="chat" ref={log} onClick={onLogClick}>
-      {msgs.map((m, i) => <div key={i} className={"m " + m.role}><span className="av">{m.role === "a" ? <Sparkles size={13} strokeWidth={2.2} /> : <User size={13} />}</span>
-        {m.role === "a" ? <div className="bub" dangerouslySetInnerHTML={{ __html: m.html + (m.model ? `<span class="prov">${esc(m.model)}</span>` : "") }} /> : <div className="bub">{m.text}</div>}</div>)}
-      {busy && <div className="m a"><span className="av"><Sparkles size={13} strokeWidth={2.2} /></span><div className="bub"><span className="think"><i /><i /><i /></span></div></div>}
+  const stop = () => abort.current?.abort();
+  const send = () => { const v = q; if (!v.trim()) return; setQ(""); if (ta.current) ta.current.style.height = "22px"; ask(v); };
+  const quick = k => { const [text, label] = PROMPTS.QUICK[k]; if (k === "err" && !useStore.getState().problems.length && !context().includes("Last error")) return actions.notify("Run the code first – there is no error to explain."); ask(text, label, k); };
+  const cur = modelOf(model) || models[0];
+  const code = actions.currentCode();
+  const hasError = problems.some(p => p.kind !== "warning");
+  return <aside className={"ai" + (aiOpen ? " open" : "")} style={{ "--aiw": aiWidth + "px" }} aria-hidden={!aiOpen} aria-label="Assistant">
+    <div className="ai-h"><span className="t">Assistant</span><span className="sp" />
+      <button className="mpick" ref={pickRef} title={cur?.name} aria-label={`Model: ${cur?.name}`} aria-haspopup="menu" onClick={() => menu.open(pickRef.current, models.map(m => ({ label: m.name, selected: m.id === model, run: () => setModel(m.id) })), { align: "right", width: 240 })}><span>{cur?.short}</span><ChevronDown size={14} /></button>
+      <button className="ibtn" title="Close" aria-label="Close assistant" onClick={() => toggleAI(false)}><X size={16} /></button></div>
+    <div className="chat" ref={log}>
+      {msgs.length === 0 && <div>
+        <p className="hello">Ask about the open file, its output or the last error.</p>
+        <div className="chips">{suggest(lang, code, hasError).map((c, i) => <button key={i} onClick={() => ask(c.text, c.label, c.intent)}><c.icon size={14} />{c.label}</button>)}</div>
+      </div>}
+      {msgs.map(m => m.role === "user" ? <AiMessageBubble key={m.id} role="user" content={m.text} /> :
+        <AiMessageBubble key={m.id} role="assistant" provider={providerOf(m.model)} content={m.content} isStreaming={m.streaming && !!m.content}>
+          <Thinking text={m.reasoning} />
+          <Markdown text={m.content} streaming={m.streaming} lang={lang} file={LANGUAGES[lang].file} isEdit={actions.isWholeFile} current={actions.currentCode} onApply={actions.applyCode} onInsert={actions.insertCode} />
+          {m.error && <div className="mmeta err">{m.error}</div>}
+          {m.metrics && <div className="mmeta"><span>{modelOf(m.model)?.name || String(m.model).split("/").pop()}</span>·<span>{m.metrics.estimated ? "~" : ""}{Math.round(m.metrics.tps)} tok/s</span>·<span>{fmtMs(m.metrics.ms)}</span></div>}
+        </AiMessageBubble>)}
     </div>
+    {phase && <div className="orbpill" role="status"><ThinkingOrb state={phase.state} size={20} theme="dark" /><span>{phase.label}</span></div>}
     <div className="composer">
-      <div className="chips">{Object.entries(PROMPTS.QUICK).map(([k, [text, label]]) => <button key={k} onClick={() => { if (k === "err" && !useStore.getState().problems.length && !context().includes("Last error")) return actions.notify("Run the code first – there is no error to explain."); ask(text, label); }}>{label}</button>)}</div>
-      <div className="glass">
-        <textarea ref={ta} rows={1} placeholder={`Ask about your ${LANGUAGES[lang].name} code…`} value={q} onChange={e => { setQ(e.target.value); e.target.style.height = "22px"; e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px"; }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const v = q; setQ(""); e.target.style.height = "22px"; ask(v); } }} />
-        <div className="row"><span className="hint">Enter to send · Shift+Enter for a new line</span><button className="send" disabled={busy || !q.trim()} onClick={() => { const v = q; setQ(""); ask(v); }} title="Send"><ArrowUp size={16} strokeWidth={2.4} /></button></div>
+      <div className="qa">
+        {QA.map(([label, items]) => <div key={label}><span className="label">{label}</span><div className="rowq">{items.map(([k, Icon]) => <button key={k} onClick={() => quick(k)} disabled={busy}><Icon size={14} />{PROMPTS.QUICK[k][1]}</button>)}</div></div>)}
+      </div>
+      <div className="box">
+        <textarea ref={ta} rows={1} aria-label="Message the assistant" placeholder={`Ask about your ${LANGUAGES[lang].name} code…`} value={q} onChange={e => { setQ(e.target.value); e.target.style.height = "22px"; e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px"; }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
+        <div className="row"><span className="hint">Enter to send · Shift+Enter for a new line</span>
+          <button className={"send" + (busy ? " stop" : q.trim() ? " ready" : "")} disabled={!busy && !q.trim()} onClick={busy ? stop : send} aria-label={busy ? "Stop generating" : "Send message"}><ArrowUp size={16} /><Square size={14} /></button></div>
       </div>
     </div>
     {menu.el}
-  </div></aside>;
+  </aside>;
 }

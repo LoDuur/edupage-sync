@@ -15,19 +15,19 @@ export function setupMonaco() {
   monaco.editor.defineTheme("obsidian", {
     base: "vs-dark", inherit: true,
     rules: [
-      { token: "comment", foreground: "5c5f6a", fontStyle: "italic" }, { token: "keyword", foreground: "b4a0ff" }, { token: "keyword.control", foreground: "d0a8ff" },
-      { token: "string", foreground: "a8c98a" }, { token: "number", foreground: "f2b28c" }, { token: "type", foreground: "7fd1c7" }, { token: "type.identifier", foreground: "7fd1c7" },
-      { token: "delimiter", foreground: "9a9ca8" }, { token: "operator", foreground: "9a9ca8" }, { token: "variable", foreground: "e6e6e6" }, { token: "variable.predefined", foreground: "8fb6ff" },
-      { token: "identifier", foreground: "e0e0e0" }, { token: "annotation", foreground: "e3b56f" }, { token: "builtin", foreground: "82aaff" }, { token: "label", foreground: "e3b56f" },
+      { token: "comment", foreground: "6b6b70", fontStyle: "italic" }, { token: "keyword", foreground: "c792ea" }, { token: "keyword.control", foreground: "c792ea" },
+      { token: "string", foreground: "a3e6a3" }, { token: "number", foreground: "f0c674" }, { token: "type", foreground: "82aaff" }, { token: "type.identifier", foreground: "82aaff" },
+      { token: "delimiter", foreground: "a0a0a6" }, { token: "operator", foreground: "a0a0a6" }, { token: "variable", foreground: "ededed" }, { token: "variable.predefined", foreground: "82aaff" },
+      { token: "identifier", foreground: "ededed" }, { token: "annotation", foreground: "f0c674" }, { token: "builtin", foreground: "82aaff" }, { token: "label", foreground: "f0c674" },
     ],
     colors: {
-      "editor.background": "#121212", "editor.foreground": "#e0e0e0", "editorLineNumber.foreground": "#3f3f46", "editorLineNumber.activeForeground": "#a1a1aa",
-      "editor.lineHighlightBackground": "#171717", "editor.lineHighlightBorder": "#171717", "editor.selectionBackground": "#2b3050", "editor.inactiveSelectionBackground": "#232536",
-      "editorCursor.foreground": "#c7c9ff", "editorIndentGuide.background1": "#232323", "editorIndentGuide.activeBackground1": "#3a3a3a",
-      "editorWidget.background": "#171717", "editorWidget.border": "#2a2a2a", "editorSuggestWidget.background": "#171717", "editorSuggestWidget.border": "#2a2a2a", "editorSuggestWidget.selectedBackground": "#2b3050", "editorHoverWidget.background": "#171717", "editorHoverWidget.border": "#2a2a2a",
-      "scrollbarSlider.background": "#ffffff14", "scrollbarSlider.hoverBackground": "#ffffff26", "scrollbarSlider.activeBackground": "#ffffff33", "editorError.foreground": "#ff6b6b", "editorWarning.foreground": "#f5b74f",
-      "editorGutter.background": "#121212", "editorOverviewRuler.border": "#121212", "focusBorder": "#6e7cff", "editorBracketMatch.background": "#2b305066", "editorBracketMatch.border": "#6e7cff88",
-      "editorBracketHighlight.foreground1": "#c7c9ff", "editorBracketHighlight.foreground2": "#7fd1c7", "editorBracketHighlight.foreground3": "#f2b28c", "minimap.background": "#121212",
+      "editor.background": "#0a0a0a", "editor.foreground": "#ededed", "editorLineNumber.foreground": "#6b6b70", "editorLineNumber.activeForeground": "#a0a0a6",
+      "editor.lineHighlightBackground": "#111113", "editor.lineHighlightBorder": "#111113", "editor.selectionBackground": "#3291ff1f", "editor.inactiveSelectionBackground": "#3291ff14",
+      "editorCursor.foreground": "#ededed", "editorIndentGuide.background1": "#232326", "editorIndentGuide.activeBackground1": "#3f3f46",
+      "editorWidget.background": "#18181b", "editorWidget.border": "#2e2e32", "editorSuggestWidget.background": "#18181b", "editorSuggestWidget.border": "#2e2e32", "editorSuggestWidget.selectedBackground": "#3291ff1f", "editorHoverWidget.background": "#18181b", "editorHoverWidget.border": "#2e2e32",
+      "scrollbarSlider.background": "#ffffff14", "scrollbarSlider.hoverBackground": "#ffffff26", "scrollbarSlider.activeBackground": "#ffffff33", "editorError.foreground": "#f85149", "editorWarning.foreground": "#e3a008",
+      "editorGutter.background": "#0a0a0a", "editorOverviewRuler.border": "#0a0a0a", "focusBorder": "#3291ff", "editorBracketMatch.background": "#3291ff1f", "editorBracketMatch.border": "#3291ff66",
+      "editorBracketHighlight.foreground1": "#a0a0a6", "editorBracketHighlight.foreground2": "#82aaff", "editorBracketHighlight.foreground3": "#c792ea", "minimap.background": "#0a0a0a",
     },
   });
   monaco.languages.register({ id: "pil" });

@@ -1,11 +1,15 @@
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
 const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
 const OPENROUTER = "https://openrouter.ai/api/v1";
-const GROQ = "https://api.groq.com/openai/v1";
-const GROQ_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
-const PREFERRED = ["google/gemma-4-31b", "qwen/qwen3-coder", "deepseek/deepseek", "meta-llama/llama-3.3-70b", "cohere/north-mini-code", "google/gemma-4-26b", "mistralai/"];
-
-let modelCache = { at: 0, list: [] };
+// The five assistant models. Mirrored in ide/src/lib/models.js – keep both lists identical.
+const MODELS = [
+  { id: "qwen/qwen3.8-27b:free", name: "Qwen3.8 27B" },
+  { id: "z-ai/glm-5.2:free", name: "Z.ai GLM 5.2" },
+  { id: "google/gemma-4-26b-a4b-it:free", name: "Google Gemma 26B" },
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nvidia Nemotron 3 Ultra" },
+  { id: "nvidia/nemotron-3.5-lightning:free", name: "Nvidia Nemotron 3.5 Lightning" },
+];
+const OR_HEADERS = { "HTTP-Referer": "https://loduur.github.io/edupage-sync/", "X-Title": "28teh IDE" };
 
 function cors(request, extra = {}) {
   const origin = request.headers.get("Origin") || "";
@@ -19,34 +23,30 @@ async function sha256(s) {
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
-async function freeModels(env) {
-  if (Date.now() - modelCache.at < 3600_000 && modelCache.list.length) return modelCache.list;
-  const r = await fetch(`${OPENROUTER}/models`, { headers: env.OPENROUTER_KEY ? { Authorization: `Bearer ${env.OPENROUTER_KEY}` } : {} });
-  if (!r.ok) return modelCache.list;
-  const d = await r.json();
-  const list = (d.data || [])
-    .filter(m => m.id.endsWith(":free"))
-    .map(m => ({ id: m.id, name: (m.name || m.id).replace(/ \(free\)$/i, ""), context: m.context_length || 0 }))
-    .sort((a, b) => {
-      const pa = PREFERRED.findIndex(p => a.id.startsWith(p)), pb = PREFERRED.findIndex(p => b.id.startsWith(p));
-      return (pa < 0 ? 99 : pa) - (pb < 0 ? 99 : pb) || a.name.localeCompare(b.name);
-    });
-  modelCache = { at: Date.now(), list };
-  return list;
-}
-
 async function chatOpenAI(base, key, model, messages, extraHeaders = {}) {
   const r = await fetch(`${base}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, ...extraHeaders },
-    body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2048 }),
+    body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2048, usage: { include: true } }),
   });
   const text = await r.text();
   if (!r.ok) throw new Error(`${r.status} ${text.slice(0, 200)}`);
   const d = JSON.parse(text);
   const content = d.choices?.[0]?.message?.content;
   if (!content) throw new Error("empty");
-  return { content, model: d.model || model };
+  return { content, reasoning: d.choices?.[0]?.message?.reasoning || "", model: d.model || model, usage: d.usage || null };
+}
+
+// Server-sent events straight from the upstream; the client reads delta.content / delta.reasoning and the final usage chunk.
+async function streamOpenAI(base, key, model, messages, extraHeaders = {}) {
+  const r = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, ...extraHeaders },
+    body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2048, stream: true, stream_options: { include_usage: true }, usage: { include: true } }),
+  });
+  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
+  if (!(r.headers.get("content-type") || "").includes("text/event-stream")) throw new Error("no stream");
+  return r.body;
 }
 
 async function handleAI(request, env, url) {
@@ -54,34 +54,26 @@ async function handleAI(request, env, url) {
   const key = request.headers.get("X-Access-Key") || "";
   if (!env.ACCESS_HASH || await sha256(key.trim().toUpperCase()) !== env.ACCESS_HASH) return json(request, { error: "access denied" }, 403);
 
-  if (url.pathname === "/ai/models") {
-    const list = env.OPENROUTER_KEY ? await freeModels(env) : [];
-    return json(request, { openrouter: !!env.OPENROUTER_KEY, groq: !!env.GROQ_KEY, models: list });
-  }
+  if (url.pathname === "/ai/models") return json(request, { openrouter: !!env.OPENROUTER_KEY, models: MODELS });
   if (url.pathname === "/ai/chat" && request.method === "POST") {
-    const { model, messages } = await request.json();
+    const { model, messages, stream } = await request.json();
     if (!Array.isArray(messages) || !messages.length) return json(request, { error: "messages required" }, 400);
     const errors = [];
     if (env.OPENROUTER_KEY) {
-      const models = await freeModels(env);
-      const chosen = model && models.some(m => m.id === model) ? model : (models[0]?.id);
-      const tryList = [chosen, ...models.map(m => m.id).filter(id => id !== chosen).slice(0, 2)].filter(Boolean);
+      const chosen = MODELS.some(m => m.id === model) ? model : MODELS[0].id;
+      const tryList = [chosen, ...MODELS.map(m => m.id).filter(id => id !== chosen).slice(0, 2)];
       for (const m of tryList) {
-        try { const r = await chatOpenAI(OPENROUTER, env.OPENROUTER_KEY, m, messages, { "HTTP-Referer": "https://loduur.github.io/edupage-sync/", "X-Title": "Valteh Java" }); return json(request, { ...r, provider: "openrouter" }); }
-        catch (e) { errors.push(`openrouter/${m}: ${e.message}`); }
-      }
-    }
-    if (env.GROQ_KEY) {
-      for (const m of GROQ_MODELS) {
-        try { const r = await chatOpenAI(GROQ, env.GROQ_KEY, m, messages); return json(request, { ...r, provider: "groq" }); }
-        catch (e) { errors.push(`groq/${m}: ${e.message}`); }
+        try {
+          if (stream) { const body = await streamOpenAI(OPENROUTER, env.OPENROUTER_KEY, m, messages, OR_HEADERS); return new Response(body, { status: 200, headers: cors(request, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Model": m }) }); }
+          const r = await chatOpenAI(OPENROUTER, env.OPENROUTER_KEY, m, messages, OR_HEADERS); return json(request, { ...r, provider: "openrouter" });
+        } catch (e) { errors.push(`openrouter/${m}: ${e.message}`); }
       }
     }
     try {
       const r = await fetch("https://text.pollinations.ai/openai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "openai", messages, temperature: 0.3 }) });
       const d = await r.json();
       const content = d.choices?.[0]?.message?.content;
-      if (content) return json(request, { content, model: "openai", provider: "pollinations" });
+      if (content) return json(request, { content, model: "openai", provider: "pollinations", usage: d.usage || null });
       errors.push("pollinations: empty");
     } catch (e) { errors.push("pollinations: " + e.message); }
     return json(request, { error: "all providers failed", details: errors }, 502);
