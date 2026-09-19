@@ -45,11 +45,9 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 `DAILY_HOUR` (default `21`) changes the digest hour. Linked-device automation is outside WhatsApp's terms; keep volume low.
 
-## 28teh – IDE (`ide/` → `docs/compiler/`, sandbox in `server/`)
+## 28teh – workspace (`ide/`)
 
-`docs/compiler/` is the built **28teh** IDE (React + Vite, source in `ide/`): workspace explorer (one file per language), pill tabs, **Monaco** editor with a custom "obsidian" theme and per-language completion (PIL has its own tokenizer), a floating Run/Stop/Save/Format toolbar, a bottom dock with **xterm.js** terminal / Output / Problems (Monaco markers), an AI assistant side panel (LobeHub brand icons, glass composer), saved works and live coding (see below), status bar. English UI. Build with `cd ide && npm run build` (writes `docs/compiler`; set `VITE_WS_URL=wss://…/ws` to point at a sandbox server).
-
-Execution: with a reachable **sandbox server** (`server/`, Node + Express + ws + node-pty, every run inside **Firejail** with no network, private filesystem, rlimits and a timeout, as a dedicated low-privilege user – see `server/README.md`) programs run in a real PTY streamed to the terminal. Without it the IDE falls back to Wandbox (batch; interactive input works by re-running with the accumulated stdin and an EOF-detecting shim per language) and to the in-browser wasm PIL build; the toolbar/status bar always show which one is in use. `tools/build-pil-native.sh` builds the native PIL interpreter for the server, `tools/build-pil.sh` the wasm one for the browser.
+`ide/` is the **28teh workspace**: a monochrome, terminal-first web IDE (vanilla JS + Monaco + xterm.js, JetBrains Mono) served by a small Node server that gives every browser session its own Docker container (Ubuntu, non-root `developer`, 256 MB / 0.5 CPU / 64 pids, read-only rootfs) attached as a real interactive shell, plus an AI assistant that streams from OpenRouter or Gemini through the server (keys never reach the browser). It needs a host with Docker, so it is not served from GitHub Pages – `docs/compiler/index.html` only forwards to wherever it is deployed. Setup, Docker socket implications and the security model are in [`ide/README.md`](ide/README.md).
 
 ## Games
 
