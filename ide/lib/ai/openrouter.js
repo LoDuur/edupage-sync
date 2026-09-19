@@ -10,7 +10,7 @@ export async function* stream(model, messages, { signal } = {}) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENROUTER_KEY}`, "HTTP-Referer": "https://loduur.github.io/edupage-sync/", "X-Title": "28teh workspace" },
     body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2048, stream: true, stream_options: { include_usage: true }, usage: { include: true } }),
   });
-  if (!r.ok) throw new Error(`openrouter ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  if (!r.ok) { const text = await r.text(); let msg = text.slice(0, 200); try { const e = JSON.parse(text).error; msg = e?.metadata?.raw || e?.message || msg; } catch {} throw new Error(`${r.status}: ${msg}`); }
   for await (const j of readSSE(r.body)) {
     if (j.error) throw new Error(j.error.message || "openrouter error");
     const d = j.choices?.[0]?.delta || {};

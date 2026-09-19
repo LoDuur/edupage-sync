@@ -36,7 +36,7 @@ app.post("/api/chat", requireKey, async (req, res) => {
   if (!messages.every(m => ["system", "user", "assistant"].includes(m.role) && typeof m.content === "string" && m.content.length <= 120_000)) return res.status(400).json({ error: "bad message" });
   const m = ai.modelOf(model); if (!m) return res.status(400).json({ error: "unknown model" });
   res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", "X-Accel-Buffering": "no" });
-  const ctl = new AbortController(); req.on("close", () => ctl.abort());
+  const ctl = new AbortController(); res.on("close", () => { if (!res.writableFinished) ctl.abort(); });
   const send = o => res.write(`data: ${JSON.stringify(o)}\n\n`);
   let usage = null;
   try {

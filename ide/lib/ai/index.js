@@ -11,8 +11,8 @@ export const MODELS = [
   { id: "google/gemma-4-26b-a4b-it:free", label: "Google Gemma 26B", provider: "openrouter", icon: "google" },
   { id: "nvidia/nemotron-3-ultra-550b-a55b:free", label: "Nvidia Nemotron 3 Ultra", provider: "openrouter", icon: "nvidia" },
   { id: "nvidia/nemotron-3.5-lightning:free", label: "Nvidia Nemotron 3.5 Lightning", provider: "openrouter", icon: "nvidia" },
-  { id: "gemini-2.5-flash", label: "Google Gemini 2.5 Flash", provider: "gemini", icon: "googlegemini" },
-  { id: "gemini-2.5-pro", label: "Google Gemini 2.5 Pro", provider: "gemini", icon: "googlegemini" },
+  { id: "gemini-3.8-flash", label: "Google Gemini 3.8 Flash", provider: "gemini", icon: "googlegemini" },
+  { id: "gemini-pro-latest", label: "Google Gemini Pro", provider: "gemini", icon: "googlegemini" },
 ];
 
 export const availableModels = () => MODELS.filter(m => PROVIDERS[m.provider].enabled());

@@ -39,11 +39,12 @@ After every question you get the current file (with its name), the recent termin
   function openMenu(anchor, items, { align = "right" } = {}) {
     closeMenu();
     const m = document.createElement("div"); m.className = "menu"; m.setAttribute("role", "menu");
+    const anyIcon = items.some(it => it && it.icon);
     for (const it of items) {
       if (it === "-") { m.appendChild(document.createElement("hr")); continue; }
       if (it.h) { const h = document.createElement("div"); h.className = "h"; h.textContent = it.h; m.appendChild(h); continue; }
       const b = document.createElement("button"); b.setAttribute("role", "menuitem"); b.className = it.on ? "on" : "";
-      b.innerHTML = `${it.icon ? `<img src="${esc(it.icon)}" alt="" width="16" height="16">` : ""}<span>${esc(it.label)}</span>${it.k ? `<span class="k">${esc(it.k)}</span>` : ""}`;
+      b.innerHTML = `${it.icon ? `<img src="${esc(it.icon)}" alt="" width="16" height="16">` : anyIcon ? '<span class="inline-block w-4 h-4"></span>' : ""}<span>${esc(it.label)}</span>${it.k ? `<span class="k">${esc(it.k)}</span>` : ""}`;
       b.onclick = () => { closeMenu(); it.run?.(); };
       m.appendChild(b);
     }
@@ -255,10 +256,10 @@ After every question you get the current file (with its name), the recent termin
         }
       } catch (e) { if (e.name !== "AbortError") err = e.message; }
       cancelAnimationFrame(raf); wait.remove(); if (!a.parentNode) chat.appendChild(a);
-      const end = performance.now(), secs = (end - t0) / 1000, tokens = usage?.output || Math.round((content.length + reasoning.length) / 4), gen = Math.max(0.05, (end - (first || t0)) / 1000);
+      const end = performance.now(), secs = Math.max(0.05, (end - t0) / 1000), tokens = usage?.output || Math.round((content.length + reasoning.length) / 4);
       if (reasoning) { think.hidden = false; think.querySelector("pre").textContent = reasoning; }
       body.innerHTML = bodyHtml(content, false) || (err ? "" : "<p>(empty answer)</p>");
-      meta.innerHTML = err ? esc(err) : metaHtml(model, tokens / gen, secs, !usage?.output); meta.classList.toggle("err", !!err);
+      meta.innerHTML = err ? esc(err) : metaHtml(model, tokens / secs, secs, !usage?.output); meta.classList.toggle("err", !!err);
       const codes = parseMd(content, false).filter(b => b.t === "code"); if (codes.length) { lastCode = codes[codes.length - 1].code; $("apply-last").disabled = false; }
       if (content) history.push({ role: "user", content: shown }, { role: "assistant", content });
       busy = null; $("send").textContent = "Send"; for (const b of document.querySelectorAll("[data-act]")) b.disabled = false; chat.scrollTop = chat.scrollHeight;

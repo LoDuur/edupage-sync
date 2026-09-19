@@ -18,7 +18,7 @@ export async function* stream(model, messages, { signal } = {}) {
     headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
     body: JSON.stringify({ ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}), contents, generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } }),
   });
-  if (!r.ok) throw new Error(`gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  if (!r.ok) { const text = await r.text(); let msg = text.slice(0, 200); try { msg = JSON.parse(text).error?.message || msg; } catch {} throw new Error(`${r.status}: ${msg}`); }
   for await (const j of readSSE(r.body)) {
     if (j.error) throw new Error(j.error.message || "gemini error");
     let delta = "", reasoning = "";
