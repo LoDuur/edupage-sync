@@ -18,7 +18,7 @@ ide/
 ### 1. Install Docker and start the daemon
 
 - **Linux (Debian/Ubuntu)** – Docker Engine: `curl -fsSL https://get.docker.com | sh`, then `sudo systemctl enable --now docker`.
-- **macOS** – install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it (whale icon in the menu bar). It exposes the socket at `/var/run/docker.sock` (a symlink to `~/.docker/run/docker.sock`).
+- **macOS** – install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it (whale icon in the menu bar). The socket is `~/.docker/run/docker.sock`; the server finds it automatically when `/var/run/docker.sock` is absent (Docker Desktop only creates that symlink if *Allow the default Docker socket* is enabled in its settings).
 - **Windows** – install Docker Desktop (WSL 2 backend). The daemon listens on the named pipe `//./pipe/docker_engine`; set `DOCKER_HOST=npipe:////./pipe/docker_engine` in `.env` (the server also tries this pipe by default on Windows).
 
 Verify the daemon is running before anything else:

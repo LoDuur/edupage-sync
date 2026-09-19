@@ -1,4 +1,8 @@
 import Docker from "dockerode";
+import http from "node:http";
+import https from "node:https";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 
 export const IMAGE = process.env.SANDBOX_IMAGE || "28teh-sandbox";
 export const IDLE_MS = (+process.env.IDLE_MINUTES || 10) * 60_000;
@@ -9,13 +13,31 @@ const SWEEP_MS = 60_000;
 
 function dockerOptions() {
   const host = process.env.DOCKER_HOST;
-  if (!host) return { socketPath: process.platform === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock" };
+  if (!host) {
+    if (process.platform === "win32") return { socketPath: "//./pipe/docker_engine" };
+    const desktop = `${homedir()}/.docker/run/docker.sock`;
+    return { socketPath: !existsSync("/var/run/docker.sock") && existsSync(desktop) ? desktop : "/var/run/docker.sock" };
+  }
   if (host.startsWith("npipe://")) return { socketPath: host.replace(/^npipe:\/\//, "") };
   if (host.startsWith("unix://")) return { socketPath: host.replace(/^unix:\/\//, "") };
   const u = new URL(host.replace(/^tcp:/, "http:"));
   return { host: u.hostname, port: +u.port || 2375, protocol: u.protocol === "https:" ? "https" : "http" };
 }
-export const docker = new Docker(dockerOptions());
+const DOCKER_OPTS = dockerOptions();
+export const docker = new Docker(DOCKER_OPTS);
+
+// Raw TTY attach over an HTTP upgrade. dockerode's attach() sends its option object as the request body, which Docker
+// forwards into the container's stdin after hijacking; an explicit zero-length body avoids that.
+function attachTty(id) {
+  return new Promise((resolve, reject) => {
+    const mod = DOCKER_OPTS.protocol === "https" ? https : http;
+    const req = mod.request({ ...(DOCKER_OPTS.socketPath ? { socketPath: DOCKER_OPTS.socketPath } : { host: DOCKER_OPTS.host, port: DOCKER_OPTS.port }), method: "POST", path: `/containers/${id}/attach?stream=1&stdin=1&stdout=1&stderr=1`, headers: { "Content-Type": "application/vnd.docker.raw-stream", Connection: "Upgrade", Upgrade: "tcp", "Content-Length": 0 } });
+    req.on("upgrade", (res, sock, head) => { if (head.length) sock.unshift(head); resolve(sock); });
+    req.on("response", res => { let body = ""; res.on("data", d => { body += d; }); res.on("end", () => reject(new Error(`attach failed: ${res.statusCode} ${body.slice(0, 200)}`))); });
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 // sessions: socket id → { container, stream, ip, lastInput, createdAt, cols, rows, filter }
 const sessions = new Map();
@@ -46,7 +68,7 @@ export async function create(id, { ip, cols = 100, rows = 30 }) {
       Binds: [], Privileged: false, AutoRemove: false, LogConfig: { Type: "none" },
     },
   });
-  const stream = await container.attach({ stream: true, stdin: true, stdout: true, stderr: true, hijack: true });
+  const stream = await attachTty(container.id);
   const s = { container, stream, ip, lastInput: Date.now(), createdAt: Date.now(), cols, rows, filter: markerFilter() };
   sessions.set(id, s);
   try { await container.start(); await container.resize({ h: rows, w: cols }); }

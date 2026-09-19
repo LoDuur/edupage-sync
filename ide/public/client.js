@@ -165,7 +165,7 @@ After every question you get the current file (with its name), the recent termin
     socket.on("connect", () => { setState("creating"); fitAddon.fit(); socket.emit("terminal-open", { cols: term.cols, rows: term.rows }); });
     socket.on("connect_error", e => setState("error", e.message === "access denied" ? "Access denied – sign out and enter the code again." : "Cannot reach the server."));
     socket.on("disconnect", () => setState("disconnected"));
-    socket.on("terminal-status", ({ state, message, idleMs: ms }) => { if (ms) idleMs = ms; if (state === "attached") { term.clear(); lastInput = Date.now(); setTimeout(() => { fitTerm(); term.focus(); }, 30); } setState(state, message); });
+    socket.on("terminal-status", ({ state, message, idleMs: ms }) => { if (ms) idleMs = ms; if (state === "creating") term.reset(); if (state === "attached") { lastInput = Date.now(); setTimeout(() => { fitTerm(); term.focus(); }, 30); } setState(state, message); });
     socket.on("terminal-output", data => { term.write(data); recent = (recent + data).slice(-6000); if (runPending && PROMPT_RE.test(stripAnsi(recent))) { runPending = false; setRunButton(false); } });
     socket.on("open-url", url => { if (ALLOWED_URLS.includes(url)) window.open(url, "_blank", "noopener"); });
     term.onData(d => { lastInput = Date.now(); socket.emit("terminal-input", d); });
