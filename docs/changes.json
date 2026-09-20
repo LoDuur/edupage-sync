@@ -1,5 +1,42 @@
 [
  {
+  "time": "2026-09-20T10:57:32+03:00",
+  "versions": [
+   "505",
+   "507",
+   "509"
+  ],
+  "added": [
+   "Pr 21.09 3.–4. Svešval. I (B2) - angļu val. (213.)",
+   "Pr 21.09 5. Pusdienas",
+   "Pr 21.09 6.–7. Sociālās zin. un vēsture (355.)",
+   "Pr 21.09 8.–9. Valoda, kult.izpratne un izpausmes (1.l.) (410.)",
+   "Ot 22.09 4.–5. Matemātika I (356.)",
+   "Ot 22.09 6. Pusdienas",
+   "Ot 22.09 7. Sociālās zin. un vēsture (355.)",
+   "Ot 22.09 8. Sociālās zin. un vēsture (355.)",
+   "Ot 22.09 9.–10. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Tr 23.09 1.–2. Svešval.(B1)- krievu val. (310.)",
+   "Tr 23.09 3.–4. Sports (303.)",
+   "Tr 23.09 5. Pusdienas",
+   "Tr 23.09 6.–7. Programmas izstrādes process (IT labor.)",
+   "Tr 23.09 8.–9. Programmas izstrādes process (IT labor.)",
+   "Ce 24.09 2.–3. Fizika I (245.)",
+   "Ce 24.09 4. Pusdienas",
+   "Ce 24.09 5.–6. Latviešu val. I (354.)",
+   "Ce 24.09 7. Grupas stunda (MNT)",
+   "Ce 24.09 8.–9. Sports (303.)",
+   "Pk 25.09 1.–2. Dabaszinības (221.)",
+   "Pk 25.09 3.–4. Valoda, kult.izpratne un izpausmes (1.l.) (353.)",
+   "Pk 25.09 5. Sociālās zin. un vēsture (355.)",
+   "Pk 25.09 6. Pusdienas",
+   "Pk 25.09 7. Sociālās zin. un vēsture (355.)",
+   "Pk 25.09 8.–9. Iniciatīva un uzņēmējdarb. (1.l.) (353.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-09-16T12:33:48+03:00",
   "versions": [
    "505",
