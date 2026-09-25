@@ -1156,6 +1156,455 @@
     "I.Kobiaka"
    ],
    "version": "509"
+  },
+  "2026-09-28|1|*588": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Stundas: 1.\nStundu saraksts v513",
+   "end": "2026-09-28T08:50:00+03:00",
+   "gcal_id": "bporfjimchm6bd7qs5p57hm0h4",
+   "groups": [],
+   "hash": "d870685595cad22f0b5f0a6bbfa8d06ba952e417",
+   "location": "",
+   "periods": "1.",
+   "start": "2026-09-28T08:10:00+03:00",
+   "summary": "Valsts aizsardzības mācība",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-09-28|3|*596": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Skolotājs: T.Misiņa\nStundas: 3.\nStundu saraksts v513",
+   "end": "2026-09-28T10:50:00+03:00",
+   "gcal_id": "thohtkh60a19mtohpo0tqsaufs",
+   "groups": [],
+   "hash": "c0040751e08fa58f490e81b1c0fa4104f4ab64cf",
+   "location": "223.",
+   "periods": "3.",
+   "start": "2026-09-28T10:10:00+03:00",
+   "summary": "Matemātikas speciālās nodaļas",
+   "teachers": [
+    "T.Misiņa"
+   ],
+   "version": "513"
+  },
+  "2026-09-28|4|*582": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Skolotājs: A.Eiklone\nStundas: 4.\nStundu saraksts v513",
+   "end": "2026-09-28T11:40:00+03:00",
+   "gcal_id": "qbutekvpk2966c1709jrf3q1c4",
+   "groups": [],
+   "hash": "81888eee94c01cadb065025b6879f257b5260fbd",
+   "location": "",
+   "periods": "4.",
+   "start": "2026-09-28T11:00:00+03:00",
+   "summary": "Literatūra I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "513"
+  },
+  "2026-09-28|5|*1180": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Skolotājs: O.Sorochynska\nStundas: 5.\nStundu saraksts v513",
+   "end": "2026-09-28T12:30:00+03:00",
+   "gcal_id": "varp9fstfl4olvak385i6i9jqc",
+   "groups": [],
+   "hash": "e0ccd8de692e5db43cf902f707744d1923921482",
+   "location": "310.",
+   "periods": "5.",
+   "start": "2026-09-28T11:50:00+03:00",
+   "summary": "Svešval.(B1)- krievu val.",
+   "teachers": [
+    "O.Sorochynska"
+   ],
+   "version": "513"
+  },
+  "2026-09-28|8|*1126": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Skolotājs: A.Šamšele\nStundas: 8.\nStundu saraksts v513",
+   "end": "2026-09-28T15:00:00+03:00",
+   "gcal_id": "49nlokjvk2mktv7tobbrarghhc",
+   "groups": [],
+   "hash": "662ff04fad7fc60340640b74c94d56c796dc47dd",
+   "location": "355.",
+   "periods": "8.",
+   "start": "2026-09-28T14:20:00+03:00",
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "513"
+  },
+  "2026-09-28|9|*600": {
+   "date": "2026-09-28",
+   "dayType": "monday",
+   "description": "Skolotājs: K.Tomsons\nStundas: 9.\nStundu saraksts v513",
+   "end": "2026-09-28T15:50:00+03:00",
+   "gcal_id": "vpfh97lmndsqgs2oo5lirteeh4",
+   "groups": [],
+   "hash": "75d7cf70f70edb5a2020097ce765349c53da5aac",
+   "location": "",
+   "periods": "9.",
+   "start": "2026-09-28T15:10:00+03:00",
+   "summary": "Datu bāzu tehnoloģijas",
+   "teachers": [
+    "K.Tomsons"
+   ],
+   "version": "513"
+  },
+  "2026-09-29|2|*596": {
+   "date": "2026-09-29",
+   "dayType": "midweek",
+   "description": "Skolotājs: T.Misiņa\nStundas: 2.\nStundu saraksts v513",
+   "end": "2026-09-29T09:50:00+03:00",
+   "gcal_id": "ib9vsntkfoinppllilqbt7nob0",
+   "groups": [],
+   "hash": "21394639492c9e2ef696403e61a2a6e0d78aa18e",
+   "location": "223.",
+   "periods": "2.",
+   "start": "2026-09-29T09:10:00+03:00",
+   "summary": "Matemātikas speciālās nodaļas",
+   "teachers": [
+    "T.Misiņa"
+   ],
+   "version": "513"
+  },
+  "2026-09-29|4|*1180": {
+   "date": "2026-09-29",
+   "dayType": "midweek",
+   "description": "Skolotājs: O.Sorochynska\nStundas: 4.\nStundu saraksts v513",
+   "end": "2026-09-29T11:30:00+03:00",
+   "gcal_id": "e7ibn04t6gm4h7uohb3iq2m3ug",
+   "groups": [],
+   "hash": "dc8dcfc0605c0694c3deb3127a428c9b88b375a3",
+   "location": "310.",
+   "periods": "4.",
+   "start": "2026-09-29T10:50:00+03:00",
+   "summary": "Svešval.(B1)- krievu val.",
+   "teachers": [
+    "O.Sorochynska"
+   ],
+   "version": "513"
+  },
+  "2026-09-29|6|*14": {
+   "date": "2026-09-29",
+   "dayType": "midweek",
+   "description": "Stundas: 6.\nStundu saraksts v513",
+   "end": "2026-09-29T13:10:00+03:00",
+   "gcal_id": "vmsb628duom0478a5cqre4jjlo",
+   "groups": [],
+   "hash": "0ef3cb8d741d8a4fc24bc2ffd29db65dd37eeb81",
+   "location": "",
+   "periods": "6.",
+   "start": "2026-09-29T12:30:00+03:00",
+   "summary": "Pusdienas",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-09-29|7|*586": {
+   "date": "2026-09-29",
+   "dayType": "midweek",
+   "description": "Skolotājs: A.Šamšele\nStundas: 7.–8.\nStundu saraksts v513",
+   "end": "2026-09-29T14:50:00+03:00",
+   "gcal_id": "7l3v21j8s2vbf4k6suf80hvtm8",
+   "groups": [],
+   "hash": "4da1d976843f74737b80cea7932abb96e0d79d40",
+   "location": "355.",
+   "periods": "7.–8.",
+   "start": "2026-09-29T13:20:00+03:00",
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "513"
+  },
+  "2026-09-29|9|*142": {
+   "date": "2026-09-29",
+   "dayType": "midweek",
+   "description": "Skolotājs: L.Māziņa\nStundas: 9.–10.\nStundu saraksts v513",
+   "end": "2026-09-29T16:30:00+03:00",
+   "gcal_id": "fhmlfoil02llhob5l61o96mot0",
+   "groups": [],
+   "hash": "1ad13d3072de19929287ba743be177582222fb0d",
+   "location": "303.",
+   "periods": "9.–10.",
+   "start": "2026-09-29T15:00:00+03:00",
+   "summary": "Sports",
+   "teachers": [
+    "L.Māziņa"
+   ],
+   "version": "513"
+  },
+  "2026-09-30|1|*142": {
+   "date": "2026-09-30",
+   "dayType": "midweek",
+   "description": "Skolotājs: L.Māziņa\nStundas: 1.–2.\nStundu saraksts v513",
+   "end": "2026-09-30T09:50:00+03:00",
+   "gcal_id": "bl4v76oafuob53dogpgqca8pqo",
+   "groups": [],
+   "hash": "9e0d620a27dd5ee9c8d355765f9b081671e72a73",
+   "location": "303.",
+   "periods": "1.–2.",
+   "start": "2026-09-30T08:10:00+03:00",
+   "summary": "Sports",
+   "teachers": [
+    "L.Māziņa"
+   ],
+   "version": "513"
+  },
+  "2026-09-30|5|*14": {
+   "date": "2026-09-30",
+   "dayType": "midweek",
+   "description": "Stundas: 5.\nStundu saraksts v513",
+   "end": "2026-09-30T12:20:00+03:00",
+   "gcal_id": "vgse4u38nlqr4iifc21e5sgsmo",
+   "groups": [],
+   "hash": "cfec2ad9b3742cf716db1b839950d9fc5aa577b4",
+   "location": "",
+   "periods": "5.",
+   "start": "2026-09-30T11:40:00+03:00",
+   "summary": "Pusdienas",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-09-30|6|*583": {
+   "date": "2026-09-30",
+   "dayType": "midweek",
+   "description": "Skolotājs: A.Eiklone\nStundas: 6.–7.\nStundu saraksts v513",
+   "end": "2026-09-30T14:00:00+03:00",
+   "gcal_id": "c49du6aier47qqsqkhrmuudkbc",
+   "groups": [],
+   "hash": "71a9d329871cb82d012739e9c8a5393a91098108",
+   "location": "354.",
+   "periods": "6.–7.",
+   "start": "2026-09-30T12:30:00+03:00",
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "513"
+  },
+  "2026-09-30|8|*588": {
+   "date": "2026-09-30",
+   "dayType": "midweek",
+   "description": "Stundas: 8.\nStundu saraksts v513",
+   "end": "2026-09-30T14:50:00+03:00",
+   "gcal_id": "2o6s1ckbr0lf1bla9hgsjk6ubc",
+   "groups": [],
+   "hash": "d9b9fb9b67b7c4fb35e3dbb9a0dfc06b238d1fb0",
+   "location": "",
+   "periods": "8.",
+   "start": "2026-09-30T14:10:00+03:00",
+   "summary": "Valsts aizsardzības mācība",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-10-01|1|*891": {
+   "date": "2026-10-01",
+   "dayType": "midweek",
+   "description": "Skolotājs: I.Bērziņa\nStundas: 1.\nStundu saraksts v513",
+   "end": "2026-10-01T08:50:00+03:00",
+   "gcal_id": "0r898u3tst290f10uon1uo7npk",
+   "groups": [],
+   "hash": "3f62ad49a2f78b32db73f0c2498f1381bdf820cc",
+   "location": "MNT",
+   "periods": "1.",
+   "start": "2026-10-01T08:10:00+03:00",
+   "summary": "Grupas stunda",
+   "teachers": [
+    "I.Bērziņa"
+   ],
+   "version": "513"
+  },
+  "2026-10-01|2|*1014": {
+   "date": "2026-10-01",
+   "dayType": "midweek",
+   "description": "Skolotājs: Datorium\nStundas: 2.–3.\nStundu saraksts v513",
+   "end": "2026-10-01T10:40:00+03:00",
+   "gcal_id": "cp0m9hopmj051f3k9bh8ui4g30",
+   "groups": [],
+   "hash": "38a46c013d0638e5f93ef5ac7287a9050919c4a6",
+   "location": "245.",
+   "periods": "2.–3.",
+   "start": "2026-10-01T09:10:00+03:00",
+   "summary": "Fizika I",
+   "teachers": [
+    "Datorium"
+   ],
+   "version": "513"
+  },
+  "2026-10-01|5|*14": {
+   "date": "2026-10-01",
+   "dayType": "midweek",
+   "description": "Stundas: 5.\nStundu saraksts v513",
+   "end": "2026-10-01T12:20:00+03:00",
+   "gcal_id": "dlbn247e9ec8trl0uj733u5mck",
+   "groups": [],
+   "hash": "2efb6d001abb462c86967fdedd53e94975d2d72e",
+   "location": "",
+   "periods": "5.",
+   "start": "2026-10-01T11:40:00+03:00",
+   "summary": "Pusdienas",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-10-01|6|*302": {
+   "date": "2026-10-01",
+   "dayType": "midweek",
+   "description": "Skolotājs: E.Millere\nStundas: 6.–7.\nStundu saraksts v513",
+   "end": "2026-10-01T14:00:00+03:00",
+   "gcal_id": "qikfpgrjlchpsr220fpvroislk",
+   "groups": [],
+   "hash": "30f0332e080f70494e5e46ff978b532c7e861f1f",
+   "location": "118.",
+   "periods": "6.–7.",
+   "start": "2026-10-01T12:30:00+03:00",
+   "summary": "Matemātika I",
+   "teachers": [
+    "E.Millere"
+   ],
+   "version": "513"
+  },
+  "2026-10-01|8|*601": {
+   "date": "2026-10-01",
+   "dayType": "midweek",
+   "description": "Skolotājs: K.Uškāns\nStundas: 8.–9.\nStundu saraksts v513",
+   "end": "2026-10-01T15:40:00+03:00",
+   "gcal_id": "v7ccd67jv5htvhs3jh5f3kfcd4",
+   "groups": [],
+   "hash": "c3c917fd73f0a1d00bdf51db88fd34bf87ab2045",
+   "location": "IT labor.",
+   "periods": "8.–9.",
+   "start": "2026-10-01T14:10:00+03:00",
+   "summary": "Programmas izstrādes process",
+   "teachers": [
+    "K.Uškāns"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|1|*969": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: I.Posse\nStundas: 1.–2.\nStundu saraksts v513",
+   "end": "2026-10-02T09:40:00+03:00",
+   "gcal_id": "0v8cg5ljnkjbf618v1d4vc3rq4",
+   "groups": [],
+   "hash": "75a727275c20f7fe2e441ad4c2470846b65d6456",
+   "location": "221.",
+   "periods": "1.–2.",
+   "start": "2026-10-02T08:10:00+03:00",
+   "summary": "Dabaszinības",
+   "teachers": [
+    "I.Posse"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|3|*587": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: A.Šamšele\nStundas: 3.\nStundu saraksts v513",
+   "end": "2026-10-02T10:25:00+03:00",
+   "gcal_id": "kg15bpvdgvogc48cf62r5uk1a4",
+   "groups": [],
+   "hash": "b91cad590fbfc7cf35720c6ede816e6ad3540e8c",
+   "location": "355.",
+   "periods": "3.",
+   "start": "2026-10-02T09:45:00+03:00",
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|4|*587": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: A.Šamšele\nStundas: 4.\nStundu saraksts v513",
+   "end": "2026-10-02T11:10:00+03:00",
+   "gcal_id": "hrieth542v9cja1pm4fk7jg6f8",
+   "groups": [],
+   "hash": "03410ebb089015b1a76c64c1d04c59867b1f1b5b",
+   "location": "355.",
+   "periods": "4.",
+   "start": "2026-10-02T10:30:00+03:00",
+   "summary": "Sociālās zin. un vēsture",
+   "teachers": [
+    "A.Šamšele"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|6|*69": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Grupa: 1.grupa\nStundas: 6.\nStundu saraksts v513",
+   "end": "2026-10-02T12:40:00+03:00",
+   "gcal_id": "hp22n2o11nlatjnpevs9r3j4bs",
+   "groups": [
+    "1.grupa"
+   ],
+   "hash": "dcbe5bf98970901d08e656d4d4fb9601c4854c66",
+   "location": "",
+   "periods": "6.",
+   "start": "2026-10-02T12:00:00+03:00",
+   "summary": "Pusdienas (1.grupa)",
+   "teachers": [],
+   "version": "513"
+  },
+  "2026-10-02|7|*1180": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: O.Sorochynska\nStundas: 7.\nStundu saraksts v513",
+   "end": "2026-10-02T13:25:00+03:00",
+   "gcal_id": "12681bttj928ebpkmvbascj18o",
+   "groups": [],
+   "hash": "6d5a494be9c4a4f6caa9ecc8e6069442570756a8",
+   "location": "310.",
+   "periods": "7.",
+   "start": "2026-10-02T12:45:00+03:00",
+   "summary": "Svešval.(B1)- krievu val.",
+   "teachers": [
+    "O.Sorochynska"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|8|*584": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: A.Eiklone\nStundas: 8.\nStundu saraksts v513",
+   "end": "2026-10-02T14:10:00+03:00",
+   "gcal_id": "t7sevfaphq4psl4mvfdat6ue3o",
+   "groups": [],
+   "hash": "e3af5d8c7e1e4f87330873139d394e14b18d61f3",
+   "location": "354.",
+   "periods": "8.",
+   "start": "2026-10-02T13:30:00+03:00",
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "513"
+  },
+  "2026-10-02|9|*584": {
+   "date": "2026-10-02",
+   "dayType": "friday",
+   "description": "Skolotājs: A.Eiklone\nStundas: 9.\nStundu saraksts v513",
+   "end": "2026-10-02T14:55:00+03:00",
+   "gcal_id": "rnitb9fajkneb31pja28css4i8",
+   "groups": [],
+   "hash": "056936270d16307efa9b654bb3764c7f7d6ba84e",
+   "location": "354.",
+   "periods": "9.",
+   "start": "2026-10-02T14:15:00+03:00",
+   "summary": "Latviešu val. I",
+   "teachers": [
+    "A.Eiklone"
+   ],
+   "version": "513"
   }
  },
  "last_daily": "2026-09-24",
@@ -1163,7 +1612,8 @@
  "seen_versions": [
   "505",
   "507",
-  "509"
+  "509",
+  "513"
  ],
  "substitutions": {}
 }

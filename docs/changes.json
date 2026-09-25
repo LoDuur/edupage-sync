@@ -1,5 +1,44 @@
 [
  {
+  "time": "2026-09-26T01:00:24+03:00",
+  "versions": [
+   "507",
+   "509",
+   "513"
+  ],
+  "added": [
+   "Pr 28.09 1. Valsts aizsardzības mācība",
+   "Pr 28.09 3. Matemātikas speciālās nodaļas (223.)",
+   "Pr 28.09 4. Literatūra I",
+   "Pr 28.09 5. Svešval.(B1)- krievu val. (310.)",
+   "Pr 28.09 8. Sociālās zin. un vēsture (355.)",
+   "Pr 28.09 9. Datu bāzu tehnoloģijas",
+   "Ot 29.09 2. Matemātikas speciālās nodaļas (223.)",
+   "Ot 29.09 4. Svešval.(B1)- krievu val. (310.)",
+   "Ot 29.09 6. Pusdienas",
+   "Ot 29.09 7.–8. Sociālās zin. un vēsture (355.)",
+   "Ot 29.09 9.–10. Sports (303.)",
+   "Tr 30.09 1.–2. Sports (303.)",
+   "Tr 30.09 5. Pusdienas",
+   "Tr 30.09 6.–7. Latviešu val. I (354.)",
+   "Tr 30.09 8. Valsts aizsardzības mācība",
+   "Ce 01.10 1. Grupas stunda (MNT)",
+   "Ce 01.10 2.–3. Fizika I (245.)",
+   "Ce 01.10 5. Pusdienas",
+   "Ce 01.10 6.–7. Matemātika I (118.)",
+   "Ce 01.10 8.–9. Programmas izstrādes process (IT labor.)",
+   "Pk 02.10 1.–2. Dabaszinības (221.)",
+   "Pk 02.10 3. Sociālās zin. un vēsture (355.)",
+   "Pk 02.10 4. Sociālās zin. un vēsture (355.)",
+   "Pk 02.10 6. Pusdienas (1.grupa)",
+   "Pk 02.10 7. Svešval.(B1)- krievu val. (310.)",
+   "Pk 02.10 8. Latviešu val. I (354.)",
+   "Pk 02.10 9. Latviešu val. I (354.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-09-20T10:57:32+03:00",
   "versions": [
    "505",
