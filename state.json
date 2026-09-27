@@ -564,14 +564,30 @@
   },
   "2026-09-17|2|*1036": {
    "date": "2026-09-17",
+   "dayType": "midweek",
    "description": "Skolotājs: Datorium\nStundas: 2.–3.\nStundu saraksts v507",
-   "end": "2026-09-17T10:40:00+03:00",
+   "end": "2026-09-17T10:30:00+03:00",
    "gcal_id": "6me7jiv3fruftqh39ti4r5us5g",
-   "hash": "8abe34919c3f39166342a0dd8ba9ccd2c7203db3",
+   "groups": [],
+   "hash": "b4e567e480f10ff567f1f29d3dd19ef071fc1aa9",
    "location": "245.",
    "periods": "2.–3.",
-   "start": "2026-09-17T09:10:00+03:00",
-   "summary": "Fizika I"
+   "slots": [
+    [
+     540,
+     580
+    ],
+    [
+     590,
+     630
+    ]
+   ],
+   "start": "2026-09-17T09:00:00+03:00",
+   "summary": "Fizika I",
+   "teachers": [
+    "Datorium"
+   ],
+   "version": "507"
   },
   "2026-09-17|4|*9": {
    "date": "2026-09-17",
@@ -978,13 +994,23 @@
    "date": "2026-09-24",
    "dayType": "midweek",
    "description": "Skolotājs: Datorium\nStundas: 2.–3.\nStundu saraksts v509",
-   "end": "2026-09-24T10:40:00+03:00",
+   "end": "2026-09-24T10:30:00+03:00",
    "gcal_id": "18qornu7lja5sjfrk7kb0dfloo",
    "groups": [],
-   "hash": "fa25ebd7c9eda84490e35fecea885952f9a6073f",
+   "hash": "37fddca1f5140787bfcd060457a8251c6a531231",
    "location": "245.",
    "periods": "2.–3.",
-   "start": "2026-09-24T09:10:00+03:00",
+   "slots": [
+    [
+     540,
+     580
+    ],
+    [
+     590,
+     630
+    ]
+   ],
+   "start": "2026-09-24T09:00:00+03:00",
    "summary": "Fizika I",
    "teachers": [
     "Datorium"
@@ -1365,13 +1391,23 @@
    "date": "2026-10-01",
    "dayType": "midweek",
    "description": "Skolotājs: Datorium\nStundas: 2.–3.\nStundu saraksts v513",
-   "end": "2026-10-01T10:40:00+03:00",
+   "end": "2026-10-01T10:30:00+03:00",
    "gcal_id": "cp0m9hopmj051f3k9bh8ui4g30",
    "groups": [],
-   "hash": "38a46c013d0638e5f93ef5ac7287a9050919c4a6",
+   "hash": "e4af7a67847c684b3063d5521d8045912ca5cb46",
    "location": "245.",
    "periods": "2.–3.",
-   "start": "2026-10-01T09:10:00+03:00",
+   "slots": [
+    [
+     540,
+     580
+    ],
+    [
+     590,
+     630
+    ]
+   ],
+   "start": "2026-10-01T09:00:00+03:00",
    "summary": "Fizika I",
    "teachers": [
     "Datorium"
