@@ -85,11 +85,12 @@ def split_periods(events):
         nums = [int(n) for n in re.findall(r"\d+", e["periods"])]
         first, last = nums[0], nums[-1]
         table = bells.TABLES.get(e.get("dayType") or "midweek", bells.TABLES["midweek"])
-        if last == first or not all(p in table for p in range(first, last + 1)):
+        slots = e.get("slots") or ([table[p] for p in range(first, last + 1)] if all(p in table for p in range(first, last + 1)) else None)
+        if last == first or not slots or len(slots) != last - first + 1:
             out.append(e)
             continue
         for p in range(first, last + 1):
-            start, end = table[p]
+            start, end = slots[p - first]
             seg = dict(e)
             seg["periods"] = f"{p}."
             seg["start"] = e["start"][:11] + f"{start // 60:02d}:{start % 60:02d}" + e["start"][16:]

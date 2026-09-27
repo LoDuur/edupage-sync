@@ -341,9 +341,10 @@ function splitPeriods(evs){
   for(const e of evs){
     const [first,last]=parsePeriods(e.periods);
     const table=bells[e.dayType]||bells.midweek;
-    if(last===first||!table||!table[last-1]){out.push(e);continue}
+    const slots=e.slots||(table&&table[last-1]?table.slice(first-1,last):null);
+    if(last===first||!slots||slots.length!==last-first+1){out.push(e);continue}
     for(let p=first;p<=last;p++){
-      const [s,en]=table[p-1];
+      const [s,en]=slots[p-first];
       out.push({...e,periods:`${p}.`,start:e.start.slice(0,11)+fromMin(s)+e.start.slice(16),end:e.end.slice(0,11)+fromMin(en)+e.end.slice(16)});
     }
   }

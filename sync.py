@@ -150,7 +150,8 @@ def build_events(tables, week_start, tt_num, overrides):
             day = week_start + timedelta(days=day_idx)
             if bells.is_holiday(day):
                 continue
-            win = bells.window(day, first, last, overrides)
+            lesson_slots = bells.slots(day, first, last, subject, overrides)
+            win = (lesson_slots[0][0], lesson_slots[-1][1]) if lesson_slots else None
             if win:
                 start_min, end_min = win
                 edupage_start, _ = period_window(periods, str(first), day_idx)
@@ -180,6 +181,7 @@ def build_events(tables, week_start, tt_num, overrides):
                 "teachers": teachers,
                 "groups": group_names,
                 "version": tt_num,
+                "slots": [[a, b] for a, b in lesson_slots] if lesson_slots else None,
                 "dayType": bells.day_type(day, overrides),
             }
             ev["hash"] = hashlib.sha1("|".join([ev["summary"], ev["start"], ev["end"], ev["location"], ev["description"]]).encode()).hexdigest()

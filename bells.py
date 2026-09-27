@@ -12,6 +12,12 @@ SCHEDULES = {
 }
 WEEKDAY_TYPE = {0: "monday", 1: "midweek", 2: "midweek", 3: "midweek", 4: "friday"}
 
+# Subjects that keep their own bell times instead of the school-wide table.
+# Times are per lesson inside the block: 1st lesson, 2nd lesson, ...
+SUBJECT_SCHEDULES = {
+    "fizika": ["9:00-9:40", "9:50-10:30"],
+}
+
 
 def _minutes(hhmm):
     h, m = hhmm.split(":")
@@ -81,6 +87,27 @@ def day_type(d, overrides=None):
     if is_holiday(d + timedelta(days=1)):
         return "short"
     return WEEKDAY_TYPE.get(d.weekday(), "midweek")
+
+
+def subject_slots(subject):
+    """Custom (start, end) minute pairs for a subject, or None."""
+    name = (subject or "").strip().lower()
+    for key, slots in SUBJECT_SCHEDULES.items():
+        if name.startswith(key):
+            return [tuple(_minutes(t) for t in slot.split("-")) for slot in slots]
+    return None
+
+
+def slots(d, first_period, last_period, subject=None, overrides=None):
+    """(start, end) minute pairs for each lesson of a block, subject rules first."""
+    custom = subject_slots(subject)
+    count = last_period - first_period + 1
+    if custom and count <= len(custom):
+        return custom[:count]
+    table = TABLES[day_type(d, overrides)]
+    if all(p in table for p in range(first_period, last_period + 1)):
+        return [table[p] for p in range(first_period, last_period + 1)]
+    return None
 
 
 def window(d, first_period, last_period, overrides=None):
