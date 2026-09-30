@@ -7,7 +7,7 @@ ROW_RE = re.compile(r'<div class="row\s*([a-z]*)\s*">\s*<div class="period">\s*<
 
 
 def _text(s):
-    return html.unescape(re.sub(r"<[^>]+>", "", s)).strip()
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
 
 
 def _norm(s):

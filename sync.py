@@ -155,7 +155,7 @@ def build_events(tables, week_start, tt_num, overrides):
             if win:
                 start_min, end_min = win
                 edupage_start, _ = period_window(periods, str(first), day_idx)
-                if bells.day_type(day, overrides) == WEEKDAY_TYPE_CHECK.get(day.weekday()) and edupage_start != start_min:
+                if not bells.subject_slots(subject) and bells.day_type(day, overrides) == WEEKDAY_TYPE_CHECK.get(day.weekday()) and edupage_start != start_min:
                     print(f"WARNING: EduPage start for {day} period {first} is {edupage_start // 60:02d}:{edupage_start % 60:02d}, bells table says {start_min // 60:02d}:{start_min % 60:02d}")
             else:
                 start_min, _ = period_window(periods, str(first), day_idx)

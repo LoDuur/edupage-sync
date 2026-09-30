@@ -72,6 +72,7 @@ def rounded(draw, box, radius, fill, outline=None):
 
 
 def ellipsize(draw, text, f, max_w):
+    text = re.sub(r"\s+", " ", str(text))
     if draw.textlength(text, font=f) <= max_w:
         return text
     while text and draw.textlength(text + "…", font=f) > max_w:
