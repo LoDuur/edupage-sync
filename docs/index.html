@@ -230,6 +230,47 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
 .notify{position:fixed;left:50%;bottom:1.2rem;transform:translate(-50%,140%);z-index:60;max-width:90vw;padding:.55rem .9rem;border-radius:12px;background:var(--con-bg,rgba(28,28,30,.92));color:var(--con-text,#f2f2f7);border:1px solid var(--line-strong,rgba(255,255,255,.14));box-shadow:0 12px 36px rgba(0,0,0,.35);font:.82rem/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:transform .28s cubic-bezier(.32,.72,0,1);cursor:pointer}
 .notify.on{transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){.notify{transition:none}}
+
+/* aizvietošana */
+.ev.sub{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 70%,transparent)}
+.ev.sub-add{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--green,#34c759) 70%,transparent)}
+.ev.cancelled .t{text-decoration:line-through;opacity:.75}
+.ev.cancelled{opacity:.82}
+.subbtn{position:absolute;isolation:isolate;top:.28rem;right:.28rem;width:1.25rem;height:1.25rem;min-width:1.25rem;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--amber) 88%,#fff);color:#2a1d00;font:700 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform .15s cubic-bezier(.32,.72,0,1),box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:3}
+.ev.sub-add .subbtn{background:color-mix(in srgb,var(--green,#34c759) 85%,#fff);color:#032a12}
+.ev.sub-cancel .subbtn{background:color-mix(in srgb,var(--red,#ff3b30) 85%,#fff);color:#2c0603}
+.subbtn::after{content:"";position:absolute;inset:-9px;border-radius:50%}
+.subbtn:hover{transform:scale(1.12)}
+.subbtn:active{transform:scale(.94)}
+.subbtn.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--amber) 55%,transparent),0 1px 3px rgba(0,0,0,.28)}
+.subbtn:focus-visible{outline:2px solid var(--accent,#0a84ff);outline-offset:2px}
+.ev.tiny .subbtn,.ev.short .subbtn{width:1.05rem;height:1.05rem;min-width:1.05rem;font-size:.6rem;top:.2rem;right:.2rem}
+.subpop{position:fixed;z-index:70;width:min(19rem,calc(100vw - 1.6rem));background:var(--surface,#1c1c1e);color:var(--text,#f2f2f7);border:1px solid var(--line-strong,rgba(255,255,255,.14));border-radius:1rem;box-shadow:0 18px 50px rgba(0,0,0,.45);padding:.65rem .75rem .75rem;opacity:0;transform:translateY(-6px) scale(.98);transition:opacity .16s ease,transform .18s cubic-bezier(.32,.72,0,1)}
+.subpop.on{opacity:1;transform:none}
+.subpop .head{display:flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--text-dim,rgba(235,235,245,.6));margin-bottom:.45rem}
+.subpop .head b{font-size:.8rem;color:var(--text,#f2f2f7)}
+.subpop .head span{margin-left:auto}
+.subpop .head .x{width:1.4rem;height:1.4rem;border:0;border-radius:50%;background:color-mix(in srgb,currentColor 12%,transparent);color:inherit;font-size:.7rem;cursor:pointer;display:grid;place-items:center;flex:none}
+.subpop .head .x:hover{background:color-mix(in srgb,currentColor 22%,transparent)}
+.subpop .row{display:grid;grid-template-columns:3.1rem 1fr;gap:.15rem .5rem;align-items:baseline;padding:.3rem 0;border-top:1px solid var(--line,rgba(255,255,255,.08))}
+.subpop .row .lbl{grid-row:span 2;font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim,rgba(235,235,245,.6));padding-top:.12rem}
+.subpop .row b{font-size:.85rem;font-weight:600}
+.subpop .row small{font-size:.74rem;color:var(--text-dim,rgba(235,235,245,.6))}
+.subpop .row.was b{text-decoration:line-through;opacity:.7;font-weight:500}
+.subpop .note{margin-top:.45rem;padding:.35rem .5rem;border-radius:.5rem;background:color-mix(in srgb,var(--amber) 16%,transparent);font-size:.75rem;line-height:1.35}
+.subpop.cancel .note{background:color-mix(in srgb,var(--red,#ff3b30) 14%,transparent)}
+@media (max-width:640px){
+  .subscrim{position:fixed;inset:0;z-index:69;background:rgba(0,0,0,.35);opacity:0;transition:opacity .16s ease}
+  .subscrim.on{opacity:1}
+  .subpop.sheet{left:.6rem;right:.6rem;bottom:calc(.6rem + env(safe-area-inset-bottom));top:auto;width:auto;transform:translateY(12px);border-radius:1.2rem;padding:.8rem .9rem 1rem}
+  .subpop.sheet.on{transform:none}
+  .subbtn{width:1.5rem;height:1.5rem;min-width:1.5rem;font-size:.75rem}
+  .ev.tiny .subbtn,.ev.short .subbtn{width:1.3rem;height:1.3rem;min-width:1.3rem;font-size:.66rem}
+}
+.cls-table .lesson.subbed,.classic .lesson.subbed{position:relative;box-shadow:inset 0 0 0 1.5px rgba(180,120,0,.55)}
+.lesson.subbed::after{content:"↻";position:absolute;top:1px;right:2px;font-size:.6rem;color:#7a5200}
+.lesson.cancelled{text-decoration:line-through;opacity:.7}
+@media (prefers-reduced-motion:reduce){.subpop,.subbtn{transition:none}}
 </style>
 </head>
 <body>
@@ -414,7 +455,58 @@ function splitPeriods(evs){
   }
   return out;
 }
-function eventsFor(iso){return splitPeriods(data.events.filter(e=>e.date===iso)).sort((a,b)=>a.start<b.start?-1:1)}
+/* ---- aizvietošanas (substitutions) ---- */
+function parseSub(s){
+  const nums=(s.period||"").match(/\d+/g)||[];
+  const a=+nums[0]||0,b=+nums[nums.length-1]||a;
+  const text=(s.text||"").trim();
+  const subject=(text.split(/\s+-\s+/)[0]||"").trim();
+  let rest=text.slice(subject.length).replace(/^\s*-\s*/,"").replace(/^Added,?\s*/i,"");
+  const teacher=((rest.match(/Skolot[āa]js:\s*([^,]+)/i)||[])[1]||"").trim();
+  const room=((rest.match(/Kabinets:\s*([^,]+)/i)||[])[1]||"").trim();
+  const note=rest.replace(/Skolot[āa]js:\s*[^,]+,?\s*/i,"").replace(/Kabinets:\s*[^,]+,?\s*/i,"").replace(/^[,\s]+/,"").replace(/[,\s]+$/,"").trim();
+  return {a,b,subject,teacher,room,note,cancelled:/atcelt/i.test(note)||/atcelt/i.test(subject),period:s.period,text};
+}
+function subTimes(a,b,dayType){
+  const table=bells[dayType]||bells.midweek;
+  if(!table||!table[b-1])return null;
+  return [table[a-1][0],table[b-1][1]];
+}
+function applySubs(evs,iso){
+  const subs=(data.substitutions||[]).filter(s=>s.date===iso).map(parseSub).filter(s=>s.a);
+  if(!subs.length)return evs;
+  const dayType=evs[0]?.dayType||data.events.find(e=>e.date===iso)?.dayType||"midweek";
+  const out=evs.map(e=>({...e}));
+  for(const s of subs){
+    const hit=out.filter(e=>{const [a,b]=parsePeriods(e.periods);return a<=s.b&&b>=s.a});
+    if(hit.length){
+      for(const e of hit){
+        e.orig={summary:e.summary,location:e.location,teachers:e.teachers||[]};
+        e.subNote=s.note;e.subPeriod=s.period;
+        if(s.cancelled){e.cancelled=true;e.subKind="cancel"}
+        else{
+          e.subKind="change";
+          if(s.subject&&s.subject!==e.summary){e.summary=s.subject;delete e.slots}
+          if(s.room)e.location=s.room;
+          if(s.teacher)e.teachers=[s.teacher];
+        }
+      }
+    }else{
+      const t=subTimes(s.a,s.b,dayType);
+      if(!t)continue;
+      const day=iso+"T",tz=(data.events[0]?.start||"").slice(16)||"+03:00";
+      out.push({date:iso,dayType,periods:s.a===s.b?`${s.a}.`:`${s.a}.–${s.b}.`,summary:s.subject||"Aizvietošana",
+        location:s.room||"",teachers:s.teacher?[s.teacher]:[],groups:[],
+        start:day+fromMin(t[0])+":00"+tz,end:day+fromMin(t[1])+":00"+tz,
+        subKind:"add",subNote:s.note,subPeriod:s.period,cancelled:s.cancelled,added:true});
+    }
+  }
+  return out;
+}
+function unmatchedSubs(iso,evs){
+  return (data.substitutions||[]).filter(s=>s.date===iso).map(parseSub).filter(s=>!s.a||!evs.some(e=>{const [a,b]=parsePeriods(e.periods);return a<=s.b&&b>=s.a}));
+}
+function eventsFor(iso){return splitPeriods(applySubs(data.events.filter(e=>e.date===iso),iso)).sort((a,b)=>a.start<b.start?-1:1)}
 
 function freeBlocks(evs,dayType){
   const table=bells[dayType]||bells.midweek;
@@ -470,7 +562,7 @@ function render(){
     const day=document.createElement("div");
     day.className="day"+(iso===todayIso?" today":"");day.dataset.iso=iso;day.dataset.idx=i;
     const short=evs.some(e=>e.dayType==="short");
-    const subs=(data.substitutions||[]).filter(s=>s.date===iso);
+    const subs=unmatchedSubs(iso,evs);
     const subsHtml=subs.length?`<div class="subs"><b>Aizvietošana</b>${subs.map(s=>`<div><span>${esc(s.period)}.</span>${esc(s.text)}</div>`).join("")}</div>`:"";
     day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>${subsHtml}`;
     const canvas=day.querySelector(".canvas");
@@ -486,9 +578,13 @@ function render(){
       el.dataset.s=e._s;el.dataset.e=e._e;
       const meta=[e.location,(e.teachers||[]).join(", ")].filter(Boolean).join(" · ");
       const time=`${hm(e.start)}–${hm(e.end)} · ${esc(e.periods)} st.`;
-      el.innerHTML=dur<60
+      if(e.subKind)el.classList.add("sub","sub-"+e.subKind);
+      if(e.cancelled)el.classList.add("cancelled");
+      const badge=e.subKind?`<button class="subbtn" type="button" aria-label="${e.subKind==="cancel"?"Atcelta stunda":e.subKind==="add"?"Pievienota stunda":"Mainīta stunda"} – rādīt detaļas" aria-expanded="false">${e.subKind==="cancel"?"✕":e.subKind==="add"?"+":"↻"}</button>`:"";
+      el.innerHTML=(dur<60
         ?`<div class="t">${esc(e.summary)}</div><div class="tm">${time}${meta?" · "+esc(meta):""}</div>`
-        :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`;
+        :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`)+badge;
+      if(e.subKind){const b=el.querySelector(".subbtn");b.onclick=ev=>{ev.stopPropagation();openSubPop(b,e)}}
       canvas.appendChild(el);
     }
     const frees=freeBlocks(evs,evs[0]?.dayType);
@@ -544,7 +640,7 @@ function renderClassic(){
   h+="</tr></thead><tbody>";
   for(let d=0;d<5;d++){
     const iso=isoD(addDays(weekStart,d));
-    const evs=data.events.filter(e=>e.date===iso).map(e=>{const [a,b]=parsePeriods(e.periods);return {...e,a,b}}).sort((x,y)=>x.a-y.a||x.b-y.b);
+    const evs=applySubs(data.events.filter(e=>e.date===iso),iso).map(e=>{const [a,b]=parsePeriods(e.periods);return {...e,a,b}}).sort((x,y)=>x.a-y.a||x.b-y.b);
     const clusters=[];
     for(const e of evs){const c=clusters.find(c=>e.a<=c.b&&e.b>=c.a);if(c){c.a=Math.min(c.a,e.a);c.b=Math.max(c.b,e.b);c.items.push(e)}else clusters.push({a:e.a,b:e.b,items:[e]})}
     h+=`<tr><th>${CLASSIC_DAYS[d]}</th>`;
@@ -553,7 +649,7 @@ function renderClassic(){
       const c=clusters.find(c=>c.a===p);
       if(!c){h+="<td></td>";p++;continue}
       const span=Math.min(c.b,nP)-c.a+1;
-      const cell=e=>`<div class="lesson${/pusdienas/i.test(e.summary)?" lunch":""}" style="background:${pastel(baseColor(e.summary))}"><span class="tch">${esc((e.teachers||[]).join(", "))}</span>${esc(e.summary)}<span class="room">${esc(e.location||"")}</span></div>`;
+      const cell=e=>`<div class="lesson${/pusdienas/i.test(e.summary)?" lunch":""}${e.subKind?" subbed":""}${e.cancelled?" cancelled":""}" style="background:${pastel(baseColor(e.summary))}"${e.subKind?` title="${esc((e.orig?`Bija: ${e.orig.summary}${e.orig.location?" · "+e.orig.location:""}. `:"")+(e.subNote||"Izmaiņa"))}"`:""}><span class="tch">${esc((e.teachers||[]).join(", "))}</span>${esc(e.summary)}<span class="room">${esc(e.location||"")}</span></div>`;
       h+=`<td class="cell" colspan="${span}">${c.items.length>1?`<div class="stack">${c.items.map(cell).join("")}</div>`:cell(c.items[0])}</td>`;
       p=c.a+span;
     }
@@ -564,6 +660,48 @@ function renderClassic(){
   if(subs.length)h+=`<div class="cls-subs"><b>Aizvietošana:</b>${subs.map(s=>`<div>${esc(s.date)} · ${esc(s.period)}. ${esc(s.text)}</div>`).join("")}</div>`;
   el.innerHTML=h+"</div>";
 }
+
+function closeSubPop(){
+  const p=document.getElementById("subpop");
+  if(p){const b=p._btn;p.remove();if(b){b.setAttribute("aria-expanded","false");b.classList.remove("on")}}
+  const sc=document.getElementById("subscrim");if(sc)sc.remove();
+}
+function openSubPop(btn,e){
+  const open=document.getElementById("subpop");
+  const same=open&&open._btn===btn;
+  closeSubPop();
+  if(same)return;
+  const kind=e.subKind==="cancel"?"Atcelta stunda":e.subKind==="add"?"Pievienota stunda":"Mainīta stunda";
+  const line=(o)=>[o.location,(o.teachers||[]).join(", ")].filter(Boolean).join(" · ");
+  const now=`<div class="row now"><span class="lbl">Tagad</span><b>${esc(e.summary)}</b><small>${esc(line(e))||"—"}</small></div>`;
+  const was=e.orig?`<div class="row was"><span class="lbl">Bija</span><b>${esc(e.orig.summary)}</b><small>${esc(line(e.orig))||"—"}</small></div>`:"";
+  const p=document.createElement("div");
+  p.className="subpop"+(e.subKind==="cancel"?" cancel":"");p.id="subpop";p._btn=btn;p.setAttribute("role","dialog");
+  p.innerHTML=`<div class="head"><b>${kind}</b><span>${esc(e.subPeriod||e.periods)} st. · ${fmtD(new Date(e.date))}</span><button class="x" type="button" aria-label="Aizvērt">✕</button></div>${e.cancelled&&!e.orig?"":was}${now}${e.subNote?`<div class="note">${esc(e.subNote)}</div>`:""}`;
+  document.body.appendChild(p);
+  p.querySelector(".x").onclick=closeSubPop;
+  btn.setAttribute("aria-expanded","true");btn.classList.add("on");
+  const r=btn.getBoundingClientRect(),pr=p.getBoundingClientRect(),m=8;
+  if(matchMedia("(max-width: 640px)").matches){
+    p.classList.add("sheet");
+    const sc=document.createElement("div");sc.className="subscrim";sc.id="subscrim";sc.onclick=closeSubPop;
+    document.body.insertBefore(sc,p);requestAnimationFrame(()=>sc.classList.add("on"));
+  }
+  else{
+    let left=Math.min(Math.max(m,r.right-pr.width),innerWidth-pr.width-m);
+    let top=r.bottom+6;
+    if(top+pr.height>innerHeight-m)top=Math.max(m,r.top-pr.height-6);
+    p.style.left=left+"px";p.style.top=top+"px";
+  }
+  requestAnimationFrame(()=>p.classList.add("on"));
+  setTimeout(()=>{
+    const off=ev=>{if(!p.contains(ev.target)&&ev.target!==btn){closeSubPop();document.removeEventListener("pointerdown",off)}};
+    document.addEventListener("pointerdown",off);
+  },0);
+}
+addEventListener("keydown",e=>{if(e.key==="Escape")closeSubPop()});
+addEventListener("resize",closeSubPop);
+document.addEventListener("scroll",()=>{const p=document.getElementById("subpop");if(p&&!p.classList.contains("sheet"))closeSubPop()},true);
 
 function tick(){
   const now=new Date(),m=now.getHours()*60+now.getMinutes();
