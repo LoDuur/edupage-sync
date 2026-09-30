@@ -342,7 +342,7 @@ async function load(){
 function setUpdated(){document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
 
 /* ---- automātiska datu pārbaude ---- */
-const POLL_MS=120000;
+const POLL_MS=30000;
 let lastCheck=0,checking=false;
 const evKey=e=>`${e.date}|${e.periods}|${e.summary}`;
 const evVal=e=>`${e.start}|${e.end}|${e.location}|${(e.teachers||[]).join(",")}`;
@@ -394,7 +394,7 @@ function notify(text){
 }
 function startAutoCheck(){
   setInterval(()=>{if(!document.hidden)checkUpdates({silent:false})},POLL_MS);
-  const soon=()=>{if(!document.hidden&&Date.now()-lastCheck>30000)checkUpdates({silent:false})};
+  const soon=()=>{if(!document.hidden&&Date.now()-lastCheck>10000)checkUpdates({silent:false})};
   document.addEventListener("visibilitychange",soon);
   addEventListener("focus",soon);
   addEventListener("online",soon);

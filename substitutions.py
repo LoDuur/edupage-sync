@@ -10,11 +10,22 @@ def _text(s):
     return html.unescape(re.sub(r"<[^>]+>", "", s)).strip()
 
 
-def parse(page_html, class_short, fix_name=lambda s: s, date=None):
+def _norm(s):
+    return re.sub(r"\s+", "", (s or "")).lower()
+
+
+def parse(page_html, class_names, fix_name=lambda s: s, date=None):
+    """class_names: one name or several (short and full) – EduPage varies the heading."""
+    if isinstance(class_names, str):
+        class_names = [class_names]
+    wanted = {_norm(n) for n in class_names if n}
     rows = []
     for section in SECTION_RE.findall(page_html):
         header = HEADER_RE.search(section)
-        if not header or _text(header.group(1)) != class_short:
+        if not header:
+            continue
+        head = _norm(_text(header.group(1)))
+        if head not in wanted and not any(head.endswith(w) and not head[-len(w) - 1].isalnum() for w in wanted if len(head) > len(w)):
             continue
         for kind, period, info in ROW_RE.findall(section):
             rows.append({

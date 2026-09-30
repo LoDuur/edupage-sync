@@ -327,7 +327,7 @@ def fetch_substitutions(today, overrides):
         if d.weekday() >= 5 or bells.is_holiday(d):
             continue
         page = api("substitution/server/viewer.js?__func=getSubstViewerDayDataHtml", [None, {"date": d.isoformat(), "mode": "classes"}])
-        rows += substitutions.parse(page, CLASS_SHORT, fix_name, d.isoformat())
+        rows += substitutions.parse(page, [CLASS_SHORT, CLASS_NAME], fix_name, d.isoformat())
     return {substitutions.key(r): r for r in rows}
 
 
