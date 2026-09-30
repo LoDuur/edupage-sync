@@ -227,6 +227,9 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
 .game-bar button:hover{background:var(--con-text);color:var(--con-bg)}
 .game-box iframe{display:block;border:0;width:100%;aspect-ratio:4/3;max-height:calc(65vh - 9rem);background:#000}
 .con.gaming{max-height:65vh}
+.notify{position:fixed;left:50%;bottom:1.2rem;transform:translate(-50%,140%);z-index:60;max-width:90vw;padding:.55rem .9rem;border-radius:12px;background:var(--con-bg,rgba(28,28,30,.92));color:var(--con-text,#f2f2f7);border:1px solid var(--line-strong,rgba(255,255,255,.14));box-shadow:0 12px 36px rgba(0,0,0,.35);font:.82rem/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:transform .28s cubic-bezier(.32,.72,0,1);cursor:pointer}
+.notify.on{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.notify{transition:none}}
 </style>
 </head>
 <body>
@@ -333,8 +336,69 @@ async function load(){
   fetch("changes.json?"+Date.now()).then(r=>r.json()).then(j=>changesData=j).catch(()=>{});
   requestAnimationFrame(()=>scrollToNow(true));
   setInterval(tick,30000);
+  lastCheck=Date.now();
+  startAutoCheck();
 }
 function setUpdated(){document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
+
+/* ---- automātiska datu pārbaude ---- */
+const POLL_MS=120000;
+let lastCheck=0,checking=false;
+const evKey=e=>`${e.date}|${e.periods}|${e.summary}`;
+const evVal=e=>`${e.start}|${e.end}|${e.location}|${(e.teachers||[]).join(",")}`;
+function diffData(a,b){
+  const A=new Map((a.events||[]).map(e=>[evKey(e),evVal(e)])),B=new Map((b.events||[]).map(e=>[evKey(e),evVal(e)]));
+  let added=0,removed=0,changed=0;
+  for(const [k,v] of B)A.has(k)?(A.get(k)!==v&&changed++):added++;
+  for(const k of A.keys())if(!B.has(k))removed++;
+  const oldV=new Set((a.versions||[]).map(v=>v.weekStart+":"+v.num));
+  const versions=(b.versions||[]).filter(v=>!oldV.has(v.weekStart+":"+v.num));
+  const subs=JSON.stringify(a.substitutions||{})!==JSON.stringify(b.substitutions||{});
+  return {added,removed,changed,versions,subs,total:added+removed+changed+versions.length+(subs?1:0)};
+}
+function applyData(fresh){
+  data=fresh;
+  for(const [k,v] of Object.entries(data.bells||{}))bells[k]=v.map(x=>x.split("-").map(toMin));
+  setUpdated();render();
+}
+async function checkUpdates({silent=true}={}){
+  if(checking)return {busy:true};
+  checking=true;
+  try{
+    const fresh=await (await fetch("data.json?"+Date.now(),{cache:"no-store"})).json();
+    const diff=diffData(data,fresh);
+    const isNew=fresh.updated!==data.updated;
+    if(isNew||diff.total){
+      applyData(fresh);
+      fetch("changes.json?"+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>changesData=j).catch(()=>{});
+      if(!silent&&diff.total)notify(diffText(diff));
+    }
+    lastCheck=Date.now();
+    return {fresh,diff,updated:isNew};
+  }catch(e){return {error:e}}finally{checking=false}
+}
+function diffText(d){
+  const p=[];
+  if(d.versions.length)p.push(d.versions.length===1?`jauns saraksts (v${d.versions[0].num})`:`${d.versions.length} jauni saraksti`);
+  if(d.added)p.push(`+${d.added} stundas`);
+  if(d.removed)p.push(`−${d.removed} stundas`);
+  if(d.changed)p.push(`${d.changed} mainītas`);
+  if(d.subs)p.push("jauna aizvietošana");
+  return p.length?"Saraksts atjaunināts · "+p.join(" · "):"Saraksts atjaunināts";
+}
+function notify(text){
+  let el=document.getElementById("notify");
+  if(!el){el=document.createElement("div");el.id="notify";el.className="notify";document.body.appendChild(el);el.onclick=()=>el.classList.remove("on")}
+  el.textContent=text;el.classList.add("on");
+  clearTimeout(notify._t);notify._t=setTimeout(()=>el.classList.remove("on"),6000);
+}
+function startAutoCheck(){
+  setInterval(()=>{if(!document.hidden)checkUpdates({silent:false})},POLL_MS);
+  const soon=()=>{if(!document.hidden&&Date.now()-lastCheck>30000)checkUpdates({silent:false})};
+  document.addEventListener("visibilitychange",soon);
+  addEventListener("focus",soon);
+  addEventListener("online",soon);
+}
 
 function splitPeriods(evs){
   const out=[];
@@ -795,7 +859,17 @@ const CMDS={
   make:{g:"Sistēma",d:"",f(a){const t=a.join(" ");if(/sandwich|sviestmaiz/i.test(t))return print(root?"Labi.":"Ko? Uztaisi pats.");print("make: *** nav norādīts mērķis un nav Makefile. Stop.","err")}},
   apt:{g:"Sistēma",d:"",f(){print(juarch()?"apt: šeit ir juarch. Lieto judo juarchupdate.":"apt: šī nav Debian. Mēģini sudo juarchinstall.","err")}},
   vim:{g:"Sistēma",d:"",f(){vimMode=true;print("<span class=\"dim\">~\n~\n~   VIM – Vi IMproved · stundu saraksts ir tikai lasāms\n~\n~   iziet: ievadi :q</span>")}},
-  reboot:{g:"Sistēma",d:"pārlādē lapu",f(){print("Pārstartē…");setTimeout(()=>location.reload(),400)}},
+  reboot:{g:"Sistēma",u:"[-f]",d:"pārbauda jaunu sarakstu un atjauno datus",m:"reboot – pieprasa data.json no servera, salīdzina ar esošo un uzreiz pārzīmē sarakstu, ja kaut kas mainījies. reboot -f – pilnībā pārlādē lapu (arī lapas kodu).",async f(a){
+    if((a[0]||"")==="-f"){print("Pārstartē…");return setTimeout(()=>location.reload(),400)}
+    const p=print("Pārbauda serverī jaunu sarakstu…","dim");
+    const r=await checkUpdates({silent:true});
+    if(r.error)return p.innerHTML='<span class="err">kļūda: neizdevās ielādēt data.json</span>';
+    const d=r.diff;
+    if(!d.total&&!r.updated)return p.innerHTML=`<span class="dim">nav izmaiņu · dati no ${new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>`;
+    p.innerHTML=`<span class="ok">${diffText(d)}</span>`;
+    if(d.versions.length)print(d.versions.map(v=>`  nedēļa ${v.weekStart} → v${v.num}`).join("\n"));
+    print('<span class="dim">skats atjaunots</span>');
+  }},
   clear:{g:"Sistēma",d:"notīra konsoli",f(){closeGame();conOut.innerHTML=""}},
   exit:{g:"Sistēma",d:"aizver konsoli (vai iziet no root)",f(){if(root){root=false;setPrompt();print("atteikšanās")}else toggleCon(false)}},
 
