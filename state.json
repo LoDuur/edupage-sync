@@ -1577,18 +1577,6 @@
   "513"
  ],
  "substitutions": {
-  "2026-10-01|2 - 3|Fizika I - Added, Skolotājs: Datorium, Kabinets: 355., Kabinetas maiņa": {
-   "date": "2026-10-01",
-   "kind": "add",
-   "period": "2 - 3",
-   "text": "Fizika I - Added, Skolotājs: Datorium, Kabinets: 355., Kabinetas maiņa"
-  },
-  "2026-10-01|4 - 5|Inform. un komun. tehn. (1.l.) - Added, Skolotājs: Kobiaka Ilze, Kabinets: 409., Pievienots kabinets": {
-   "date": "2026-10-01",
-   "kind": "add",
-   "period": "4 - 5",
-   "text": "Inform. un komun. tehn. (1.l.) - Added, Skolotājs: Kobiaka Ilze, Kabinets: 409., Pievienots kabinets"
-  },
   "2026-10-02|4|Sociālās zin. un vēsture - Added, Skolotājs: Šamšele Agita, Kabinets: 355., Atcelts. 28. grupai Pusdienas": {
    "date": "2026-10-02",
    "kind": "add",
