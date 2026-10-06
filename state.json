@@ -2273,5 +2273,12 @@
   "513",
   "514"
  ],
- "substitutions": {}
+ "substitutions": {
+  "2026-10-08|3|Svešval. I (B2) - angļu val. - Added, Skolotājs: Krastiņa Sanita, Kabinets: 213., Atcelts": {
+   "date": "2026-10-08",
+   "kind": "add",
+   "period": "3",
+   "text": "Svešval. I (B2) - angļu val. - Added, Skolotājs: Krastiņa Sanita, Kabinets: 213., Atcelts"
+  }
+ }
 }
