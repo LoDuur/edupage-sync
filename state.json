@@ -2274,12 +2274,6 @@
   "514"
  ],
  "substitutions": {
-  "2026-10-08|3|Svešval. I (B2) - angļu val. - Added, Skolotājs: Krastiņa Sanita, Kabinets: 213., Atcelts": {
-   "date": "2026-10-08",
-   "kind": "add",
-   "period": "3",
-   "text": "Svešval. I (B2) - angļu val. - Added, Skolotājs: Krastiņa Sanita, Kabinets: 213., Atcelts"
-  },
   "2026-10-09|(5)|Sociālās zin. un vēsture - Šamšele Agita, Atcelts, 28.gr. Pusdienas": {
    "date": "2026-10-09",
    "kind": "remove",
