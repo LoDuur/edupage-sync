@@ -17,6 +17,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,7 +25,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: sudo apt-get install -y -qq fonts-dejavu-core >/dev/null
+      - name: Ensure DejaVu fonts
+        run: fc-list | grep -qi dejavu || sudo apt-get install -y -qq fonts-dejavu-core >/dev/null
       - run: python sync.py
         env:
           CLASS_NAME: "2.k. 28.grupa"
@@ -42,7 +44,21 @@ jobs:
           git config user.name "edupage-sync bot"
           git config user.email "actions@users.noreply.github.com"
           git add state.json docs
-          git diff --cached --quiet || (git commit -m "sync $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)
+          if git diff --cached --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          git commit -m "sync $(date -u +'%Y-%m-%d %H:%M UTC')"
+          for attempt in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "push failed (attempt $attempt), rebasing on origin/${GITHUB_REF_NAME}"
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || exit 1
+            sleep $((attempt * 3))
+          done
+          echo "::error::could not push sync commit after 3 attempts; state.json may be re-sent next run"
+          exit 1
       - name: Report failure
         if: failure()
         env:

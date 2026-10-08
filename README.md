@@ -2,7 +2,7 @@
 
 Syncs the Valmieras tehnikums EduPage timetable for **2.k. 28.grupa** into Google Calendar (and therefore Apple Calendar), publishes a subscribable `.ics`, and posts a Discord message whenever the timetable changes.
 
-Runs hourly on GitHub Actions. `state.json` holds the last published lessons; each run diffs it against the current EduPage data.
+Runs on GitHub Actions every 10 minutes (plus an external fast trigger every 2 minutes, see below). `state.json` holds the last published lessons; each run diffs it against the current EduPage data. A run with no EduPage changes writes nothing and creates no commit.
 
 ## Setup
 
@@ -28,6 +28,23 @@ Add your Google account under *Settings → Apps → Calendar → Accounts* (iOS
 
 Alternative for any calendar app: subscribe to
 `https://raw.githubusercontent.com/<user>/edupage-sync/main/docs/timetable.ics`
+
+## Fast trigger
+
+GitHub's `schedule:` is best effort and often fires 10–30 minutes late, so the crons in `.github/workflows/sync.yml` are only a fallback. An external scheduler (cron-job.org) calls the workflow directly:
+
+```
+POST https://api.github.com/repos/<user>/edupage-sync/actions/workflows/sync.yml/dispatches
+Authorization: Bearer <token>
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+
+{"ref":"main"}
+```
+
+Token: a fine-grained personal access token limited to this repository with **Actions: read and write**. Store it in the scheduler only; it is never needed in the repo. A successful call returns `204 No Content`.
+
+Schedule: every 2 minutes, 06:00–23:00 Europe/Riga, every day. Do not poll more often than every 1–2 minutes — runs are serialised by the `sync` concurrency group and each one hits EduPage through the proxy.
 
 ## WhatsApp (Green API)
 

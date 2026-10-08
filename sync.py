@@ -259,7 +259,7 @@ def sync_google(state_events, added, changed, removed):
 
 
 def ics_escape(s):
-    return s.replace("\\", "\\\\").replace(";", "\;").replace(",", "\\,").replace("\n", "\\n")
+    return s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
 
 def ics_time(iso):
@@ -267,7 +267,7 @@ def ics_time(iso):
 
 
 def write_ics(events):
-    now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp_token = "@@DTSTAMP@@"
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -284,7 +284,7 @@ def write_ics(events):
         lines += [
             "BEGIN:VEVENT",
             f"UID:{hashlib.sha1(key.encode()).hexdigest()}@{SCHOOL}.edupage",
-            f"DTSTAMP:{now}",
+            f"DTSTAMP:{stamp_token}",
             f"DTSTART:{ics_time(ev['start'])}",
             f"DTEND:{ics_time(ev['end'])}",
             f"SUMMARY:{ics_escape(ev['summary'])}",
@@ -294,8 +294,13 @@ def write_ics(events):
         lines.append(f"DESCRIPTION:{ics_escape(ev['description'])}")
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
+    body = "\r\n".join(lines) + "\r\n"
+    if ICS_FILE.exists():
+        previous = ICS_FILE.read_bytes().decode("utf-8")
+        if re.sub(r"DTSTAMP:\d{8}T\d{6}Z", f"DTSTAMP:{stamp_token}", previous) == body:
+            return
     ICS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    ICS_FILE.write_text("\r\n".join(lines) + "\r\n")
+    ICS_FILE.write_bytes(body.replace(stamp_token, datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")).encode("utf-8"))
 
 
 def write_site_data(events, versions, added, changed, removed, subs=None):
@@ -317,6 +322,13 @@ def write_site_data(events, versions, added, changed, removed, subs=None):
         "substitutions": sorted((subs or {}).values(), key=lambda r: (r["date"], r["period"])),
         "events": [{k: v for k, v in ev.items() if k not in ("hash", "gcal_id")} for _, ev in sorted(events.items(), key=lambda kv: kv[1]["start"])],
     }
+    if DATA_FILE.exists():
+        try:
+            previous = json.loads(DATA_FILE.read_text())
+        except json.JSONDecodeError:
+            previous = None
+        if previous is not None and {k: v for k, v in previous.items() if k != "updated"} == {k: v for k, v in data.items() if k != "updated"}:
+            return
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False) + "\n")
 
 
@@ -445,10 +457,16 @@ def main():
                 send_week_image(f"Izmaiņas stundu sarakstā {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
                                 f"*Izmaiņas stundu sarakstā* ({n})\n{SITE_URL}")
 
+    if added or changed or removed:
+        state["events"] = old_events
+        save_state(state)
+
     for ws, num in new_versions:
         send_week_image(f"Stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}", ws, new_events, subs_new,
                         f"*Jauns stundu saraksts {ws:%d.%m.}–{ws + timedelta(days=4):%d.%m.}*\n{SITE_URL}")
     state["seen_versions"] = sorted({num for _, num in versions} | set(seen_versions or []))[-20:]
+    if new_versions:
+        save_state(state)
 
     if subs_added or subs_removed:
         text = messages.substitutions(subs_added, subs_removed)
@@ -461,6 +479,8 @@ def main():
             note = f"\n_(atcelts: {', '.join(r['period'] + '. st.' for r in cancelled)})_" if cancelled else ""
             whatsapp.send_image(str(path), f"*Aizvietošana {messages._d(iso)}*{note}\n{SITE_URL}")
     state["substitutions"] = {k: r for k, r in subs_new.items()}
+    if subs_added or subs_removed:
+        save_state(state)
 
     if send_daily:
         since = state.get("last_daily_at") or ""
@@ -486,6 +506,7 @@ def main():
         if sent:
             state["last_daily"] = today.isoformat()
             state["last_daily_at"] = now.isoformat(timespec="seconds")
+            save_state(state)
 
     cutoff = (today - timedelta(days=KEEP_DAYS)).isoformat()
     state["events"] = {k: v for k, v in old_events.items() if v["date"] >= cutoff}
