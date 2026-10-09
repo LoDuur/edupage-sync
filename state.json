@@ -2907,12 +2907,5 @@
   "514",
   "515"
  ],
- "substitutions": {
-  "2026-10-09|(5)|Sociālās zin. un vēsture - Šamšele Agita, Atcelts, 28.gr. Pusdienas": {
-   "date": "2026-10-09",
-   "kind": "remove",
-   "period": "(5)",
-   "text": "Sociālās zin. un vēsture - Šamšele Agita, Atcelts, 28.gr. Pusdienas"
-  }
- }
+ "substitutions": {}
 }
