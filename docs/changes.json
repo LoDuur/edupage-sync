@@ -1,5 +1,42 @@
 [
  {
+  "time": "2026-10-09T16:11:24+03:00",
+  "versions": [
+   "513",
+   "514",
+   "515"
+  ],
+  "added": [
+   "Pr 12.10 2.–3. Matemātika I (356.)",
+   "Pr 12.10 4.–5. Datu bāzu tehnoloģijas (206.)",
+   "Pr 12.10 6. Pusdienas",
+   "Pr 12.10 7. Matemātikas speciālās nodaļas (223.)",
+   "Pr 12.10 8.–9. Valoda, kult.izpratne un izpausmes (1.l.) (353.)",
+   "Ot 13.10 2.–3. Matemātikas speciālās nodaļas (223.)",
+   "Ot 13.10 4.–5. Sociālās zin. un vēsture (355.)",
+   "Ot 13.10 6. Pusdienas",
+   "Ot 13.10 7.–8. Svešval. I (B2) - angļu val. (213.)",
+   "Ot 13.10 9.–10. Sociālās zin. un vēsture (355.)",
+   "Tr 14.10 1.–2. Svešval. I (B2) - angļu val. (213.)",
+   "Tr 14.10 3.–4. Iniciatīva un uzņēmējdarb. (1.l.) (222.)",
+   "Tr 14.10 5. Pusdienas",
+   "Tr 14.10 6.–7. Matemātika I (356.)",
+   "Tr 14.10 8.–9. Svešval.(B1)- krievu val. (310.)",
+   "Ce 15.10 2.–3. Fizika I (355.)",
+   "Ce 15.10 4. Pusdienas",
+   "Ce 15.10 5.–6. Datu bāzu tehnoloģijas (206.)",
+   "Ce 15.10 7.–8. Svešval. I (B2) - angļu val. (213.)",
+   "Ce 15.10 9. Matemātika I (356.)",
+   "Pk 16.10 2.–3. Iniciatīva un uzņēmējdarb. (1.l.) (353.)",
+   "Pk 16.10 4. Pusdienas",
+   "Pk 16.10 5. Matemātikas speciālās nodaļas (223.)",
+   "Pk 16.10 6.–7. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pk 16.10 8.–9. Matemātika I (356.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-10-03T01:37:07+03:00",
   "versions": [
    "509",
