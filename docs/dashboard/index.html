@@ -124,9 +124,9 @@
     <div class="form-grid">
       <label class="field field-full">
         <span class="field-label">Priekšmets</span>
-        <input class="input" id="editor-subject" list="subject-options" maxlength="80" autocomplete="off">
-        <span class="field-error" id="editor-subject-error" hidden>Ievadi priekšmetu</span>
-        <span class="quick-picks"><button class="chip" id="editor-lunch" type="button">Pusdienas</button></span>
+        <select class="input select" id="editor-subject-pick"></select>
+        <input class="input" id="editor-subject" maxlength="80" autocomplete="off" placeholder="Priekšmeta nosaukums" aria-label="Cits priekšmets" hidden>
+        <span class="field-error" id="editor-subject-error" hidden>Izvēlies priekšmetu</span>
       </label>
       <label class="field">
         <span class="field-label">Kabinets</span>
@@ -141,7 +141,6 @@
         <input class="input" id="editor-note" maxlength="160" autocomplete="off" placeholder="Piem., aizvieto skolotāju">
       </label>
     </div>
-    <datalist id="subject-options"></datalist>
     <datalist id="teacher-options"></datalist>
 
     <footer class="dialog-foot">

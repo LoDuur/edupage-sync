@@ -40,6 +40,7 @@ const parseClock = text => { const [hours, minutes] = text.split(":").map(Number
 const capitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const LUNCH_SUBJECT = "Pusdienas";
+const OTHER_SUBJECT_VALUE = "__other__";
 const isLunch = subject => /^pusdienas\b/i.test(subject.trim());
 const shortDate = iso => { const date = parseIsoDate(iso); return `${WEEKDAY_SHORT[weekdayIndex(iso)]} ${date.getDate()}.${pad2(date.getMonth() + 1)}.`; };
 const longDate = iso => capitalize(parseIsoDate(iso).toLocaleDateString("lv-LV", { weekday: "long", day: "numeric", month: "long" }));
@@ -572,7 +573,7 @@ function revealSlot(key) {
   flashCell(key);
 }
 
-function fillDatalists() {
+function fillEditorOptions() {
   const subjects = new Set([...state.subjectCatalog.keys()]);
   const teachers = new Set();
   for (const original of state.originals.values()) original.teacher.split(", ").filter(Boolean).forEach(name => teachers.add(name));
@@ -580,9 +581,9 @@ function fillDatalists() {
     if (override.subject && !isLunch(override.subject)) subjects.add(override.subject);
     if (override.teacher) teachers.add(override.teacher);
   }
-  const options = values => [...values].sort((a, b) => a.localeCompare(b, "lv")).map(value => `<option value="${escapeHtml(value)}"></option>`).join("");
+  const options = values => [...values].sort((a, b) => a.localeCompare(b, "lv")).map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
   subjects.add(LUNCH_SUBJECT);
-  $("subject-options").innerHTML = options(subjects);
+  $("editor-subject-pick").innerHTML = `<option value="">Izvēlies priekšmetu</option>${options(subjects)}<option value="${OTHER_SUBJECT_VALUE}">Cits priekšmets…</option>`;
   $("teacher-options").innerHTML = options(teachers);
 }
 
@@ -590,13 +591,14 @@ function setEditorStatus(status) {
   state.editorStatus = status;
   for (const button of $("editor-status").querySelectorAll("button")) button.setAttribute("aria-checked", String(button.dataset.status === status));
   const isRemoved = status === "removed";
-  for (const id of ["editor-subject", "editor-room", "editor-teacher", "editor-lunch"]) $(id).disabled = isRemoved;
+  for (const id of ["editor-subject-pick", "editor-subject", "editor-room", "editor-teacher"]) $(id).disabled = isRemoved;
   $("editor-note").placeholder = isRemoved ? "Piem., skolotājs slims" : "Piem., aizvieto skolotāju";
   clearSubjectError();
 }
 
 function clearSubjectError() {
   $("editor-subject-error").hidden = true;
+  $("editor-subject-pick").removeAttribute("aria-invalid");
   $("editor-subject").removeAttribute("aria-invalid");
 }
 
@@ -604,7 +606,7 @@ function openEditor(key) {
   const lesson = lessonAt(key);
   const original = lesson.original;
   state.editorKey = key;
-  fillDatalists();
+  fillEditorOptions();
   $("editor-title").textContent = `${longDate(lesson.date)}, ${lesson.period}. stunda`;
   $("editor-sub").textContent = slotTimeLabel(lesson.date, lesson.period) || "Laiks nav zināms";
   $("editor-original").innerHTML = original
@@ -612,7 +614,7 @@ function openEditor(key) {
     : '<span class="original-label">EduPage</span><span>Šajā laikā stundas nav</span>';
   $("editor-status").hidden = !original;
   const isRemoved = lesson.status === "removed";
-  $("editor-subject").value = isRemoved ? original.subject : lesson.subject;
+  showSubject(isRemoved ? original.subject : lesson.subject);
   $("editor-room").value = isRemoved ? original.room : lesson.room;
   $("editor-teacher").value = isRemoved ? original.teacher : lesson.teacher;
   $("editor-note").value = lesson.note;
@@ -621,7 +623,7 @@ function openEditor(key) {
   $("editor-clear").hidden = Boolean(original) || lesson.status === "empty";
   $("editor-swap").hidden = lesson.status === "empty" && !original;
   $("editor").showModal();
-  if (!isRemoved) $("editor-subject").focus();
+  if (!isRemoved) $("editor-subject-pick").focus();
 }
 
 function closeEditor() {
@@ -641,9 +643,10 @@ function applyEditor(event) {
     note: $("editor-note").value.replace(/\s+/g, " ").trim(),
   };
   if (!isRemoved && !fields.subject) {
+    const field = $("editor-subject").hidden ? $("editor-subject-pick") : $("editor-subject");
     $("editor-subject-error").hidden = false;
-    $("editor-subject").setAttribute("aria-invalid", "true");
-    $("editor-subject").focus();
+    field.setAttribute("aria-invalid", "true");
+    field.focus();
     return;
   }
   stageOverride(key, { ...fields, removed: isRemoved });
@@ -653,19 +656,34 @@ function applyEditor(event) {
   flashCell(key);
 }
 
-function autofillFromSubject() {
-  clearSubjectError();
-  const known = state.subjectCatalog.get($("editor-subject").value.trim());
-  if (!known) return;
-  if (!$("editor-room").value.trim()) $("editor-room").value = known.room;
-  if (!$("editor-teacher").value.trim()) $("editor-teacher").value = known.teacher;
+function showSubject(subject) {
+  const picker = $("editor-subject-pick");
+  const isListed = [...picker.options].some(option => option.value === subject && option.value !== OTHER_SUBJECT_VALUE);
+  picker.value = isListed || !subject ? subject : OTHER_SUBJECT_VALUE;
+  $("editor-subject").value = subject;
+  $("editor-subject").hidden = isListed || !subject;
 }
 
-function fillLunch() {
-  $("editor-subject").value = LUNCH_SUBJECT;
-  $("editor-room").value = "";
-  $("editor-teacher").value = "";
+function pickSubject() {
   clearSubjectError();
+  const picked = $("editor-subject-pick").value;
+  if (picked === OTHER_SUBJECT_VALUE) {
+    $("editor-subject").value = "";
+    $("editor-subject").hidden = false;
+    $("editor-subject").focus();
+    return;
+  }
+  $("editor-subject").value = picked;
+  $("editor-subject").hidden = true;
+  if (isLunch(picked)) {
+    $("editor-room").value = "";
+    $("editor-teacher").value = "";
+    return;
+  }
+  const known = state.subjectCatalog.get(picked);
+  if (!known) return;
+  $("editor-room").value = known.room;
+  $("editor-teacher").value = known.teacher;
 }
 
 function resetEditorSlot() {
@@ -1023,8 +1041,7 @@ function bindEvents() {
   }
 
   $("editor-form").addEventListener("submit", applyEditor);
-  $("editor-subject").addEventListener("change", autofillFromSubject);
-  $("editor-lunch").addEventListener("click", fillLunch);
+  $("editor-subject-pick").addEventListener("change", pickSubject);
   $("editor-subject").addEventListener("input", clearSubjectError);
   $("editor-swap").addEventListener("click", () => startSwap(state.editorKey));
   $("editor-reset").addEventListener("click", resetEditorSlot);
