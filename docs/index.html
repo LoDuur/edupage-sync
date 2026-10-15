@@ -376,11 +376,53 @@ async function load(){
   render();
   fetch("changes.json?"+Date.now()).then(r=>r.json()).then(j=>changesData=j).catch(()=>{});
   requestAnimationFrame(()=>scrollToNow(true));
+  loadManualOverrides();
   setInterval(tick,30000);
   lastCheck=Date.now();
   startAutoCheck();
 }
 function setUpdated(){document.getElementById("updated").textContent="Atjaunināts "+new Date(data.updated).toLocaleString("lv-LV",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
+
+const SCHEDULE_API=["localhost","127.0.0.1"].includes(location.hostname)?"http://localhost:8790":"https://edupage-proxy.loduur.workers.dev";
+const SESSION_STORE="schedule-session";
+const WEEKDAY_DAY_TYPES=["monday","midweek","midweek","midweek","friday"];
+let manualOverrides=[],manualRevision=-1;
+async function loadManualOverrides(){
+  try{
+    const r=await fetch(`${SCHEDULE_API}/schedule/overrides`,{cache:"no-store"});
+    if(!r.ok)return;
+    const state=await r.json();
+    if(state.revision===manualRevision)return;
+    const isFirstLoad=manualRevision<0;
+    manualRevision=state.revision;manualOverrides=state.overrides;render();
+    if(!isFirstLoad)notify("Saraksts atjaunināts · manuālas izmaiņas");
+  }catch(e){}
+}
+function applyManual(evs,iso){
+  const day=manualOverrides.filter(o=>o.date===iso);
+  if(!day.length)return evs;
+  const dayType=evs[0]?.dayType||data.events.find(e=>e.date===iso)?.dayType||WEEKDAY_DAY_TYPES[wdIdx(iso)]||"midweek";
+  const out=evs.map(e=>({...e}));
+  for(const o of day){
+    const hit=out.filter(e=>{const [a,b]=parsePeriods(e.periods);return a<=o.period&&b>=o.period});
+    for(const e of hit){
+      e.orig=e.orig||{summary:e.summary,location:e.location,teachers:e.teachers||[]};
+      e.subPeriod=`${o.period}.`;e.subNote=o.note;
+      if(o.removed){e.cancelled=true;e.subKind="cancel";continue}
+      e.cancelled=false;e.subKind="change";e.summary=o.subject;e.location=o.room;e.teachers=o.teacher?[o.teacher]:[];delete e.slots;
+    }
+    if(hit.length||o.removed)continue;
+    const t=subTimes(o.period,o.period,dayType);
+    if(!t)continue;
+    const tz=(data.events[0]?.start||"").slice(16)||"+03:00";
+    out.push({date:iso,dayType,periods:`${o.period}.`,summary:o.subject,location:o.room,teachers:o.teacher?[o.teacher]:[],groups:[],
+      start:`${iso}T${fromMin(t[0])}:00${tz}`,end:`${iso}T${fromMin(t[1])}:00${tz}`,subKind:"add",subNote:o.note,subPeriod:`${o.period}.`,added:true});
+  }
+  return out;
+}
+function readSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_STORE)||"null");return s&&s.token&&s.expiresAt>Date.now()?s:null}catch(e){return null}}
+function writeSession(s){try{localStorage.setItem(SESSION_STORE,JSON.stringify({token:s.token,expiresAt:s.expiresAt}))}catch(e){}}
+function clearSession(){try{localStorage.removeItem(SESSION_STORE)}catch(e){}}
 
 /* ---- automātiska datu pārbaude ---- */
 const POLL_MS=30000;
@@ -434,8 +476,8 @@ function notify(text){
   clearTimeout(notify._t);notify._t=setTimeout(()=>el.classList.remove("on"),6000);
 }
 function startAutoCheck(){
-  setInterval(()=>{if(!document.hidden)checkUpdates({silent:false})},POLL_MS);
-  const soon=()=>{if(!document.hidden&&Date.now()-lastCheck>10000)checkUpdates({silent:false})};
+  setInterval(()=>{if(!document.hidden){checkUpdates({silent:false});loadManualOverrides()}},POLL_MS);
+  const soon=()=>{if(!document.hidden&&Date.now()-lastCheck>10000){checkUpdates({silent:false});loadManualOverrides()}};
   document.addEventListener("visibilitychange",soon);
   addEventListener("focus",soon);
   addEventListener("online",soon);
@@ -506,7 +548,7 @@ function applySubs(evs,iso){
 function unmatchedSubs(iso,evs){
   return (data.substitutions||[]).filter(s=>s.date===iso).map(parseSub).filter(s=>!s.a||!evs.some(e=>{const [a,b]=parsePeriods(e.periods);return a<=s.b&&b>=s.a}));
 }
-function eventsFor(iso){return splitPeriods(applySubs(data.events.filter(e=>e.date===iso),iso)).sort((a,b)=>a.start<b.start?-1:1)}
+function eventsFor(iso){return applyManual(splitPeriods(applySubs(data.events.filter(e=>e.date===iso),iso)),iso).sort((a,b)=>a.start<b.start?-1:1)}
 
 function freeBlocks(evs,dayType){
   const table=bells[dayType]||bells.midweek;
@@ -548,7 +590,7 @@ function render(){
   document.documentElement.style.setProperty("--dayhead","3rem");
   document.getElementById("range").textContent=`${fmtD(weekStart)} – ${fmtD(end)}${end.getFullYear()}`;
   document.getElementById("prev").disabled=!data.events.some(e=>e.date<isoD(weekStart));
-  document.getElementById("next").disabled=!data.events.some(e=>e.date>isoD(end));
+  document.getElementById("next").disabled=!data.events.some(e=>e.date>isoD(end))&&!manualOverrides.some(o=>o.date>isoD(end));
 
   const axis=document.getElementById("axis");
   axis.innerHTML="";
@@ -930,8 +972,9 @@ function askConfirm(question,onYes){pendingConfirm=onYes;print(question+' <span 
 function finishConfirm(){const v=conIn.value.trim().toLowerCase();conIn.value="";conIn.placeholder="help";const cb=pendingConfirm;pendingConfirm=null;setPrompt();if(["j","jā","y","yes"].includes(v))cb();else print("pārtraukts")}
 function startSudo(a,label){pendingSudo=a;conIn.type="password";conIn.placeholder="";promptEl.textContent=label;promptEl.style.color=juarch()?"var(--accent)":"";conIn.focus();renderSug()}
 function finishSudo(){
-  const a=pendingSudo;pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();
+  const a=pendingSudo,secret=conIn.value;pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();
   if(!a)return;
+  if(typeof a==="function")return a(secret);
   root=true;setPrompt();
   if(a[0]==="-i"||a[0]==="su")return print(`root@${host()}:~# `);
   const line=a.join(" ");print(`<span class="cmd">${juarch()?"⚡#":"#"}</span> ${esc(line)}`);
@@ -1009,6 +1052,14 @@ const CMDS={
     print('<span class="dim">skats atjaunots</span>');
   }},
   clear:{g:"Sistēma",d:"notīra konsoli",f(){closeGame();conOut.innerHTML=""}},
+  admin:{g:"Saraksts",u:"[status|logout]",d:"atver stundu saraksta paneli (vajag administratora atslēgu)",m:"admin – prasa atslēgu un atver paneli, kurā var mainīt, pievienot, dzēst un samainīt stundas; izmaiņas redz visi. admin status – vai esi pieslēdzies. admin logout – iziet no paneļa šajā pārlūkā.",f(a){
+    if(a[0]==="logout"){clearSession();return print("izgāji no paneļa","ok")}
+    const session=readSession();
+    if(a[0]==="status")return print(session?`pieslēdzies līdz ${new Date(session.expiresAt).toLocaleString("lv-LV",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}`:"nav pieslēdzies · ievadi <b>admin</b>");
+    if(a.length)return print("lietojums: admin [status|logout]","err");
+    if(session){print("atver paneli…","ok");return openDashboard()}
+    startSudo(submitAdminKey,"[admin] atslēga:");
+  }},
   exit:{g:"Sistēma",d:"aizver konsoli (vai iziet no root)",f(){if(root){root=false;setPrompt();print("atteikšanās")}else toggleCon(false)}},
 
   juarchinstall:{g:"juarch",d:"instalē juarch (vajag root)",m:"Unikāla, uz Arch bāzēta pieredze: jauna tēma, judo sudo vietā. Palaid: sudo juarchinstall",f(){if(!requireRoot("juarchinstall"))return;return juarchInstall()}},
@@ -1032,6 +1083,24 @@ const CMDS={
   lolcat:{g:"Jautri",u:"<teksts>",d:"varavīksne",f(a){const t=a.join(" ")||"stundu saraksts";print([...t].map((c,i)=>`<span style="color:hsl(${(i*25)%360} 80% 55%)">${esc(c)}</span>`).join(""))}},
 };
 
+function openDashboard(){location.href="dashboard/"}
+function adminError(status,body){
+  if(status===401)return `admin: nepareiza atslēga${Number.isInteger(body.attemptsLeft)?` · atlikuši ${body.attemptsLeft} mēģinājumi`:""}`;
+  if(status===429)return `admin: pārāk daudz nepareizu mēģinājumu · mēģini vēlreiz pēc ${Math.ceil((body.retryAfterSeconds||900)/60)} min`;
+  if(status===503)return "admin: serverī nav iestatīta administratora atslēga";
+  return `admin: servera kļūda (${status}) · mēģini vēlreiz`;
+}
+async function submitAdminKey(key){
+  if(!key.trim())return print("admin: atslēga nav ievadīta","err");
+  const line=print("pārbauda atslēgu…","dim");
+  try{
+    const r=await fetch(`${SCHEDULE_API}/schedule/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});
+    const body=await r.json().catch(()=>({}));
+    if(!r.ok){line.className="err";line.textContent=adminError(r.status,body);return}
+    writeSession(body);line.className="ok";line.textContent="atslēga pareiza · atver paneli…";
+    openDashboard();
+  }catch(e){line.className="err";line.textContent="admin: nevar sazināties ar serveri · pārbaudi savienojumu un mēģini vēlreiz"}
+}
 function exec(toks){
   let [cmd,...args]=toks;
   if(ALIASES[cmd]){const t=tokenize(ALIASES[cmd]);cmd=t[0];args=[...t.slice(1),...args]}
@@ -1135,7 +1204,7 @@ document.addEventListener("keydown",e=>{
     if(busy==="seq"){cancelSeq=true;return}
     if(busy){stopAnim();return}
     if(pendingConfirm){pendingConfirm=null;conIn.value="";conIn.placeholder="help";setPrompt();print("pārtraukts");renderSug();return}
-    if(pendingSudo){pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();print(`${sudoName()}: pārtraukts`,"err");renderSug();return}
+    if(pendingSudo){const name=typeof pendingSudo==="function"?"admin":sudoName();pendingSudo=null;conIn.type="text";conIn.value="";conIn.placeholder="help";setPrompt();print(`${name}: pārtraukts`,"err");renderSug();return}
     if(vimMode){print('<span class="dim">~   (iziet: :q)</span>');return}
     toggleCon(false);return
   }
@@ -1160,7 +1229,7 @@ conIn.addEventListener("input",()=>{sugIdx=0;renderSug()});
 conSug.addEventListener("click",e=>{const i=e.target.dataset.i;if(i!==undefined){accept(+i);conIn.focus()}});
 document.getElementById("conbtn").onclick=()=>toggleCon();
 setPrompt();
-load();
+load().then(()=>{if(location.hash!=="#admin")return;window.history.replaceState(null,"",location.pathname+location.search);toggleCon(true);run("admin")});
 </script>
 </body>
 </html>

@@ -1,3 +1,5 @@
+import { handleSchedule } from "./schedule.js";
+
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
 const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
 const OPENROUTER = "https://openrouter.ai/api/v1";
@@ -14,7 +16,7 @@ const OR_HEADERS = { "HTTP-Referer": "https://loduur.github.io/edupage-sync/", "
 function cors(request, extra = {}) {
   const origin = request.headers.get("Origin") || "";
   const allow = ORIGINS.includes(origin) ? origin : ORIGINS[0];
-  return { "Access-Control-Allow-Origin": allow, "Access-Control-Allow-Headers": "Content-Type, X-Access-Key, X-Proxy-Key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin", ...extra };
+  return { "Access-Control-Allow-Origin": allow, "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Access-Key, X-Proxy-Key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin", ...extra };
 }
 const json = (request, body, status = 200) => new Response(JSON.stringify(body), { status, headers: cors(request, { "Content-Type": "application/json" }) });
 
@@ -85,6 +87,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/ai/")) return handleAI(request, env, url);
+    if (url.pathname.startsWith("/schedule/")) return handleSchedule(request, env, url, cors);
 
     if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
     if (request.headers.get("X-Proxy-Key") !== env.PROXY_KEY) return new Response("forbidden", { status: 403 });

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>Saraksta pārvaldība</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23172033'/><rect x='7' y='9' width='18' height='4' rx='2' fill='%23FFE066'/><rect x='7' y='16' width='12' height='3' rx='1.5' fill='%23fff'/><rect x='7' y='22' width='15' height='3' rx='1.5' fill='%23fff' opacity='.6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<section class="login" id="login-screen" hidden>
+  <form class="login-panel" id="login-form" novalidate>
+    <div class="login-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    <h1 class="login-title">Saraksta pārvaldība</h1>
+    <p class="login-lead" id="login-lead">Ievadi piekļuves atslēgu, lai rediģētu stundu sarakstu.</p>
+    <label class="field">
+      <span class="field-label">Piekļuves atslēga</span>
+      <input class="input" id="login-key" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" maxlength="256" required>
+    </label>
+    <p class="form-error" id="login-error" role="alert" hidden></p>
+    <button class="button button-primary button-block" id="login-submit" type="submit">Ieiet</button>
+    <p class="login-alt">Atslēgu var ievadīt arī <a href="../#admin">vietnes terminālī</a> ar komandu <kbd>admin</kbd>.</p>
+  </form>
+</section>
+
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <a class="brand-mark" href="../" aria-label="Uz publisko stundu sarakstu"><span></span><span></span><span></span></a>
+        <div class="brand-text">
+          <span class="brand-title">Saraksta pārvaldība</span>
+          <span class="brand-sub" id="group-name">Stundu saraksts</span>
+        </div>
+      </div>
+
+      <nav class="week-nav" aria-label="Nedēļa">
+        <button class="icon-button" id="week-prev" type="button" aria-label="Iepriekšējā nedēļa"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></button>
+        <span class="week-label" id="week-label" aria-live="polite"></span>
+        <button class="icon-button" id="week-next" type="button" aria-label="Nākamā nedēļa"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg></button>
+        <button class="button button-quiet button-small" id="week-today" type="button">Šī nedēļa</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <div class="segmented" role="radiogroup" aria-label="Skats">
+          <button type="button" role="radio" data-view="current" aria-checked="true">Aktuālais</button>
+          <button type="button" role="radio" data-view="original" aria-checked="false">EduPage</button>
+        </div>
+        <span class="sync-status" id="sync-status" data-tone="ok" role="status"><i aria-hidden="true"></i><span>Viss saglabāts</span></span>
+        <button class="button button-quiet button-small" id="logout" type="button">Iziet</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="board" aria-labelledby="board-title">
+      <div class="board-head">
+        <h2 class="board-title" id="board-title">Nedēļas saraksts</h2>
+        <ul class="legend" aria-label="Apzīmējumi">
+          <li><span class="legend-swatch swatch-changed"></span>Mainīta</li>
+          <li><span class="legend-swatch swatch-added"></span>Pievienota</li>
+          <li><span class="legend-swatch swatch-removed"></span>Atcelta</li>
+          <li><span class="legend-swatch swatch-draft"></span>Nesaglabāta</li>
+        </ul>
+      </div>
+      <div class="notice" id="board-notice" hidden></div>
+      <div class="day-tabs" id="day-tabs" role="tablist" aria-label="Diena"></div>
+      <div class="timetable" id="timetable" aria-busy="true"></div>
+    </section>
+
+    <aside class="rail">
+      <section class="panel" aria-labelledby="today-title">
+        <h2 class="panel-title" id="today-title">Šodien</h2>
+        <p class="panel-sub" id="today-date"></p>
+        <ol class="agenda" id="today-list"></ol>
+      </section>
+      <section class="panel" aria-labelledby="week-changes-title">
+        <h2 class="panel-title" id="week-changes-title">Izmaiņas šajā nedēļā</h2>
+        <ul class="change-list" id="week-changes"></ul>
+      </section>
+      <section class="panel" aria-labelledby="history-title">
+        <h2 class="panel-title" id="history-title">Vēsture</h2>
+        <ul class="change-list" id="history-list"></ul>
+        <button class="button button-quiet button-small button-block" id="history-more" type="button" hidden>Rādīt vairāk</button>
+      </section>
+    </aside>
+  </main>
+
+  <div class="floatbar swap-banner" id="swap-banner" role="status" hidden>
+    <span class="floatbar-text" id="swap-text"></span>
+    <button class="button button-quiet" id="swap-cancel" type="button">Atcelt</button>
+  </div>
+
+  <div class="floatbar savebar" id="savebar" hidden>
+    <span class="floatbar-text" id="savebar-text"></span>
+    <button class="button button-quiet" id="discard-drafts" type="button">Atmest</button>
+    <button class="button button-primary" id="save-drafts" type="button">Saglabāt izmaiņas</button>
+  </div>
+</div>
+
+<dialog class="dialog editor" id="editor" aria-labelledby="editor-title">
+  <form id="editor-form" novalidate>
+    <header class="dialog-head">
+      <div>
+        <h2 class="dialog-title" id="editor-title"></h2>
+        <p class="dialog-sub" id="editor-sub"></p>
+      </div>
+      <button class="icon-button" type="button" data-close aria-label="Aizvērt"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+    </header>
+
+    <div class="original-card" id="editor-original"></div>
+
+    <div class="segmented segmented-wide" id="editor-status" role="radiogroup" aria-label="Stundas statuss">
+      <button type="button" role="radio" data-status="active" aria-checked="true">Stunda notiek</button>
+      <button type="button" role="radio" data-status="removed" aria-checked="false">Atcelta</button>
+    </div>
+
+    <div class="form-grid">
+      <label class="field field-full">
+        <span class="field-label">Priekšmets</span>
+        <input class="input" id="editor-subject" list="subject-options" maxlength="80" autocomplete="off">
+        <span class="field-error" id="editor-subject-error" hidden>Ievadi priekšmetu</span>
+      </label>
+      <label class="field">
+        <span class="field-label">Kabinets</span>
+        <input class="input" id="editor-room" maxlength="24" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="field-label">Skolotājs</span>
+        <input class="input" id="editor-teacher" list="teacher-options" maxlength="60" autocomplete="off">
+      </label>
+      <label class="field field-full">
+        <span class="field-label">Piezīme <span class="field-hint">neobligāti</span></span>
+        <input class="input" id="editor-note" maxlength="160" autocomplete="off" placeholder="Piem., aizvieto skolotāju">
+      </label>
+    </div>
+    <datalist id="subject-options"></datalist>
+    <datalist id="teacher-options"></datalist>
+
+    <footer class="dialog-foot">
+      <div class="dialog-foot-start">
+        <button class="button button-secondary" id="editor-swap" type="button">Mainīt vietām</button>
+        <button class="button button-quiet" id="editor-reset" type="button">Atjaunot oriģinālu</button>
+        <button class="button button-quiet button-danger" id="editor-clear" type="button">Noņemt stundu</button>
+      </div>
+      <div class="dialog-foot-end">
+        <button class="button button-quiet" type="button" data-close>Aizvērt</button>
+        <button class="button button-primary" type="submit">Piemērot</button>
+      </div>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog confirm" id="confirm" aria-labelledby="confirm-title">
+  <form method="dialog">
+    <h2 class="dialog-title" id="confirm-title"></h2>
+    <p class="confirm-body" id="confirm-body"></p>
+    <footer class="dialog-foot dialog-foot-end">
+      <button class="button button-quiet" value="cancel">Atpakaļ</button>
+      <button class="button button-primary" id="confirm-accept" value="accept"></button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
