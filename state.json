@@ -2907,5 +2907,24 @@
   "514",
   "515"
  ],
- "substitutions": {}
+ "substitutions": {
+  "2026-10-16|1|Latviešu val. I - Added, Skolotājs: Eiklone Anitra, Kabinets: 354., Pievienota mācību stunda": {
+   "date": "2026-10-16",
+   "kind": "add",
+   "period": "1",
+   "text": "Latviešu val. I - Added, Skolotājs: Eiklone Anitra, Kabinets: 354., Pievienota mācību stunda"
+  },
+  "2026-10-16|2|(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Grupas stunda - Aizvietošana: (Kobiaka Ilze) ➔ Bērziņa Inga": {
+   "date": "2026-10-16",
+   "kind": "change",
+   "period": "2",
+   "text": "(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Grupas stunda - Aizvietošana: (Kobiaka Ilze) ➔ Bērziņa Inga"
+  },
+  "2026-10-16|3|Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (353.), stunda nenotiek": {
+   "date": "2026-10-16",
+   "kind": "change",
+   "period": "3",
+   "text": "Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (353.), stunda nenotiek"
+  }
+ }
 }
