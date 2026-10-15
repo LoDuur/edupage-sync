@@ -24,9 +24,12 @@ const sha256 = text => crypto.subtle.digest("SHA-256", encoder.encode(text));
 const sessionSecret = env => `schedule-session:${env.SCHEDULE_ADMIN_KEY}`;
 const hmacKey = secret => crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 
-async function keysMatch(candidate, expected) {
-  const [candidateDigest, expectedDigest] = await Promise.all([sha256(candidate), sha256(expected)]);
-  return crypto.subtle.timingSafeEqual(candidateDigest, expectedDigest);
+const parseAdminKeys = env => (env.SCHEDULE_ADMIN_KEY || "").split(",").map(key => key.trim()).filter(Boolean);
+
+async function keysMatch(candidate, expectedKeys) {
+  const candidateDigest = await sha256(candidate);
+  const comparisons = await Promise.all(expectedKeys.map(async expected => crypto.subtle.timingSafeEqual(candidateDigest, await sha256(expected))));
+  return comparisons.includes(true);
 }
 
 async function issueSession(env) {
@@ -131,7 +134,7 @@ async function login(request, env) {
   }
   const body = await readJsonBody(request);
   const key = typeof body?.key === "string" ? body.key.trim() : "";
-  if (key && key.length <= 256 && await keysMatch(key, env.SCHEDULE_ADMIN_KEY)) return { status: 200, body: await issueSession(env) };
+  if (key && key.length <= 256 && await keysMatch(key, parseAdminKeys(env))) return { status: 200, body: await issueSession(env) };
   await db.batch([
     db.prepare("INSERT INTO login_failures (ip, at) VALUES (?, ?)").bind(ip, now),
     db.prepare("DELETE FROM login_failures WHERE at < ?").bind(now - LOGIN_FAILURE_RETENTION_MS),
@@ -173,7 +176,7 @@ async function route(request, env, url) {
     if (fromDate && !isRealDate(fromDate)) throw new RequestError("invalid_date");
     return { status: 200, body: await readState(env.DB, fromDate) };
   }
-  if (!env.SCHEDULE_ADMIN_KEY) return { status: 503, body: { error: "admin_key_not_configured" } };
+  if (!parseAdminKeys(env).length) return { status: 503, body: { error: "admin_key_not_configured" } };
   if (pathname === "/schedule/login" && method === "POST") return login(request, env);
   const expiresAt = await sessionExpiry(request, env);
   if (!expiresAt) return { status: 401, body: { error: "session_required" } };
