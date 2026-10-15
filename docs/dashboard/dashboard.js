@@ -39,7 +39,8 @@ const formatMinutes = minutes => `${Math.floor(minutes / 60)}:${pad2(minutes % 6
 const parseClock = text => { const [hours, minutes] = text.split(":").map(Number); return hours * 60 + minutes; };
 const capitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
-const isLunch = subject => /^pusdienas$/i.test(subject.trim());
+const LUNCH_SUBJECT = "Pusdienas";
+const isLunch = subject => /^pusdienas\b/i.test(subject.trim());
 const shortDate = iso => { const date = parseIsoDate(iso); return `${WEEKDAY_SHORT[weekdayIndex(iso)]} ${date.getDate()}.${pad2(date.getMonth() + 1)}.`; };
 const longDate = iso => capitalize(parseIsoDate(iso).toLocaleDateString("lv-LV", { weekday: "long", day: "numeric", month: "long" }));
 const monthName = date => date.toLocaleDateString("lv-LV", { month: "long" });
@@ -576,10 +577,11 @@ function fillDatalists() {
   const teachers = new Set();
   for (const original of state.originals.values()) original.teacher.split(", ").filter(Boolean).forEach(name => teachers.add(name));
   for (const override of state.saved.values()) {
-    if (override.subject) subjects.add(override.subject);
+    if (override.subject && !isLunch(override.subject)) subjects.add(override.subject);
     if (override.teacher) teachers.add(override.teacher);
   }
   const options = values => [...values].sort((a, b) => a.localeCompare(b, "lv")).map(value => `<option value="${escapeHtml(value)}"></option>`).join("");
+  subjects.add(LUNCH_SUBJECT);
   $("subject-options").innerHTML = options(subjects);
   $("teacher-options").innerHTML = options(teachers);
 }
@@ -588,7 +590,7 @@ function setEditorStatus(status) {
   state.editorStatus = status;
   for (const button of $("editor-status").querySelectorAll("button")) button.setAttribute("aria-checked", String(button.dataset.status === status));
   const isRemoved = status === "removed";
-  for (const id of ["editor-subject", "editor-room", "editor-teacher"]) $(id).disabled = isRemoved;
+  for (const id of ["editor-subject", "editor-room", "editor-teacher", "editor-lunch"]) $(id).disabled = isRemoved;
   $("editor-note").placeholder = isRemoved ? "Piem., skolotājs slims" : "Piem., aizvieto skolotāju";
   clearSubjectError();
 }
@@ -657,6 +659,13 @@ function autofillFromSubject() {
   if (!known) return;
   if (!$("editor-room").value.trim()) $("editor-room").value = known.room;
   if (!$("editor-teacher").value.trim()) $("editor-teacher").value = known.teacher;
+}
+
+function fillLunch() {
+  $("editor-subject").value = LUNCH_SUBJECT;
+  $("editor-room").value = "";
+  $("editor-teacher").value = "";
+  clearSubjectError();
 }
 
 function resetEditorSlot() {
@@ -1015,6 +1024,7 @@ function bindEvents() {
 
   $("editor-form").addEventListener("submit", applyEditor);
   $("editor-subject").addEventListener("change", autofillFromSubject);
+  $("editor-lunch").addEventListener("click", fillLunch);
   $("editor-subject").addEventListener("input", clearSubjectError);
   $("editor-swap").addEventListener("click", () => startSwap(state.editorKey));
   $("editor-reset").addEventListener("click", resetEditorSlot);

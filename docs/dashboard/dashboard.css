@@ -159,6 +159,20 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .input:disabled { background: var(--surface-sunk); color: var(--ink-3); }
 .input[aria-invalid="true"] { border-color: var(--pen); }
+.quick-picks { display: flex; gap: 6px; }
+.chip {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color .15s var(--ease), color .15s var(--ease), background-color .15s var(--ease);
+}
+.chip:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.chip:disabled { opacity: .5; cursor: not-allowed; }
 .field-error, .form-error { margin: 0; font-size: 13px; color: var(--pen); }
 
 .login {
