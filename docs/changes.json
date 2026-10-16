@@ -1,5 +1,44 @@
 [
  {
+  "time": "2026-10-16T14:46:38+03:00",
+  "versions": [
+   "514",
+   "515",
+   "518"
+  ],
+  "added": [],
+  "changed": [
+   "Pr 19.10 1.–2. Svešval. I (B2) - angļu val. (213.)",
+   "Pr 19.10 3. Valoda, kult.izpratne un izpausmes (1.l.) (410.)",
+   "Pr 19.10 4. Latviešu val. I (354.)",
+   "Pr 19.10 5. Pusdienas",
+   "Pr 19.10 6.–7. Sports",
+   "Pr 19.10 8. Grupas stunda (224.)",
+   "Pr 19.10 9. Matemātika I (356.)",
+   "Ot 20.10 2.–3. Dabaszinības (225.)",
+   "Ot 20.10 4. Datu bāzu tehnoloģijas (206.)",
+   "Ot 20.10 5. Matemātikas speciālās nodaļas (223.)",
+   "Ot 20.10 6. Pusdienas",
+   "Ot 20.10 7.–8. Iniciatīva un uzņēmējdarb. (1.l.) (353.)",
+   "Ot 20.10 9.–10. Iniciatīva un uzņēmējdarb. (1.l.) (104.)",
+   "Tr 21.10 3.–4. Svešval.(B1)- krievu val. (310.)",
+   "Tr 21.10 5. Pusdienas",
+   "Tr 21.10 6.–7. Svešval. I (B2) - angļu val. (213.)",
+   "Tr 21.10 8.–9. Datu bāzu tehnoloģijas (206.)",
+   "Ce 22.10 1.–2. Svešval.(B1)- krievu val. (310.)",
+   "Ce 22.10 3.–4. Valoda, kult.izpratne un izpausmes (1.l.) (410.)",
+   "Ce 22.10 5. Pusdienas",
+   "Ce 22.10 6.–7. Dabaszinības (212.)",
+   "Ce 22.10 8.–9. Matemātika I (356.)",
+   "Pk 23.10 1.–2. Svešval. I (B2) - angļu val. (213.)",
+   "Pk 23.10 3.–4. Datu bāzu tehnoloģijas (206.)",
+   "Pk 23.10 5. Pusdienas",
+   "Pk 23.10 6.–7. Matemātika I (356.)",
+   "Pk 23.10 8.–9. Sociālās zin. un vēsture (355.)"
+  ],
+  "removed": []
+ },
+ {
   "time": "2026-10-16T09:24:09+03:00",
   "versions": [
    "514",
