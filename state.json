@@ -3584,54 +3584,5 @@
   "516",
   "518"
  ],
- "substitutions": {
-  "2026-10-16|1|Valsts aizsardzības mācība - Added, Skolotāji: Spandega Līga, Galvanovska Sanita, Kabinets: 105., 1.un 2.pusgr.": {
-   "date": "2026-10-16",
-   "kind": "add",
-   "period": "1",
-   "text": "Valsts aizsardzības mācība - Added, Skolotāji: Spandega Līga, Galvanovska Sanita, Kabinets: 105., 1.un 2.pusgr."
-  },
-  "2026-10-16|2|(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Valsts aizsardzības mācība - +Galvanovska Sanita, Aizvietošana: (Kobiaka Ilze) ➔ Spandega Līga, Mainīt kabinetu: (353.) ➔ 105.": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "2",
-   "text": "(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Valsts aizsardzības mācība - +Galvanovska Sanita, Aizvietošana: (Kobiaka Ilze) ➔ Spandega Līga, Mainīt kabinetu: (353.) ➔ 105."
-  },
-  "2026-10-16|3|(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Valsts aizsardzības mācība - Aizvietošana: (Kobiaka Ilze) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (353.) ➔ 105., Priekšmeta maiņa": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "3",
-   "text": "(Iniciatīva un uzņēmējdarb. (1.l.)) ➔ Valsts aizsardzības mācība - Aizvietošana: (Kobiaka Ilze) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (353.) ➔ 105., Priekšmeta maiņa"
-  },
-  "2026-10-16|4|(Pusdienas) ➔ Valsts aizsardzības mācība - +Spandega Līga, +Galvanovska Sanita, +105., Priekšmeta maiņa": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "4",
-   "text": "(Pusdienas) ➔ Valsts aizsardzības mācība - +Spandega Līga, +Galvanovska Sanita, +105., Priekšmeta maiņa"
-  },
-  "2026-10-16|5|(Matemātikas speciālās nodaļas) ➔ Valsts aizsardzības mācība - Aizvietošana: (Misiņa Tija) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (223.) ➔ 105., Priekšmeta maiņa": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "5",
-   "text": "(Matemātikas speciālās nodaļas) ➔ Valsts aizsardzības mācība - Aizvietošana: (Misiņa Tija) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (223.) ➔ 105., Priekšmeta maiņa"
-  },
-  "2026-10-16|6 - 7|(Programmas koda rakstīšana(Kodēšana)) ➔ Valsts aizsardzības mācība - Aizvietošana: (Upīte Sarmīte) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (202.) ➔ 105., Priekšmeta maiņa": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "6 - 7",
-   "text": "(Programmas koda rakstīšana(Kodēšana)) ➔ Valsts aizsardzības mācība - Aizvietošana: (Upīte Sarmīte) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (202.) ➔ 105., Priekšmeta maiņa"
-  },
-  "2026-10-16|8|(Matemātika I) ➔ Valsts aizsardzības mācība - Aizvietošana: (Millere Elīna) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (356.) ➔ 105., Priekšmeta maiņa": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "8",
-   "text": "(Matemātika I) ➔ Valsts aizsardzības mācība - Aizvietošana: (Millere Elīna) ➔ Spandega Līga, +Galvanovska Sanita, Mainīt kabinetu: (356.) ➔ 105., Priekšmeta maiņa"
-  },
-  "2026-10-16|9|Matemātika I - (Millere Elīna), (356.), stunda nenotiek": {
-   "date": "2026-10-16",
-   "kind": "change",
-   "period": "9",
-   "text": "Matemātika I - (Millere Elīna), (356.), stunda nenotiek"
-  }
- }
+ "substitutions": {}
 }
