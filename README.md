@@ -72,11 +72,11 @@ The timetable console has `doom` (and `games`): DOOM shareware v1.9 runs in js-d
 
 ## Collaborative drawing
 
-The console command `paint [room]` (alias `draw`) opens `docs/paint/`, a shared canvas the whole class draws on in real time. Rooms are separate canvases (`paint fizika`); the default room is `klase`. Joining asks once for a name and the class access code (the same code as the 28teh workspace, checked against `ACCESS_HASH`).
+The console command `paint [room]` (alias `draw`) opens `docs/paint/`, a shared canvas the whole class draws on in real time. Rooms are separate canvases (`paint fizika`); the default room is `klase`. Joining asks once for a name; there is no access code, only the Worker's origin check.
 
 Real-time sync runs in the `edupage-proxy` Worker: `/paint/rooms/<room>` upgrades to a WebSocket handled by one `PaintRoom` Durable Object per room (`proxy/paint.js`, SQLite storage, WebSocket hibernation, so idle rooms cost nothing). Strokes are stored as vector ops, so the drawing survives reconnects, reloads and Worker restarts. A second clear deletes everything before the previous clear, which keeps storage bounded.
 
-Deploy after changing it: `cd proxy && npx wrangler deploy` (the first deploy runs the `paint-v1` migration that creates the Durable Object class). Locally: `npx wrangler dev --config proxy/wrangler.toml --port 8790 --var ACCESS_HASH:<sha256 of an uppercase test code>` and serve `docs/` on port 8123.
+Deploy after changing it: `cd proxy && npx wrangler deploy` (the first deploy runs the `paint-v1` migration that creates the Durable Object class). Locally: `npx wrangler dev --config proxy/wrangler.toml --port 8790` and serve `docs/` on port 8123.
 
 ## Local run
 

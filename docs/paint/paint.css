@@ -224,7 +224,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .status[data-state="online"] { color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
 .status[data-state="connecting"], .status[data-state="retrying"] { color: var(--amber); background: color-mix(in srgb, var(--amber) 16%, transparent); }
 .status[data-state="connecting"] .status-dot, .status[data-state="retrying"] .status-dot { animation: pulse 1s ease-in-out infinite; }
-.status[data-state="offline"], .status[data-state="denied"], .status[data-state="full"] { color: var(--red); background: color-mix(in srgb, var(--red) 13%, transparent); }
+.status[data-state="offline"], .status[data-state="full"] { color: var(--red); background: color-mix(in srgb, var(--red) 13%, transparent); }
 
 @keyframes pulse { 50% { opacity: .3; } }
 

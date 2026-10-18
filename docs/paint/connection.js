@@ -3,7 +3,6 @@ const SILENCE_TIMEOUT_MS = 45000;
 const RETRY_BASE_MS = 600;
 const RETRY_MAX_MS = 10000;
 const FULL_RETRY_MS = 15000;
-const AUTH_CLOSE_CODE = 4001;
 const FULL_CLOSE_CODE = 4002;
 
 export class PaintConnection {
@@ -67,11 +66,6 @@ export class PaintConnection {
     this.socket = null;
     clearInterval(this.heartbeatTimer);
     if (this.isStopped) return;
-    if (code === AUTH_CLOSE_CODE) {
-      this.isStopped = true;
-      this.onStatus({ state: "denied" });
-      return;
-    }
     if (code === FULL_CLOSE_CODE) {
       this.onStatus({ state: "full", retryInMs: FULL_RETRY_MS });
       this.retryTimer = setTimeout(() => this.connect(), FULL_RETRY_MS);

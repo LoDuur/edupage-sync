@@ -21,15 +21,9 @@ const SNAPSHOT_CHUNK_CHARS = 256 * 1024;
 const CLEAR_COOLDOWN_MS = 3000;
 const RATE_REFILL_PER_SEC = 90;
 const RATE_BURST = 180;
-const AUTH_CLOSE_CODE = 4001;
 const FULL_CLOSE_CODE = 4002;
 const DEFAULT_BACKGROUND = "#ffffff";
 const USER_COLORS = ["#ff3b30", "#0a84ff", "#34c759", "#ff9500", "#af52de", "#ff2d55", "#00c7be", "#5856d6", "#a2845e", "#ffcc00", "#30b0c7", "#8e8e93"];
-
-const sha256Hex = async text => {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
-};
 
 export async function handlePaint(request, env, url, allowedOrigins) {
   const room = decodeURIComponent(url.pathname.slice("/paint/rooms/".length));
@@ -153,7 +147,7 @@ export class PaintRoom extends DurableObject {
     if (!message || typeof message.type !== "string") return;
     const session = socket.deserializeAttachment();
     if (!session?.isAuthed) {
-      if (message.type === "hello") await this.handleHello(socket, message);
+      if (message.type === "hello") this.handleHello(socket, message);
       return;
     }
     switch (message.type) {
@@ -168,12 +162,7 @@ export class PaintRoom extends DurableObject {
     }
   }
 
-  async handleHello(socket, message) {
-    const code = typeof message.code === "string" ? message.code.trim().toUpperCase() : "";
-    if (!this.env.ACCESS_HASH || !code || await sha256Hex(code) !== this.env.ACCESS_HASH) {
-      this.send(socket, { type: "error", code: "auth" });
-      return socket.close(AUTH_CLOSE_CODE, "access denied");
-    }
+  handleHello(socket, message) {
     if (typeof message.clientKey !== "string" || !CLIENT_KEY_PATTERN.test(message.clientKey)) return socket.close(1008, "invalid client");
     const others = this.authedSockets(socket).map(other => other.deserializeAttachment());
     if (others.length >= MAX_USERS) {

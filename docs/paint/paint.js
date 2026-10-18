@@ -21,10 +21,10 @@ const CURSOR_IDLE_MS = 8000;
 const CURSOR_SWEEP_MS = 2000;
 const TOAST_DURATION_MS = 3200;
 const MAX_VISIBLE_AVATARS = 4;
-const STORAGE_KEYS = { name: "paint-name", code: "paint-code", clientKey: "paint-client-key", settings: "paint-settings" };
+const STORAGE_KEYS = { name: "paint-name", clientKey: "paint-client-key", settings: "paint-settings" };
 const PRESET_COLORS = ["#1c1c1e", "#ffffff", "#8e8e93", "#ff3b30", "#ff9500", "#ffcc00", "#34c759", "#00c7be", "#0a84ff", "#5856d6", "#af52de", "#ff2d55", "#a2845e"];
 const TOOL_KEYS = { b: "brush", e: "eraser", l: "line", r: "rect", o: "ellipse", h: "hand" };
-const STATUS_TEXT = { online: "Tiešsaistē", connecting: "Savieno…", retrying: "Atjauno…", offline: "Bezsaistē", full: "Istaba pilna", denied: "Nav piekļuves" };
+const STATUS_TEXT = { online: "Tiešsaistē", connecting: "Savieno…", retrying: "Atjauno…", offline: "Bezsaistē", full: "Istaba pilna" };
 const REJECTION_TEXT = { invalid: "Zīmējumu neizdevās saglabāt", room_full: "Audekls ir pilns — notīriet to, lai zīmētu tālāk", cooldown: "Audeklu tikko notīrīja — pagaidi mirkli" };
 
 const $ = id => document.getElementById(id);
@@ -475,11 +475,6 @@ function refreshStatusText() {
 
 function handleConnectionStatus({ state: connectionState }) {
   setStatus(connectionState);
-  if (connectionState === "denied") {
-    writeStorage(localStorage, STORAGE_KEYS.code, null);
-    $("loading").hidden = true;
-    showGate("Nepareizs klases kods. Pajautā to skolotājam.");
-  }
   if (connectionState === "full") toast("Istabā nav vietas — mēģinās vēlreiz");
 }
 
@@ -925,27 +920,23 @@ function bindUi() {
   $("gate-form").addEventListener("submit", handleGateSubmit);
 }
 
-function showGate(error) {
+function showGate() {
   $("gate").hidden = false;
   $("gate-room").textContent = room;
   $("gate-name").value = readStorage(localStorage, STORAGE_KEYS.name) || "";
-  $("gate-code").value = "";
-  $("gate-error").hidden = !error;
-  $("gate-error").textContent = error || "";
-  ($("gate-name").value ? $("gate-code") : $("gate-name")).focus();
+  $("gate-error").hidden = true;
+  $("gate-name").focus();
 }
 
 function handleGateSubmit(event) {
   event.preventDefault();
   const name = $("gate-name").value.replace(/\s+/g, " ").trim();
-  const code = $("gate-code").value.trim();
-  if (!name || !code) {
+  if (!name) {
     $("gate-error").hidden = false;
-    $("gate-error").textContent = !name ? "Ievadi savu vārdu." : "Ievadi klases kodu.";
+    $("gate-error").textContent = "Ievadi savu vārdu.";
     return;
   }
   writeStorage(localStorage, STORAGE_KEYS.name, name);
-  writeStorage(localStorage, STORAGE_KEYS.code, code);
   $("gate").hidden = true;
   startSession();
 }
@@ -958,7 +949,6 @@ function startSession() {
     buildHello: () => ({
       type: "hello",
       name: readStorage(localStorage, STORAGE_KEYS.name) || "",
-      code: readStorage(localStorage, STORAGE_KEYS.code) || "",
       clientKey,
     }),
     onMessage: handleMessage,
@@ -987,7 +977,7 @@ function start() {
 }
 
 function hasIdentity() {
-  return Boolean(readStorage(localStorage, STORAGE_KEYS.name) && readStorage(localStorage, STORAGE_KEYS.code));
+  return Boolean(readStorage(localStorage, STORAGE_KEYS.name));
 }
 
 start();
