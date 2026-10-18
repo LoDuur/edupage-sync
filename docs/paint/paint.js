@@ -1,5 +1,5 @@
-import { PaintConnection } from "./connection.js";
-import { SHAPE_TOOLS, constrainShape, drawStroke, renderOps, simplifyPoints } from "./canvas.js";
+import { PaintConnection } from "./connection.js?v=2";
+import { SHAPE_TOOLS, constrainShape, drawStroke, renderOps, simplifyPoints } from "./canvas.js?v=2";
 
 const PRODUCTION_SOCKET = "wss://edupage-proxy.loduur.workers.dev";
 const LOCAL_SOCKET = "ws://localhost:8790";

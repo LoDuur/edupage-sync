@@ -76,7 +76,7 @@ The console command `paint [room]` (alias `draw`) opens `docs/paint/`, a shared 
 
 Real-time sync runs in the `edupage-proxy` Worker: `/paint/rooms/<room>` upgrades to a WebSocket handled by one `PaintRoom` Durable Object per room (`proxy/paint.js`, SQLite storage, WebSocket hibernation, so idle rooms cost nothing). Strokes are stored as vector ops, so the drawing survives reconnects, reloads and Worker restarts. A second clear deletes everything before the previous clear, which keeps storage bounded.
 
-Deploy after changing it: `cd proxy && npx wrangler deploy` (the first deploy runs the `paint-v1` migration that creates the Durable Object class). Locally: `npx wrangler dev --config proxy/wrangler.toml --port 8790` and serve `docs/` on port 8123.
+When changing any file in `docs/paint/`, bump the `?v=` number in `index.html` and in the imports at the top of `paint.js`; GitHub Pages caches each file for 10 minutes, and without the bump a browser can mix a new page with an old script. Deploy after changing it: `cd proxy && npx wrangler deploy` (the first deploy runs the `paint-v1` migration that creates the Durable Object class). Locally: `npx wrangler dev --config proxy/wrangler.toml --port 8790` and serve `docs/` on port 8123.
 
 ## Local run
 
