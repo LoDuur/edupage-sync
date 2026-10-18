@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>Kopīgā zīmēšana</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+<link rel="stylesheet" href="paint.css">
+<script>
+try {
+  const theme = JSON.parse(localStorage.getItem("prefs") || "{}").theme;
+  const darkThemes = ["dark", "juarch", "nord", "dracula", "rose"];
+  const lightThemes = ["light", "forest", "sunset"];
+  if (darkThemes.includes(theme)) document.documentElement.dataset.theme = "dark";
+  else if (lightThemes.includes(theme)) document.documentElement.dataset.theme = "light";
+} catch {}
+</script>
+<script type="module" src="paint.js"></script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="M8.5 14.5 19 4a1.4 1.4 0 0 1 2 2L10.5 16.5"/><path d="M8.5 14.5c-2 0-3.5 1.4-3.5 3.3 0 1.5-1 2.2-2 2.2 1 1 2.6 1.5 4 1.5 2.3 0 4-1.6 4-3.8 0-.7-.2-1.3-.5-1.7"/></symbol>
+  <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7.5 20.5-4-4a1.5 1.5 0 0 1 0-2.1L13.4 4.5a1.5 1.5 0 0 1 2.1 0l4 4a1.5 1.5 0 0 1 0 2.1L9.6 20.5z"/><path d="M12 20.5h9"/><path d="m8.5 9.5 6 6"/></symbol>
+  <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19 19 5"/><circle cx="5" cy="19" r="1.4"/><circle cx="19" cy="5" r="1.4"/></symbol>
+  <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/></symbol>
+  <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5"/><path d="M11 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V6a1.5 1.5 0 0 1 3 0v7.5c0 4-2.6 7-6.2 7-2.4 0-3.9-1.1-5.3-3.3l-1.8-3a1.5 1.5 0 0 1 2.5-1.6L8 14.5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="m6 7 1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 18-6-6 6-6"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.2 14.2A6.5 6.5 0 0 1 21.5 20"/></symbol>
+  <symbol id="i-plus-color" viewBox="0 0 24 24"><path d="M12 7v10M7 12h10"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M4 3.5 19.5 10l-6.6 2.2-2.4 6.8z"/></symbol>
+</svg>
+
+<main class="viewport" id="viewport">
+  <div class="stage" id="stage">
+    <canvas class="layer" id="committed-layer"></canvas>
+    <canvas class="layer" id="live-layer"></canvas>
+  </div>
+  <div class="cursors" id="cursors" aria-hidden="true"></div>
+  <div class="brush-ring" id="brush-ring" aria-hidden="true"></div>
+</main>
+
+<header class="topbar">
+  <div class="panel topbar-left">
+    <a class="icon-button" href="../" aria-label="Atpakaļ uz stundu sarakstu" title="Uz stundu sarakstu"><svg><use href="#i-back"/></svg></a>
+    <div class="title-block">
+      <span class="title">Kopīgā zīmēšana</span>
+      <span class="subtitle" id="room-label">istaba</span>
+    </div>
+    <span class="status" id="status" data-state="connecting" role="status"><span class="status-dot"></span><span id="status-text">Savieno…</span></span>
+  </div>
+  <div class="topbar-right">
+    <div class="panel people-panel">
+      <button class="people-button" id="people-button" aria-expanded="false" aria-controls="people-list" title="Dalībnieki">
+        <span class="avatars" id="avatars"></span>
+        <span class="people-count" id="people-count">0</span>
+      </button>
+      <div class="people-list" id="people-list" hidden></div>
+    </div>
+    <div class="panel view-panel">
+      <label class="bg-button" title="Fona krāsa">
+        <span class="bg-swatch" id="bg-swatch"></span>
+        <span class="bg-label">Fons</span>
+        <input type="color" id="bg-input" value="#ffffff" aria-label="Fona krāsa">
+      </label>
+      <span class="divider"></span>
+      <button class="icon-button small" id="zoom-out" aria-label="Attālināt" title="Attālināt (−)"><svg><use href="#i-minus"/></svg></button>
+      <button class="zoom-value" id="zoom-value" title="Ietilpināt ekrānā (0)">100%</button>
+      <button class="icon-button small" id="zoom-in" aria-label="Pietuvināt" title="Pietuvināt (+)"><svg><use href="#i-plus"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<nav class="panel toolbar" id="toolbar" aria-label="Rīki">
+  <div class="tool-group" role="radiogroup" aria-label="Zīmēšanas rīks">
+    <button class="tool" data-tool="brush" role="radio" aria-checked="true" title="Ota (B)"><svg><use href="#i-brush"/></svg></button>
+    <button class="tool" data-tool="eraser" role="radio" aria-checked="false" title="Dzēšgumija (E)"><svg><use href="#i-eraser"/></svg></button>
+    <button class="tool" data-tool="line" role="radio" aria-checked="false" title="Līnija (L) · Shift = 45°"><svg><use href="#i-line"/></svg></button>
+    <button class="tool" data-tool="rect" role="radio" aria-checked="false" title="Taisnstūris (R) · Shift = kvadrāts"><svg><use href="#i-rect"/></svg></button>
+    <button class="tool" data-tool="ellipse" role="radio" aria-checked="false" title="Elipse (O) · Shift = aplis"><svg><use href="#i-ellipse"/></svg></button>
+    <button class="tool" data-tool="hand" role="radio" aria-checked="false" title="Pārvietot skatu (H vai atstarpe)"><svg><use href="#i-hand"/></svg></button>
+  </div>
+  <span class="divider"></span>
+  <div class="tool-group">
+    <button class="tool" id="undo" title="Atsaukt savu pēdējo (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
+    <button class="tool" id="redo" title="Atkārtot (Ctrl+Shift+Z)" disabled><svg><use href="#i-redo"/></svg></button>
+    <button class="tool danger" id="clear" title="Notīrīt audeklu visiem"><svg><use href="#i-trash"/></svg></button>
+  </div>
+</nav>
+
+<section class="panel stylebar" id="stylebar" aria-label="Krāsa un izmērs">
+  <div class="palette" id="palette" role="radiogroup" aria-label="Krāsa"></div>
+  <label class="custom-color" title="Sava krāsa">
+    <span class="custom-color-ring"><span class="custom-color-fill" id="custom-color-fill"></span></span>
+    <input type="color" id="color-input" value="#0a84ff" aria-label="Sava krāsa">
+  </label>
+  <span class="divider"></span>
+  <div class="size-control">
+    <span class="size-preview" aria-hidden="true"><span id="size-dot"></span></span>
+    <input type="range" id="size-input" min="1" max="120" value="6" aria-label="Izmērs">
+    <output id="size-value" for="size-input">6</output>
+  </div>
+</section>
+
+<div class="loading" id="loading" hidden>
+  <div class="spinner" aria-hidden="true"></div>
+  <span id="loading-text">Ielādē audeklu…</span>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<div class="modal-backdrop" id="gate" hidden>
+  <form class="modal" id="gate-form" novalidate>
+    <div class="modal-art" aria-hidden="true"><span></span><span></span><span></span></div>
+    <h1 class="modal-title">Kopīgā zīmēšana</h1>
+    <p class="modal-lead">Zīmē kopā ar klasi vienā audeklā. Istaba: <b id="gate-room">klase</b></p>
+    <label class="field">
+      <span class="field-label">Tavs vārds</span>
+      <input class="input" id="gate-name" maxlength="24" autocomplete="nickname" spellcheck="false" required>
+    </label>
+    <label class="field">
+      <span class="field-label">Klases kods</span>
+      <input class="input" id="gate-code" type="password" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="characters" required>
+    </label>
+    <p class="form-error" id="gate-error" role="alert" hidden></p>
+    <button class="button primary" type="submit">Pievienoties</button>
+    <a class="modal-link" href="../">← Atpakaļ uz stundu sarakstu</a>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="clear-dialog" hidden>
+  <div class="modal compact" role="alertdialog" aria-labelledby="clear-title" aria-describedby="clear-text">
+    <h2 class="modal-title" id="clear-title">Notīrīt audeklu visiem?</h2>
+    <p class="modal-lead" id="clear-text">Zīmējums pazudīs visiem istabā (<b id="clear-count">0</b>). Atjaunot to varēsi tikai tu – ar <b>Atsaukt</b>.</p>
+    <div class="modal-actions">
+      <button class="button" id="clear-cancel" type="button">Atcelt</button>
+      <button class="button danger" id="clear-confirm" type="button">Notīrīt</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

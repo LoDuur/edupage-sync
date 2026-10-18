@@ -1,4 +1,7 @@
 import { handleSchedule } from "./schedule.js";
+import { handlePaint } from "./paint.js";
+
+export { PaintRoom } from "./paint.js";
 
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
 const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
@@ -88,6 +91,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/ai/")) return handleAI(request, env, url);
     if (url.pathname.startsWith("/schedule/")) return handleSchedule(request, env, url, cors);
+    if (url.pathname.startsWith("/paint/")) return handlePaint(request, env, url, ORIGINS);
 
     if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
     if (request.headers.get("X-Proxy-Key") !== env.PROXY_KEY) return new Response("forbidden", { status: 403 });
