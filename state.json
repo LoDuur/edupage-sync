@@ -3584,18 +3584,5 @@
   "516",
   "518"
  ],
- "substitutions": {
-  "2026-10-20|7 - 8|Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (353.), stunda nenotiek": {
-   "date": "2026-10-20",
-   "kind": "change",
-   "period": "7 - 8",
-   "text": "Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (353.), stunda nenotiek"
-  },
-  "2026-10-20|9 - 10|Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (104.), stunda nenotiek": {
-   "date": "2026-10-20",
-   "kind": "change",
-   "period": "9 - 10",
-   "text": "Iniciatīva un uzņēmējdarb. (1.l.) - (Kobiaka Ilze), (104.), stunda nenotiek"
-  }
- }
+ "substitutions": {}
 }
