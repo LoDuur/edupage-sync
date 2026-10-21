@@ -3584,5 +3584,18 @@
   "516",
   "518"
  ],
- "substitutions": {}
+ "substitutions": {
+  "2026-10-22|6|(Dabaszinības) ➔ Svešval. I (B2) - angļu val. - Aizvietošana: (Ārne Dace) ➔ Krastiņa Sanita, Mainīt kabinetu: (212.) ➔ 213., Priekšmeta maiņa": {
+   "date": "2026-10-22",
+   "kind": "change",
+   "period": "6",
+   "text": "(Dabaszinības) ➔ Svešval. I (B2) - angļu val. - Aizvietošana: (Ārne Dace) ➔ Krastiņa Sanita, Mainīt kabinetu: (212.) ➔ 213., Priekšmeta maiņa"
+  },
+  "2026-10-22|7|(Dabaszinības) ➔ Matemātikas speciālās nodaļas - Aizvietošana: (Ārne Dace) ➔ Misiņa Tija, Mainīt kabinetu: (212.) ➔ 223., Priekšmeta maiņa": {
+   "date": "2026-10-22",
+   "kind": "change",
+   "period": "7",
+   "text": "(Dabaszinības) ➔ Matemātikas speciālās nodaļas - Aizvietošana: (Ārne Dace) ➔ Misiņa Tija, Mainīt kabinetu: (212.) ➔ 223., Priekšmeta maiņa"
+  }
+ }
 }
