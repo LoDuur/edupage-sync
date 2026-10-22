@@ -1,5 +1,43 @@
 [
  {
+  "time": "2026-10-22T18:13:20+03:00",
+  "versions": [
+   "515",
+   "518",
+   "519"
+  ],
+  "added": [
+   "Pr 26.10 2. Matemātika I (356.)",
+   "Pr 26.10 3.–4. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 26.10 5. Pusdienas",
+   "Pr 26.10 6.–7. Sports (303.)",
+   "Pr 26.10 8.–9. Dabaszinības (212.)",
+   "Ot 27.10 2.–3. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Ot 27.10 4. Pusdienas",
+   "Ot 27.10 5.–6. Matemātikas speciālās nodaļas (223.)",
+   "Ot 27.10 7.–8. Matemātika I (356.)",
+   "Ot 27.10 9.–10. Dabaszinības (212.)",
+   "Tr 28.10 2.–3. Programmas izstrādes process (V115.)",
+   "Tr 28.10 4. Pusdienas",
+   "Tr 28.10 5.–6. Programmas izstrādes process (V115.)",
+   "Tr 28.10 7. Sociālās zin. un vēsture (355.)",
+   "Tr 28.10 8.–9. Dabaszinības (212.)",
+   "Ce 29.10 2.–3. Fizika I (355.)",
+   "Ce 29.10 4. Grupas stunda (118.)",
+   "Ce 29.10 5. Pusdienas",
+   "Ce 29.10 6.–7. Matemātikas speciālās nodaļas (223.)",
+   "Ce 29.10 8.–9. Datu bāzu tehnoloģijas (206.)",
+   "Pk 30.10 1. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pk 30.10 2.–3. Datu bāzu tehnoloģijas (206.)",
+   "Pk 30.10 4. Matemātikas speciālās nodaļas (223.)",
+   "Pk 30.10 5. Pusdienas",
+   "Pk 30.10 6.–7. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pk 30.10 8.–9. Dabaszinības (212.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-10-16T14:46:38+03:00",
   "versions": [
    "514",
