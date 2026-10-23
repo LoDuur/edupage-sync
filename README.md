@@ -64,7 +64,7 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 ## 28teh – workspace (`ide/`)
 
-`ide/` is the **28teh workspace**: a monochrome, terminal-first web IDE (vanilla JS + Monaco + xterm.js, JetBrains Mono) served by a small Node server that gives every browser session its own Docker container (Ubuntu, non-root `developer`, 256 MB / 0.5 CPU / 64 pids, read-only rootfs) attached as a real interactive shell, plus an AI assistant that streams from OpenRouter or Gemini through the server (keys never reach the browser). It needs a host with Docker, so it is not served from GitHub Pages – `docs/compiler/index.html` only forwards to wherever it is deployed. Setup, Docker socket implications and the security model are in [`ide/README.md`](ide/README.md).
+`ide/` is the **28teh workspace**: Monaco editor, a real sandboxed terminal (xterm.js + bubblewrap), saved projects with share links, live viewing and version history, and an AI assistant. One `compiler <file>` command runs Python, JavaScript, Java, C, C++, C#, Lua, PIL and Bash. It is a single Node app with SQLite storage and needs no Docker; code execution needs a Linux host, so it is not served from GitHub Pages – `docs/compiler/index.html` forwards to wherever it is deployed. Setup, deployment and the security model are in [`ide/README.md`](ide/README.md).
 
 ## Games
 
