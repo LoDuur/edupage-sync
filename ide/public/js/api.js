@@ -10,11 +10,13 @@ export function workspaceKey() {
   return key;
 }
 
+export const API_BASE = (window.WORKSPACE?.api || "").replace(/\/$/, "");
+
 export function createApi(accessKey) {
   const headers = () => ({ "Content-Type": "application/json", "X-Access-Key": accessKey, "X-Owner": workspaceKey() });
   async function request(method, url, body) {
     let response;
-    try { response = await fetch(url, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) }); }
+    try { response = await fetch(API_BASE + url, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) }); }
     catch { throw new ApiError("Cannot reach the server. Check your connection.", 0); }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new ApiError(data.error || `Request failed (${response.status}).`, response.status, data);
@@ -31,7 +33,8 @@ export function createApi(accessKey) {
 
 export async function checkAccess(key) {
   try {
-    const r = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
+    const r = await fetch(API_BASE + "/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
+    if (!r.ok) return null;
     return (await r.json()).ok === true;
-  } catch { return false; }
+  } catch { return null; }
 }

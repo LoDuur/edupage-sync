@@ -5,6 +5,8 @@ import { settings, layout, LAYOUT_DEFAULTS, saveLayout, onSettings, updateSettin
 import { LANGUAGE_META } from "./languages.js";
 import { loadMonaco, createEditor, setProblems, revealLine, getMonaco } from "./editor.js";
 import { createTerminal } from "./terminal.js";
+import { createRemoteTerminal } from "./remote.js";
+import { socketLive, pollingLive } from "./live.js";
 import { createWorkspace } from "./workspace.js";
 import { createAssistant } from "./assistant.js";
 import { diagnose, exitReason } from "./diagnose.js";
@@ -15,16 +17,19 @@ const VISIBILITY = {
   public: { label: "Public", description: "Listed under Class gallery for everyone in the class.", icon: icon.globe },
 };
 
+const shareUrl = id => `${location.origin}${location.pathname}?p=${encodeURIComponent(id)}`;
+
 async function gate() {
   const saved = store.get("access", "");
-  if (await checkAccess(saved)) return saved;
+  if (saved && await checkAccess(saved)) return saved;
   $("boot").hidden = true; $("gate").hidden = false; $("gate-input").focus();
   return new Promise(resolve => {
     $("gate-form").onsubmit = async e => {
       e.preventDefault();
       const key = $("gate-input").value.trim().toUpperCase(); if (!key) return;
-      if (await checkAccess(key)) { store.set("access", key); $("gate").hidden = true; resolve(key); }
-      else $("gate-error").textContent = "That code is not correct. Check it with your teacher.";
+      const ok = await checkAccess(key);
+      if (ok) { store.set("access", key); $("gate").hidden = true; resolve(key); }
+      else $("gate-error").textContent = ok === null ? "Cannot reach the workspace server. Try again in a moment." : "That code is not correct. Check it with your teacher.";
     };
   });
 }
@@ -52,8 +57,9 @@ async function main() {
   for (const [id, tip] of Object.entries(tips)) $(id).title = tip;
 
   const editor = createEditor($("editor"));
-  const socket = window.io({ auth: { key: accessKey, owner: workspaceKey() }, transports: ["websocket", "polling"] });
-  const workspace = createWorkspace({ api, socket, editor });
+  const remote = config.sandbox.mode === "remote";
+  const socket = remote ? null : window.io({ auth: { key: accessKey, owner: workspaceKey() }, transports: ["websocket", "polling"] });
+  const workspace = createWorkspace({ api, live: remote ? pollingLive(api) : socketLive(socket), editor });
 
   const isNarrow = () => innerWidth < 760;
   if (isNarrow()) Object.assign(layout, { sideOn: false, asideOn: false });
@@ -94,7 +100,7 @@ async function main() {
 
   let problems = [], elapsedTimer = 0, lastOutcome = null;
   const fileOf = project => LANGUAGE_META[project.language]?.file || "main.txt";
-  const terminal = createTerminal({
+  const terminal = (remote ? createRemoteTerminal : createTerminal)({
     element: $("terminal"), socket,
     onStatus: renderSandbox,
     onRunState: run => { if (run.phase === "finished") onRunFinished(run); renderRun(run); },
@@ -102,7 +108,7 @@ async function main() {
   });
 
   function renderSandbox(state, message) {
-    const map = { connecting: ["wait", "Connecting"], creating: ["wait", "Starting terminal"], attached: ["ok", config.sandbox.mode === "off" ? "Terminal ready (no sandbox)" : "Terminal ready"], exited: ["", "Terminal stopped"], limit: ["err", "Terminal limit reached"], error: ["err", "Terminal unavailable"], disconnected: ["wait", "Reconnecting"] };
+    const map = { connecting: ["wait", "Connecting"], creating: ["wait", "Starting terminal"], attached: ["ok", remote ? "Runs on wandbox.org" : config.sandbox.mode === "off" ? "Terminal ready (no sandbox)" : "Terminal ready"], exited: ["", "Terminal stopped"], limit: ["err", "Terminal limit reached"], error: ["err", "Terminal unavailable"], disconnected: ["wait", "Reconnecting"] };
     const [dot, text] = map[state] || ["", state];
     $("sandbox-dot").className = "dot " + dot;
     $("sandbox-text").textContent = text;
@@ -119,8 +125,8 @@ async function main() {
   function renderRun(run) {
     const el = $("run-status"), line = $("runline");
     clearInterval(elapsedTimer);
-    if (run.phase === "pending" || run.phase === "compiling" || run.phase === "running") {
-      const label = run.phase === "compiling" ? "Compiling" : run.phase === "running" ? "Running" : "Starting";
+    if (["pending", "compiling", "running", "waiting"].includes(run.phase)) {
+      const label = { compiling: "Compiling", running: "Running", waiting: "Waiting for input", pending: "Starting" }[run.phase];
       line.dataset.state = run.phase === "compiling" ? "compiling" : "running";
       const tick = () => { el.innerHTML = `<span class="dot ${run.phase === "compiling" ? "warn" : "ok"} pulse"></span><span>${label}</span>${run.startedAt ? `<span class="muted">${seconds(Date.now() - run.startedAt)}</span>` : ""}`; };
       tick(); elapsedTimer = setInterval(tick, 100);
@@ -252,7 +258,7 @@ async function main() {
   $("share").onclick = () => openShare();
   function openShare() {
     const p = workspace.state.current; if (!p) return;
-    const url = `${location.origin}/?p=${encodeURIComponent(p.id)}`;
+    const url = shareUrl(p.id);
     const body = document.createElement("div");
     body.className = "form";
     const linkRow = `<div class="inline"><input class="input mono" readonly value="${esc(url)}" aria-label="Share link"><button class="btn primary" data-copy>${icon.copy}<span>Copy link</span></button></div>`;
@@ -320,7 +326,7 @@ async function main() {
       return openMenu(menuButton, [
         { label: "Open", run: () => workspace.open(id) },
         { label: "Duplicate", run: () => workspace.duplicate(id) },
-        { label: "Copy link", run: async () => { if (await copyText(`${location.origin}/?p=${id}`)) toast("Link copied"); } },
+        { label: "Copy link", run: async () => { if (await copyText(shareUrl(id))) toast("Link copied"); } },
         ...(owned ? ["-", { label: "Delete…", danger: true, run: () => deleteProject(id) }] : [{ label: "Remove from list", run: () => { workspace.state.recent = workspace.state.recent.filter(r => r.id !== id); store.set("recent-shared", workspace.state.recent); renderList(); } }]),
       ]);
     }
@@ -394,7 +400,7 @@ async function main() {
   }
 
   const assistant = createAssistant({
-    root: $("aside-assistant"), accessHeaders: api.headers, models: config.models,
+    root: $("aside-assistant"), chatUrl: window.WORKSPACE?.chat || "api/chat", accessHeaders: api.headers, models: config.models,
     getContext: () => {
       const p = workspace.state.current; if (!p) return "No file is open.";
       const output = terminal.recentOutput().trim();
@@ -458,7 +464,7 @@ async function main() {
     ];
     if (p) list.push(
       { group: "Project", label: "Share…", run: openShare },
-      { group: "Project", label: "Copy share link", run: async () => { if (await copyText(`${location.origin}/?p=${p.id}`)) toast("Link copied"); } },
+      { group: "Project", label: "Copy share link", run: async () => { if (await copyText(shareUrl(p.id))) toast("Link copied"); } },
       { group: "Project", label: "Duplicate project", run: () => workspace.duplicate() },
       { group: "Project", label: "Version history", run: () => showAside("history") },
     );

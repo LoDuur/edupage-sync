@@ -10,7 +10,7 @@ const LIMIT_CODES = new Set([124, 137, 152, 153]);
 const START_TIMEOUT_MS = 8000;
 const FORCE_STOP_MS = 3000;
 
-export function createTerminal({ element, socket, onStatus, onRunState, onLink }) {
+export function createXterm(element, onResize) {
   const term = new window.Terminal({
     fontFamily: '"JetBrains Mono", ui-monospace, Menlo, monospace', fontSize: settings.fontSize - 1, lineHeight: 1.4,
     cursorBlink: true, cursorStyle: "bar", scrollback: 5000, allowProposedApi: true, theme: THEMES[resolvedTheme()],
@@ -18,14 +18,48 @@ export function createTerminal({ element, socket, onStatus, onRunState, onLink }
   const fitAddon = new window.FitAddon.FitAddon();
   term.loadAddon(fitAddon);
   term.open(element);
-
-  let status = "connecting", run = idleRun(), lastRun = null, startTimer = 0, stopTimer = 0, queuedRun = null;
-  function idleRun() { return { phase: "idle", language: null, file: null, startedAt: 0, runAt: 0, startLine: 0 }; }
-
-  const fit = () => { if (!element.offsetParent) return; try { fitAddon.fit(); socket.emit("terminal-resize", { cols: term.cols, rows: term.rows }); } catch {} };
+  const fit = () => { if (!element.offsetParent) return; try { fitAddon.fit(); onResize?.(term.cols, term.rows); } catch {} };
   new ResizeObserver(fit).observe(element);
   document.fonts?.ready.then(fit);
   onSettings(() => { term.options.theme = THEMES[resolvedTheme()]; term.options.fontSize = settings.fontSize - 1; fit(); });
+  return { term, fit };
+}
+
+export function outcomeOf({ exitCode, started, compiled, compiles }) {
+  if (exitCode === 0) return "success";
+  if (!started) return "system";
+  if (!compiled && compiles) return "compile-error";
+  if (exitCode === 130) return "stopped";
+  return LIMIT_CODES.has(exitCode) ? "limit" : "runtime-error";
+}
+
+export async function copyTerminal(term) {
+  let text = term.getSelection();
+  if (!text) { term.selectAll(); text = term.getSelection(); term.clearSelection(); }
+  if (text.trim() && await copyText(text.trimEnd())) toast("Terminal output copied");
+}
+
+export function fileLinkProvider(term, getFile, onLink) {
+  return {
+    provideLinks(y, callback) {
+      const file = getFile(), line = term.buffer.active.getLine(y - 1);
+      if (!file || !line) return callback(undefined);
+      const text = line.translateToString(true), links = [];
+      const re = new RegExp(`${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?::| \\(|", line |: line )(\\d+)(?:[:,](\\d+))?`, "g");
+      let m;
+      while ((m = re.exec(text))) {
+        const target = { line: +m[1], column: +(m[2] || 1) };
+        links.push({ text: m[0], range: { start: { x: m.index + 1, y }, end: { x: m.index + m[0].length, y } }, activate: () => onLink(target.line, target.column) });
+      }
+      callback(links.length ? links : undefined);
+    },
+  };
+}
+
+export function createTerminal({ element, socket, onStatus, onRunState, onLink }) {
+  const { term, fit } = createXterm(element, (cols, rows) => socket.emit("terminal-resize", { cols, rows }));
+  let status = "connecting", run = idleRun(), lastRun = null, startTimer = 0, stopTimer = 0, queuedRun = null;
+  function idleRun() { return { phase: "idle", language: null, file: null, startedAt: 0, runAt: 0, startLine: 0 }; }
 
   const setStatus = (state, message = "") => { status = state; if (state !== "attached") resetRun(); onStatus(state, message); };
   const setRun = patch => { run = { ...run, ...patch }; onRunState(run); };
@@ -44,12 +78,7 @@ export function createTerminal({ element, socket, onStatus, onRunState, onLink }
 
   function finish(exitCode) {
     clearTimeout(startTimer); clearTimeout(stopTimer);
-    const sawRun = run.runAt > 0, compiles = LANGUAGE_META[run.language]?.compiles;
-    const outcome = exitCode === 0 ? "success"
-      : !run.startedAt ? "system"
-      : !sawRun && compiles ? "compile-error"
-      : exitCode === 130 ? "stopped"
-      : LIMIT_CODES.has(exitCode) ? "limit" : "runtime-error";
+    const outcome = outcomeOf({ exitCode, started: run.startedAt > 0, compiled: run.runAt > 0, compiles: LANGUAGE_META[run.language]?.compiles });
     const finished = { ...run, phase: "finished", outcome, exitCode, endedAt: Date.now(), output: transcript(run.startLine) };
     run = idleRun();
     onRunState(finished);
@@ -64,20 +93,7 @@ export function createTerminal({ element, socket, onStatus, onRunState, onLink }
     return true;
   });
 
-  term.registerLinkProvider({
-    provideLinks(y, callback) {
-      const file = lastRun?.file, line = term.buffer.active.getLine(y - 1);
-      if (!file || !line) return callback(undefined);
-      const text = line.translateToString(true), links = [];
-      const re = new RegExp(`${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?::| \\(|", line |: line )(\\d+)(?:[:,](\\d+))?`, "g");
-      let m;
-      while ((m = re.exec(text))) {
-        const target = { line: +m[1], column: +(m[2] || 1) };
-        links.push({ text: m[0], range: { start: { x: m.index + 1, y }, end: { x: m.index + m[0].length, y } }, activate: () => onLink(target.line, target.column) });
-      }
-      callback(links.length ? links : undefined);
-    },
-  });
+  term.registerLinkProvider(fileLinkProvider(term, () => lastRun?.file, onLink));
 
   socket.on("connect", () => { setStatus("creating"); fit(); socket.emit("terminal-open", { cols: term.cols, rows: term.rows }); });
   socket.on("connect_error", e => setStatus("error", e.message === "access denied" ? "Access denied – sign out and enter the access code again." : "Cannot reach the server. Retrying…"));
@@ -129,11 +145,7 @@ export function createTerminal({ element, socket, onStatus, onRunState, onLink }
     },
     restart() { resetRun(); queuedRun = null; fit(); socket.emit("terminal-restart", { cols: term.cols, rows: term.rows }); },
     clear() { term.clear(); term.focus(); },
-    async copyOutput() {
-      let text = term.getSelection();
-      if (!text) { term.selectAll(); text = term.getSelection(); term.clearSelection(); }
-      if (text.trim() && await copyText(text.trimEnd())) toast("Terminal output copied");
-    },
+    copyOutput: () => copyTerminal(term),
     recentOutput: () => transcript(cursorLine() - 60).slice(-4000),
   };
 }

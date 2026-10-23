@@ -1,0 +1,1 @@
+window.WORKSPACE = {"api":"https://edupage-proxy.loduur.workers.dev/ide","chat":"https://edupage-proxy.loduur.workers.dev/ai/chat","monaco":"https://cdn.jsdelivr.net/npm/monaco-editor@0.57.0/min/vs"};

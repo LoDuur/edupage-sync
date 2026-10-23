@@ -46,7 +46,7 @@ const textHtml = s => s.replace(/^\n+|\n+$/g, "").split(/\n{2,}/).map(p => {
 const bodyHtml = (text, streaming) => parseMarkdown(text, streaming).map(b => b.type === "text" ? textHtml(b.text)
   : `<div class="codeblock"><div class="codeblock-h"><span>${esc(b.language || "code")}</span><button class="ibtn sm" data-copy title="Copy" aria-label="Copy code">${icon.copy}</button><button class="ibtn sm" data-apply title="Replace the editor contents" aria-label="Apply to editor">${icon.apply}</button></div><pre>${esc(b.code)}</pre></div>`).join("");
 
-export function createAssistant({ root, accessHeaders, models, getContext, applyCode }) {
+export function createAssistant({ root, chatUrl, accessHeaders, models, getContext, applyCode }) {
   root.innerHTML = `
     <div class="assistant-h"><button class="btn ghost sm" data-model aria-haspopup="menu"></button></div>
     <div class="chat" aria-live="polite"><div class="empty-state small"><p>Ask about the open file, the terminal output or the last error.</p></div></div>
@@ -91,8 +91,13 @@ export function createAssistant({ root, accessHeaders, models, getContext, apply
     let content = "", reasoning = "", usage = null, frame = 0, error = "";
     const paint = () => { frame = 0; if (reasoning) { thinking.hidden = false; thinking.querySelector("pre").textContent = reasoning; } if (content) body.innerHTML = bodyHtml(content, true); chat.scrollTop = chat.scrollHeight; };
     try {
-      const response = await fetch("/api/chat", { method: "POST", headers: accessHeaders(), signal: busy.signal, body: JSON.stringify({ model, messages: [{ role: "system", content: SYSTEM }, ...history.slice(-6), { role: "user", content: prompt + "\n\n" + getContext() }] }) });
+      const response = await fetch(chatUrl, { method: "POST", headers: accessHeaders(), signal: busy.signal, body: JSON.stringify({ model, stream: true, messages: [{ role: "system", content: SYSTEM }, ...history.slice(-6), { role: "user", content: prompt + "\n\n" + getContext() }] }) });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
+      if (!(response.headers.get("content-type") || "").includes("event-stream")) {
+        const reply = await response.json();
+        content = reply.content || ""; reasoning = reply.reasoning || ""; usage = reply.usage ? { output: reply.usage.completion_tokens } : null;
+        if (reply.error) error = reply.error;
+      } else {
       const reader = response.body.getReader(), decoder = new TextDecoder();
       let buffer = "";
       for (;;) {
@@ -102,11 +107,14 @@ export function createAssistant({ root, accessHeaders, models, getContext, apply
         for (const line of lines) {
           if (!line.startsWith("data:")) continue;
           let chunk; try { chunk = JSON.parse(line.slice(5)); } catch { continue; }
-          if (chunk.error) { error = chunk.error; continue; }
+          if (chunk.error) { error = chunk.error.message || chunk.error; continue; }
           if (chunk.done) { usage = chunk.usage; continue; }
-          content += chunk.delta || ""; reasoning += chunk.reasoning || "";
+          const delta = chunk.choices?.[0]?.delta;
+          if (chunk.usage?.completion_tokens) usage = { output: chunk.usage.completion_tokens };
+          content += chunk.delta || delta?.content || ""; reasoning += chunk.reasoning || delta?.reasoning || delta?.reasoning_content || "";
           if (!frame) frame = requestAnimationFrame(paint);
         }
+      }
       }
     } catch (e) { if (e.name !== "AbortError") error = e.message; }
     cancelAnimationFrame(frame);

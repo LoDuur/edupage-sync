@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="dark light">
 <title>28teh</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2317181c'/><path d='M9 11l5 5-5 5' stroke='%23e4e4e7' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M16 21h7' stroke='%235fc98f' stroke-width='2.5' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="/vendor/xterm.css">
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="vendor/xterm.css">
+<link rel="stylesheet" href="app.css">
 <script>try{const s=JSON.parse(localStorage.getItem("settings")||"{}");const t=s.theme==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):(s.theme||"dark");document.documentElement.dataset.theme=t}catch{}</script>
 </head>
 <body>
@@ -117,10 +117,11 @@
 
 <div id="overlay-root"></div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="/vendor/xterm.js"></script>
-<script src="/vendor/addon-fit.js"></script>
-<script src="/vendor/monaco/loader.js"></script>
-<script type="module" src="/js/main.js"></script>
+<script src="config.js"></script>
+<script src="socket.io/socket.io.js"></script>
+<script src="vendor/xterm.js"></script>
+<script src="vendor/addon-fit.js"></script>
+<script src="vendor/monaco/loader.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

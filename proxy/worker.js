@@ -1,5 +1,6 @@
 import { handleSchedule } from "./schedule.js";
 import { handlePaint } from "./paint.js";
+import { handleIde } from "./ide.js";
 
 export { PaintRoom } from "./paint.js";
 
@@ -19,7 +20,7 @@ const OR_HEADERS = { "HTTP-Referer": "https://loduur.github.io/edupage-sync/", "
 function cors(request, extra = {}) {
   const origin = request.headers.get("Origin") || "";
   const allow = ORIGINS.includes(origin) ? origin : ORIGINS[0];
-  return { "Access-Control-Allow-Origin": allow, "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Access-Key, X-Proxy-Key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin", ...extra };
+  return { "Access-Control-Allow-Origin": allow, "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Access-Key, X-Proxy-Key, X-Owner", "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS", "Vary": "Origin", ...extra };
 }
 const json = (request, body, status = 200) => new Response(JSON.stringify(body), { status, headers: cors(request, { "Content-Type": "application/json" }) });
 
@@ -90,6 +91,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/ai/")) return handleAI(request, env, url);
+    if (url.pathname.startsWith("/ide/")) return handleIde(request, env, url, cors, env.OPENROUTER_KEY ? MODELS.map(m => ({ id: m.id, label: m.name, provider: "openrouter" })) : []);
     if (url.pathname.startsWith("/schedule/")) return handleSchedule(request, env, url, cors);
     if (url.pathname.startsWith("/paint/")) return handlePaint(request, env, url, ORIGINS);
 

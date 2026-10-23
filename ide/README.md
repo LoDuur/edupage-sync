@@ -1,6 +1,32 @@
 # 28teh workspace
 
-A browser coding workspace for the 28th group: Monaco editor, a real terminal (xterm.js), saved and shareable projects with version history, live viewing of shared projects, and an AI teaching assistant. One Node process serves everything; no Docker.
+A browser coding workspace for the 28th group: Monaco editor, a terminal (xterm.js), saved and shareable projects with version history, live viewing of shared projects, and an AI teaching assistant. No Docker.
+
+It runs in two ways from the same code in `public/`:
+
+| | GitHub Pages (`docs/compiler/`) | Own server (`npm start`) |
+|---|---|---|
+| Where | https://loduur.github.io/edupage-sync/compiler/ | any Linux machine you run |
+| Code runs on | wandbox.org; PIL as WebAssembly in the browser | a bubblewrap sandbox on that machine |
+| Terminal | program input/output; input is collected line by line and the program is re-run with it | a real bash shell with `compiler <file>` |
+| Projects, sharing, history, AI | the `edupage-proxy` Cloudflare Worker (D1) | SQLite next to the server |
+| Live viewing | checks for changes every 4 s | instant (Socket.IO) |
+
+## GitHub Pages version
+
+`npm run build:pages` writes `docs/compiler/` (Monaco, xterm.js and fonts load from jsDelivr; the app files go under `assets/<hash>/` so a new build never mixes with cached old files). Commit and push `docs/compiler/`; GitHub Pages serves it, and the timetable console's `compiler [language|list|id]` opens it.
+
+The Worker in `proxy/` serves the API under `/ide/api/…` and the assistant under `/ai/chat`. After changing `proxy/`, deploy it once:
+
+```bash
+cd proxy
+npx wrangler d1 migrations apply edupage-schedule --remote --config wrangler.toml
+npx wrangler deploy --config wrangler.toml
+```
+
+The first command creates the `projects` and `project_versions` tables. The class access code is checked against the Worker's `ACCESS_HASH`; the assistant needs the `OPENROUTER_KEY` secret (`npx wrangler secret put OPENROUTER_KEY`).
+
+Limits of this version: Wandbox is a free public service, so runs take a few seconds (Java often 20–30 s per run) and can fail when it is busy. Programs that read input are re-run from the start with all input typed so far, which works for ordinary input/output programs but not for ones whose output changes between runs (random numbers, the current time). To rebuild the PIL WebAssembly file run `tools/build-pil.sh --wasm` (needs emscripten).
 
 ## How it fits together
 
@@ -99,7 +125,7 @@ Code execution needs a Linux machine you control: a VPS or a school server (writ
      reverse_proxy 127.0.0.1:8787
    }
    ```
-6. Point `docs/compiler/index.html` (`WORKSPACE_URL`) at the new address so the timetable's `compiler` command opens it.
+6. The timetable console opens the GitHub Pages build; share your server address directly if you use this mode.
 
 Updating: `git pull && npm ci --omit=dev && sudo systemctl restart 28teh`. The database lives in `ide/data/` (or `DATABASE_PATH`); back it up with `sqlite3 data/28teh.db ".backup backup.db"`.
 

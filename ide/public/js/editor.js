@@ -6,7 +6,7 @@ let monaco = null;
 export function loadMonaco() {
   if (monaco) return Promise.resolve(monaco);
   return new Promise((resolve, reject) => {
-    window.require.config({ paths: { vs: "/vendor/monaco" } });
+    window.require.config({ paths: { vs: window.WORKSPACE?.monaco || new URL("vendor/monaco", document.baseURI).href } });
     window.require(["vs/editor/editor.main"], () => { monaco = window.monaco; defineThemes(); registerLanguages(monaco); resolve(monaco); }, reject);
   });
 }

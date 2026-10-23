@@ -64,7 +64,7 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 ## 28teh – workspace (`ide/`)
 
-`ide/` is the **28teh workspace**: Monaco editor, a real sandboxed terminal (xterm.js + bubblewrap), saved projects with share links, live viewing and version history, and an AI assistant. One `compiler <file>` command runs Python, JavaScript, Java, C, C++, C#, Lua, PIL and Bash. It is a single Node app with SQLite storage and needs no Docker; code execution needs a Linux host, so it is not served from GitHub Pages – `docs/compiler/index.html` forwards to wherever it is deployed. Setup, deployment and the security model are in [`ide/README.md`](ide/README.md).
+`ide/` is the **28teh workspace**: Monaco editor, an xterm.js terminal, saved projects with share links, live viewing and version history, and an AI assistant, for Python, JavaScript, Java, C, C++, C#, Lua, PIL and Bash. The timetable console command `compiler [language|list|id]` opens it at `docs/compiler/`, a static build served by GitHub Pages (`cd ide && npm run build:pages`): code runs on wandbox.org (PIL in the browser as WebAssembly), and projects and the assistant use the `edupage-proxy` Worker. The same app can also run on its own Linux server with a sandboxed terminal and one `compiler <file>` command. Details in [`ide/README.md`](ide/README.md).
 
 ## Games
 

@@ -7,7 +7,7 @@ const SAVE_DELAY_MS = 1000;
 const RETRY_MS = 5000;
 const MAX_RECENT = 12;
 
-export function createWorkspace({ api, socket, editor }) {
+export function createWorkspace({ api, live, editor }) {
   const listeners = new Set();
   const models = new Map();
   const state = { mine: [], shared: [], recent: store.get("recent-shared", []), current: null, saveState: "idle", savedAt: 0, saveError: "", conflict: null, listError: "" };
@@ -99,7 +99,7 @@ export function createWorkspace({ api, socket, editor }) {
     rememberRecent(project);
     store.set("last-project", id);
     history.replaceState(null, "", `?p=${encodeURIComponent(id)}`);
-    socket.emit("project:watch", id);
+    live.watch(project);
     emit("open");
     return project;
   }
@@ -161,6 +161,7 @@ export function createWorkspace({ api, socket, editor }) {
       const code = p.code;
       Object.assign(p, project, { code: isDirty() ? code : project.code });
       if (fields.language) setModelLanguage(models.get(p.id), project.language);
+      if (fields.visibility) live.watch(p);
       upsertSummary(p);
       emit("meta");
       return p;
@@ -207,7 +208,7 @@ export function createWorkspace({ api, socket, editor }) {
     emit("save"); emit("versions");
   }
 
-  socket.on("project:changed", project => {
+  live.on("project:changed", project => {
     const current = state.current;
     if (!current || current.id !== project.id) return;
     const model = models.get(project.id);
@@ -219,14 +220,13 @@ export function createWorkspace({ api, socket, editor }) {
     state.savedAt = project.updatedAt;
     emit("remote");
   });
-  socket.on("project:closed", ({ id }) => {
+  live.on("project:closed", ({ id }) => {
     if (state.current?.id !== id || state.current.isOwner) return;
     toast("The owner stopped sharing this project.", "error");
     state.current.canEdit = false; state.saveState = "readonly";
     editor.updateOptions({ readOnly: true });
     emit("meta");
   });
-  socket.on("connect", () => { if (state.current) socket.emit("project:watch", state.current.id); });
   addEventListener("beforeunload", e => { if (isDirty() || state.saveState === "saving") { e.preventDefault(); e.returnValue = ""; } });
 
   return {
