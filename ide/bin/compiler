@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -u
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PATH="$here:$PATH"
+
+LANGUAGES="python	Python	py
+javascript	JavaScript	js
+java	Java	java
+c	C	c
+cpp	C++	cpp
+csharp	C#	cs
+lua	Lua	lua
+pil	PIL	pil
+bash	Bash	sh"
+
+first_of() { for b in "$@"; do command -v "$b" >/dev/null 2>&1 && { echo "$b"; return 0; }; done; return 1; }
+lua_bin() { first_of lua lua5.4 lua5.3; }
+
+available() {
+  case "$1" in
+    python) first_of python3 >/dev/null ;;
+    javascript) first_of node >/dev/null ;;
+    java) first_of java >/dev/null ;;
+    c) first_of gcc cc >/dev/null ;;
+    cpp) first_of g++ c++ >/dev/null ;;
+    csharp) first_of mcs >/dev/null && first_of mono >/dev/null ;;
+    lua) lua_bin >/dev/null ;;
+    pil) first_of pil >/dev/null ;;
+    bash) first_of bash >/dev/null ;;
+    *) return 1 ;;
+  esac
+}
+
+language_of() {
+  local ext="${1##*.}"
+  case "$ext" in cc|cxx) ext=cpp ;; mjs) ext=js ;; esac
+  while IFS=$'\t' read -r id _ e; do [ "$e" = "$ext" ] && { echo "$id"; return 0; }; done <<< "$LANGUAGES"
+  return 1
+}
+
+mark() { printf '\033]7777;%s\007' "$1"; }
+
+limit() { ulimit -v "$1" 2>/dev/null; ulimit -t "$2" 2>/dev/null; ulimit -c 0 2>/dev/null; }
+
+case "${1:-}" in
+  ""|-h|--help)
+    echo "usage: compiler <file> [args…]"
+    echo "       compiler --languages"
+    echo
+    echo "Supported:"
+    while IFS=$'\t' read -r id name ext; do
+      if available "$id"; then state=""; else state="  (not installed)"; fi
+      printf '  %-11s .%-5s %s\n' "$name" "$ext" "$state"
+    done <<< "$LANGUAGES"
+    exit 0 ;;
+  --languages)
+    while IFS=$'\t' read -r id name ext; do
+      if available "$id"; then a=1; else a=0; fi
+      printf '%s\t%s\t%s\t%s\n' "$id" "$name" "$ext" "$a"
+    done <<< "$LANGUAGES"
+    exit 0 ;;
+esac
+
+file=$1; shift
+[ -f "$file" ] || { echo "compiler: $file: no such file" >&2; exit 2; }
+lang=$(language_of "$file") || { echo "compiler: don't know how to run .${file##*.} files (try compiler --help)" >&2; exit 2; }
+available "$lang" || { echo "compiler: $lang is not installed on this server" >&2; exit 127; }
+
+dir=$(dirname "$file"); base=$(basename "$file"); stem=${base%.*}
+cd "$dir" || exit 2
+mark "start;$lang"
+
+case "$lang" in
+  python)     limit 1048576 20; mark run; python3 -u "$base" "$@" ;;
+  javascript) limit unlimited 20; mark run; node --max-old-space-size=256 "$base" "$@" ;;
+  java)       limit 4194304 30; mark run; java -Xmx256m -Xss8m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64m -XX:MaxMetaspaceSize=128m -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 "$base" "$@" ;;
+  c)          limit 1048576 20; gcc -Wall -O0 -std=c17 -fdiagnostics-color=always "$base" -o "$stem" -lm && { mark run; "./$stem" "$@"; } ;;
+  cpp)        limit 1048576 30; g++ -Wall -O0 -std=c++20 -fdiagnostics-color=always "$base" -o "$stem" && { mark run; "./$stem" "$@"; } ;;
+  csharp)     limit 2097152 30; mcs -nologo -out:"$stem.exe" "$base" && { mark run; mono "$stem.exe" "$@"; } ;;
+  lua)        limit 1048576 20; mark run; "$(lua_bin)" "$base" "$@" ;;
+  pil)        limit 1048576 20; mark run; pil run "$base" "$@" ;;
+  bash)       limit 1048576 20; mark run; bash "$base" "$@" ;;
+esac

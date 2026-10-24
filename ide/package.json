@@ -1,25 +1,31 @@
 {
-  "name": "28teh-workspace",
+  "name": "28teh",
   "private": true,
-  "version": "4.0.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
+    "dev": "SANDBOX=${SANDBOX:-off} AUTH=${AUTH:-off} node --watch server.js",
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch"
+    "build": "bash tools/build-pil.sh",
+    "test": "node --test test/*.test.js",
+    "check": "node --check server.js && node --check tools/build-pages.mjs && node --check ../proxy/ide.js && for f in lib/*.js lib/ai/*.js public/js/*.js; do node --check $f || exit 1; done && bash -n bin/compiler",
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null || true",
+    "build:pages": "node tools/build-pages.mjs"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "dockerode": "^5.0.1",
     "express": "^4.21.2",
-    "monaco-editor": "^0.56.0",
+    "monaco-editor": "^0.57.0",
+    "node-pty": "^1.1.0",
     "socket.io": "^4.8.3"
   },
-  "devDependencies": {
-    "@tailwindcss/cli": "^4.3.3",
-    "tailwindcss": "^4.3.3"
+  "allowScripts": {
+    "node-pty@1.1.0": true
+  },
+  "engines": {
+    "node": ">=22.13"
   }
 }

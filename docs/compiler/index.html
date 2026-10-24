@@ -1,15 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="color-scheme" content="dark">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
 <title>28teh</title>
-<style>html{background:#050505;color:#fff;font:13px/20px ui-monospace,Menlo,monospace}body{display:grid;place-items:center;height:100vh;margin:0}main{border:1px solid #222;padding:20px;width:360px}p{color:#888;margin:4px 0 12px}a{color:#fff}</style>
-<script>
-// The 28teh workspace now runs on its own server (Node + Docker); set the URL after deploying ide/ and this page forwards to it.
-const WORKSPACE_URL = "http://192.168.1.172:8787/";
-if (WORKSPACE_URL) location.replace(WORKSPACE_URL + location.search);
-</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2317181c'/><path d='M9 11l5 5-5 5' stroke='%23e4e4e7' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M16 21h7' stroke='%235fc98f' stroke-width='2.5' stroke-linecap='round'/></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.css">
+<link rel="stylesheet" href="assets/a6b8712618/app.css">
+<script>try{const s=JSON.parse(localStorage.getItem("settings")||"{}");const t=s.theme==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):(s.theme||"dark");document.documentElement.dataset.theme=t}catch{}</script>
 </head>
-<body><main><b>28teh workspace</b><p>The workspace has moved to its own server. Ask your teacher for the link.</p><a href="../">← Timetable</a></main></body>
+<body>
+
+<div id="gate" class="gate" hidden>
+  <form id="gate-form" class="gate-card" autocomplete="off">
+    <div class="brand"><span class="brand-mark"></span>28teh</div>
+    <h1>Enter the class access code</h1>
+    <p class="muted">Your teacher shares the code. It stays in this browser.</p>
+    <input id="gate-input" class="input" aria-label="Access code" placeholder="Access code" spellcheck="false" autocapitalize="characters">
+    <p id="gate-error" class="error-text" aria-live="polite"></p>
+    <button class="btn primary block" type="submit">Continue</button>
+  </form>
+</div>
+
+<div id="boot" class="boot" aria-live="polite">Loading workspace…</div>
+
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <button class="ibtn" id="toggle-side" aria-label="Toggle sidebar"></button>
+    <div class="crumbs">
+      <button class="crumb-lesson" id="crumb-lesson" hidden></button>
+      <input id="title" class="title-input" aria-label="Project name" maxlength="80" spellcheck="false" disabled>
+      <span id="badge" class="badge" hidden></span>
+      <span id="save-state" class="save-state" aria-live="polite"></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="language" aria-haspopup="menu" disabled></button>
+      <button class="btn" id="share" disabled></button>
+      <button class="btn primary run" id="run" disabled></button>
+      <button class="ibtn" id="toggle-aside" aria-label="Toggle side panel"></button>
+      <button class="ibtn" id="more" aria-label="More actions" aria-haspopup="menu"></button>
+    </div>
+  </header>
+
+  <div class="work">
+    <aside class="sidebar" aria-label="Projects">
+      <div class="sidebar-h">
+        <label class="search"><span class="search-icon"></span><input id="search" placeholder="Search projects" aria-label="Search projects" spellcheck="false"><kbd id="search-kbd"></kbd></label>
+        <button class="ibtn" id="new-project" aria-label="New project" aria-haspopup="menu"></button>
+      </div>
+      <nav id="project-list" class="project-list"></nav>
+      <div class="sidebar-f">
+        <button class="btn ghost sm" id="open-settings"></button>
+        <button class="btn ghost sm" id="open-shortcuts"></button>
+      </div>
+    </aside>
+    <div class="split split-x" id="split-side" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" tabindex="0"></div>
+
+    <main class="main">
+      <div id="banner" class="banner" hidden></div>
+      <section class="editor-host" aria-label="Editor">
+        <div id="editor"></div>
+        <div id="editor-empty" class="empty-state" hidden></div>
+      </section>
+      <div class="split split-y" id="split-term" role="separator" aria-orientation="horizontal" aria-label="Resize terminal panel" tabindex="0"></div>
+      <section class="panel" aria-label="Terminal and problems">
+        <div class="panel-h">
+          <div class="tabs" role="tablist">
+            <button class="tab on" role="tab" aria-selected="true" data-tab="terminal">Terminal</button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="problems">Problems <span id="problem-count" class="count" hidden></span></button>
+          </div>
+          <div id="run-status" class="run-status" aria-live="polite"></div>
+          <div class="panel-actions">
+            <button class="ibtn" id="term-rerun" aria-label="Rerun"></button>
+            <button class="ibtn" id="term-copy" aria-label="Copy output"></button>
+            <button class="ibtn" id="term-clear" aria-label="Clear terminal"></button>
+            <button class="ibtn" id="term-restart" aria-label="Restart terminal"></button>
+            <button class="ibtn" id="term-hide" aria-label="Hide panel"></button>
+          </div>
+        </div>
+        <div class="runline" id="runline"></div>
+        <div class="panel-b">
+          <div id="terminal" class="terminal"></div>
+          <div id="term-overlay" class="term-overlay" hidden></div>
+          <div id="problems" class="problems" hidden></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="split split-x" id="split-aside" role="separator" aria-orientation="vertical" aria-label="Resize side panel" tabindex="0"></div>
+    <aside class="aside" aria-label="Project details">
+      <div class="panel-h">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" data-aside="details">Details</button>
+          <button class="tab" role="tab" data-aside="history">History</button>
+          <button class="tab" role="tab" data-aside="assistant">Assistant</button>
+        </div>
+      </div>
+      <div class="aside-b">
+        <div id="aside-details" class="aside-pane"></div>
+        <div id="aside-history" class="aside-pane" hidden></div>
+        <div id="aside-assistant" class="aside-pane assistant" hidden></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span class="status-item"><span class="dot" id="sandbox-dot"></span><span id="sandbox-text">Connecting</span></span>
+    <span class="status-item" id="status-live" hidden></span>
+    <span class="grow"></span>
+    <span class="status-item" id="status-pos"></span>
+    <span class="status-item" id="status-indent"></span>
+    <span class="status-item" id="status-lang"></span>
+  </footer>
+</div>
+
+<div id="overlay-root"></div>
+
+<script src="assets/a6b8712618/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.11.0/lib/addon-fit.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.57.0/min/vs/loader.js"></script>
+<script type="module" src="assets/a6b8712618/js/main.js"></script>
+</body>
 </html>
