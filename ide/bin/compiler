@@ -42,6 +42,11 @@ mark() { printf '\033]7777;%s\007' "$1"; }
 
 limit() { ulimit -v "$1" 2>/dev/null; ulimit -t "$2" 2>/dev/null; ulimit -c 0 2>/dev/null; }
 
+checksum() { cksum < "$1"; }
+cached() { [ -x "$2" ] && [ -f ".$1.built" ] && [ "$(cat ".$1.built")" = "$(checksum "$1")" ] && printf '\033[2m(unchanged – reusing the last build)\033[0m\n'; }
+built() { checksum "$1" > ".$1.built"; }
+build() { cached "$base" "$1" || { rm -f ".$base.built"; shift; "$@" && built "$base"; }; }
+
 case "${1:-}" in
   ""|-h|--help)
     echo "usage: compiler <file> [args…]"
@@ -74,9 +79,9 @@ case "$lang" in
   python)     limit 1048576 20; mark run; python3 -u "$base" "$@" ;;
   javascript) limit unlimited 20; mark run; node --max-old-space-size=256 "$base" "$@" ;;
   java)       limit 4194304 30; mark run; java -Xmx256m -Xss8m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64m -XX:MaxMetaspaceSize=128m -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 "$base" "$@" ;;
-  c)          limit 1048576 20; gcc -Wall -O0 -std=c17 -fdiagnostics-color=always "$base" -o "$stem" -lm && { mark run; "./$stem" "$@"; } ;;
-  cpp)        limit 1048576 30; g++ -Wall -O0 -std=c++20 -fdiagnostics-color=always "$base" -o "$stem" && { mark run; "./$stem" "$@"; } ;;
-  csharp)     limit 2097152 30; mcs -nologo -out:"$stem.exe" "$base" && { mark run; mono "$stem.exe" "$@"; } ;;
+  c)          limit 1048576 20; build "$stem" gcc -Wall -O0 -std=c17 -fdiagnostics-color=always "$base" -o "$stem" -lm && { mark run; "./$stem" "$@"; } ;;
+  cpp)        limit 1048576 30; build "$stem" g++ -Wall -O0 -std=c++20 -fdiagnostics-color=always "$base" -o "$stem" && { mark run; "./$stem" "$@"; } ;;
+  csharp)     limit 2097152 30; build "$stem.exe" mcs -nologo -out:"$stem.exe" "$base" && { mark run; mono "$stem.exe" "$@"; } ;;
   lua)        limit 1048576 20; mark run; "$(lua_bin)" "$base" "$@" ;;
   pil)        limit 1048576 20; mark run; pil run "$base" "$@" ;;
   bash)       limit 1048576 20; mark run; bash "$base" "$@" ;;

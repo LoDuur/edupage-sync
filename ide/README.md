@@ -7,7 +7,7 @@ It runs in two ways from the same code in `public/`:
 | | GitHub Pages (`docs/compiler/`) | Own server (`npm start`) |
 |---|---|---|
 | Where | https://loduur.github.io/edupage-sync/compiler/ | any Linux machine you run |
-| Code runs on | wandbox.org; PIL as WebAssembly in the browser | a bubblewrap sandbox on that machine |
+| Code runs on | Python (Pyodide) and PIL in the browser; C, C++, C#, Lua on godbolt.org; Java, JavaScript, Bash on wandbox.org | a bubblewrap sandbox on that machine |
 | Terminal | program input/output; input is collected line by line and the program is re-run with it | a real bash shell with `compiler <file>` |
 | Projects, sharing, history, AI | the `edupage-proxy` Cloudflare Worker (D1) | SQLite next to the server |
 | Live viewing | checks for changes every 4 s | instant (Socket.IO) |
@@ -26,7 +26,7 @@ npx wrangler deploy --config wrangler.toml
 
 The first command creates the `projects` and `project_versions` tables. The class access code is checked against the Worker's `ACCESS_HASH`; the assistant needs the `OPENROUTER_KEY` secret (`npx wrangler secret put OPENROUTER_KEY`).
 
-Limits of this version: Wandbox is a free public service, so runs take a few seconds (Java often 20–30 s per run) and can fail when it is busy. Programs that read input are re-run from the start with all input typed so far, which works for ordinary input/output programs but not for ones whose output changes between runs (random numbers, the current time). To rebuild the PIL WebAssembly file run `tools/build-pil.sh --wasm` (needs emscripten).
+Typical run times measured for this version: Python 1–15 ms once loaded (the first Python run after opening the page waits for Pyodide, about 3 s from the browser cache or longer on the first visit; it starts loading as soon as a Python project is open), PIL 10–50 ms, C/C++/C#/Lua 0.4–1.5 s on godbolt.org (repeat runs of unchanged code are faster because Compiler Explorer caches builds), Java 5–45 s and JavaScript/Bash 3–15 s on wandbox.org. godbolt.org and wandbox.org are free public services and can be slow or fail when busy. Programs that read input are re-run from the start with all input typed so far (instant for Python and PIL, one request per line for the others), which suits ordinary input/output programs but not ones whose output changes between runs (random numbers, the current time). Stopping a Python program restarts the interpreter, so the next run waits about 3 s. To rebuild the PIL WebAssembly file run `tools/build-pil.sh --wasm` (needs emscripten).
 
 ## How it fits together
 

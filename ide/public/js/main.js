@@ -5,7 +5,7 @@ import { settings, layout, LAYOUT_DEFAULTS, saveLayout, onSettings, updateSettin
 import { LANGUAGE_META } from "./languages.js";
 import { loadMonaco, createEditor, setProblems, revealLine, getMonaco } from "./editor.js";
 import { createTerminal } from "./terminal.js";
-import { createRemoteTerminal } from "./remote.js";
+import { createRemoteTerminal, prepareEngine } from "./remote.js";
 import { socketLive, pollingLive } from "./live.js";
 import { createWorkspace } from "./workspace.js";
 import { createAssistant } from "./assistant.js";
@@ -108,7 +108,7 @@ async function main() {
   });
 
   function renderSandbox(state, message) {
-    const map = { connecting: ["wait", "Connecting"], creating: ["wait", "Starting terminal"], attached: ["ok", remote ? "Runs on wandbox.org" : config.sandbox.mode === "off" ? "Terminal ready (no sandbox)" : "Terminal ready"], exited: ["", "Terminal stopped"], limit: ["err", "Terminal limit reached"], error: ["err", "Terminal unavailable"], disconnected: ["wait", "Reconnecting"] };
+    const map = { connecting: ["wait", "Connecting"], creating: ["wait", "Starting terminal"], attached: ["ok", remote ? "Ready" : config.sandbox.mode === "off" ? "Terminal ready (no sandbox)" : "Terminal ready"], exited: ["", "Terminal stopped"], limit: ["err", "Terminal limit reached"], error: ["err", "Terminal unavailable"], disconnected: ["wait", "Reconnecting"] };
     const [dot, text] = map[state] || ["", state];
     $("sandbox-dot").className = "dot " + dot;
     $("sandbox-text").textContent = text;
@@ -125,8 +125,8 @@ async function main() {
   function renderRun(run) {
     const el = $("run-status"), line = $("runline");
     clearInterval(elapsedTimer);
-    if (["pending", "compiling", "running", "waiting"].includes(run.phase)) {
-      const label = { compiling: "Compiling", running: "Running", waiting: "Waiting for input", pending: "Starting" }[run.phase];
+    if (["pending", "loading", "compiling", "running", "waiting"].includes(run.phase)) {
+      const label = { compiling: "Compiling", running: "Running", waiting: "Waiting for input", pending: "Starting", loading: "Loading Python (first run only)" }[run.phase];
       line.dataset.state = run.phase === "compiling" ? "compiling" : "running";
       const tick = () => { el.innerHTML = `<span class="dot ${run.phase === "compiling" ? "warn" : "ok"} pulse"></span><span>${label}</span>${run.startedAt ? `<span class="muted">${seconds(Date.now() - run.startedAt)}</span>` : ""}`; };
       tick(); elapsedTimer = setInterval(tick, 100);
@@ -134,8 +134,10 @@ async function main() {
       const [kind, text] = OUTCOME_TEXT[lastOutcome.outcome];
       line.dataset.state = kind;
       const detail = lastOutcome.outcome === "success" ? "" : lastOutcome.outcome === "limit" ? exitReason(lastOutcome.exitCode) : lastOutcome.outcome === "stopped" ? "" : `exit code ${lastOutcome.exitCode}`;
-      const duration = lastOutcome.startedAt ? seconds(lastOutcome.endedAt - (lastOutcome.runAt || lastOutcome.startedAt)) : "";
+      const duration = lastOutcome.startedAt ? seconds(lastOutcome.endedAt - lastOutcome.startedAt) : "";
       el.innerHTML = `<span class="dot ${kind}"></span><span>${text}</span>${detail ? `<span class="muted">${esc(detail)}</span>` : ""}${duration ? `<span class="muted">${duration}</span>` : ""}`;
+      const o = lastOutcome;
+      el.title = o.startedAt ? [o.firstOutputAt ? `First output after ${seconds(o.firstOutputAt - o.startedAt)}` : "", `Total ${seconds(o.endedAt - o.startedAt)}`].filter(Boolean).join("\n") : "";
     } else { line.dataset.state = ""; el.innerHTML = ""; }
     renderRunButton();
   }
@@ -499,6 +501,7 @@ async function main() {
     if (reason === "list") return renderList();
     if (reason === "save") { renderSaveState(); renderList(); return; }
     if (reason === "versions") { if (layout.asideOn && layout.asideTab === "history") renderHistory(); return; }
+    if (reason === "open" || reason === "meta") { if (remote && state.current) prepareEngine(state.current.language); }
     if (reason === "open") {
       problems = []; renderProblems(); $("aside-details").dataset.id = "";
       if (layout.asideOn && layout.asideTab === "history") renderHistory();

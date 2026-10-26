@@ -9,7 +9,7 @@ const worker = (process.env.WORKER_URL || "https://edupage-proxy.loduur.workers.
 const version = name => JSON.parse(readFileSync(path.join(ide, "node_modules", name, "package.json"), "utf8")).version;
 const cdn = (name, file) => `https://cdn.jsdelivr.net/npm/${name}@${version(name)}/${file}`;
 
-const sources = ["app.css", "js", "pil"];
+const sources = ["app.css", "js", "pil", "py"];
 const hash = createHash("sha256");
 const walk = p => statSync(p).isDirectory() ? readdirSync(p).sort().forEach(n => walk(path.join(p, n))) : hash.update(p).update(readFileSync(p));
 for (const s of sources) walk(path.join(ide, "public", s));
@@ -18,8 +18,7 @@ const assets = `assets/${build}`;
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(path.join(out, assets), { recursive: true });
-cpSync(path.join(ide, "public", "js"), path.join(out, assets, "js"), { recursive: true });
-cpSync(path.join(ide, "public", "pil"), path.join(out, assets, "pil"), { recursive: true });
+for (const dir of ["js", "pil", "py"]) cpSync(path.join(ide, "public", dir), path.join(out, assets, dir), { recursive: true });
 
 const css = readFileSync(path.join(ide, "public", "app.css"), "utf8")
   .replaceAll("url(vendor/font/sans/", `url(${cdn("@fontsource/ibm-plex-sans", "files/")}`)
