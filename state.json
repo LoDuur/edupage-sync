@@ -4892,12 +4892,5 @@
   "519",
   "521"
  ],
- "substitutions": {
-  "2026-10-29|2 - 3|Fizika I - Skolotājs: Datorium, Mainīt kabinetu: (355.) ➔ 410., Kabinetas maiņa": {
-   "date": "2026-10-29",
-   "kind": "change",
-   "period": "2 - 3",
-   "text": "Fizika I - Skolotājs: Datorium, Mainīt kabinetu: (355.) ➔ 410., Kabinetas maiņa"
-  }
- }
+ "substitutions": {}
 }
