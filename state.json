@@ -4223,12 +4223,12 @@
    ],
    "version": "519"
   },
-  "2026-11-02|3|*358": {
+  "2026-11-02|3|*333": {
    "date": "2026-11-02",
    "dayType": "monday",
    "description": "Skolotājs: S.Upīte\nStundas: 3.–4.\nStundu saraksts v521",
    "end": "2026-11-02T11:40:00+02:00",
-   "gcal_id": "88ap82qagmgi1m675sbe343r2o",
+   "gcal_id": "bi3rsvr3hsn5sf0abgjv3qromg",
    "groups": [],
    "hash": "f7a16e681fcbe9943a638cdbd75ba2bbf591c74e",
    "location": "202.",
@@ -4271,12 +4271,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-02|6|*358": {
+  "2026-11-02|6|*333": {
    "date": "2026-11-02",
    "dayType": "monday",
    "description": "Skolotājs: S.Upīte\nStundas: 6.–7.\nStundu saraksts v521",
    "end": "2026-11-02T14:10:00+02:00",
-   "gcal_id": "od11u82h7gpfbf618sepdspua0",
+   "gcal_id": "jnj1pmsj7ef8n7hkvi49nmsdso",
    "groups": [],
    "hash": "4c907367c9598c363e2fc5402838851ae8a8b7e6",
    "location": "202.",
@@ -4325,12 +4325,12 @@
    ],
    "version": "521"
   },
-  "2026-11-03|2|*898": {
+  "2026-11-03|2|*866": {
    "date": "2026-11-03",
    "dayType": "midweek",
    "description": "Skolotājs: D.Ārne\nStundas: 2.–3.\nStundu saraksts v521",
    "end": "2026-11-03T10:40:00+02:00",
-   "gcal_id": "llva382pglv9jn0mbmmkvt4hcg",
+   "gcal_id": "v9olbl75qlo87lid4eakl4qkpk",
    "groups": [],
    "hash": "8f6a600c0261717e5620046fbea8f0443edb37b4",
    "location": "212.",
@@ -4373,12 +4373,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-03|5|*348": {
+  "2026-11-03|5|*323": {
    "date": "2026-11-03",
    "dayType": "midweek",
    "description": "Skolotājs: A.Šamšele\nStundas: 5.–6.\nStundu saraksts v521",
    "end": "2026-11-03T13:10:00+02:00",
-   "gcal_id": "gg8asn1f1snkrj6jutlttj1eg8",
+   "gcal_id": "9bln08ctq7e4ao81u4ipoqju60",
    "groups": [],
    "hash": "421076cd3cf2fd9a5233050f181b8797281a2d10",
    "location": "355.",
@@ -4400,12 +4400,12 @@
    ],
    "version": "521"
   },
-  "2026-11-03|7|*184": {
+  "2026-11-03|7|*164": {
    "date": "2026-11-03",
    "dayType": "midweek",
    "description": "Skolotājs: E.Millere\nStundas: 7.–8.\nStundu saraksts v521",
    "end": "2026-11-03T14:50:00+02:00",
-   "gcal_id": "jj85hbtenjo0mnmqj7nek9vcqc",
+   "gcal_id": "opb2bqqu3lma8qpflqdqneu860",
    "groups": [],
    "hash": "881e39fcf529b1c504d4d39b701f6d97ab999771",
    "location": "356.",
@@ -4454,12 +4454,12 @@
    ],
    "version": "521"
   },
-  "2026-11-04|1|*357": {
+  "2026-11-04|1|*332": {
    "date": "2026-11-04",
    "dayType": "midweek",
    "description": "Skolotājs: T.Misiņa\nStundas: 1.\nStundu saraksts v521",
    "end": "2026-11-04T08:50:00+02:00",
-   "gcal_id": "9ojqi8ff6cae02s6do9tapdv84",
+   "gcal_id": "ds6ldlr0qr6eq1q39isbumgfeo",
    "groups": [],
    "hash": "34da56ca9df4a146819a6c15023639f40e8416fc",
    "location": "223.",
@@ -4477,12 +4477,12 @@
    ],
    "version": "521"
   },
-  "2026-11-04|2|*184": {
+  "2026-11-04|2|*164": {
    "date": "2026-11-04",
    "dayType": "midweek",
    "description": "Skolotājs: E.Millere\nStundas: 2.–3.\nStundu saraksts v521",
    "end": "2026-11-04T10:40:00+02:00",
-   "gcal_id": "bsiudprpm693og1ubngc6pdpus",
+   "gcal_id": "o0bve4hhh5q05d8aqfve8alrvk",
    "groups": [],
    "hash": "af9ff6708429772ec54e02cdd51c430b9ee1c764",
    "location": "356.",
@@ -4525,12 +4525,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-04|5|*596": {
+  "2026-11-04|5|*571": {
    "date": "2026-11-04",
    "dayType": "midweek",
    "description": "Skolotājs: I.Bērziņa\nStundas: 5.\nStundu saraksts v521",
    "end": "2026-11-04T12:20:00+02:00",
-   "gcal_id": "cirkc23kt5q9ehktoe54bv8m90",
+   "gcal_id": "ajnabqchn6l3cr65cgo0h828bg",
    "groups": [],
    "hash": "1e50db6e642e01e851ef83aa1a9f3cf2e52d2aac",
    "location": "118.",
@@ -4602,12 +4602,12 @@
    ],
    "version": "521"
   },
-  "2026-11-05|10|*1005": {
+  "2026-11-05|10|*973": {
    "date": "2026-11-05",
    "dayType": "midweek",
    "description": "Stundas: 10.\nStundu saraksts v521",
    "end": "2026-11-05T09:40:00+02:00",
-   "gcal_id": "sd0p2ke8khigu5gds33enn2jsk",
+   "gcal_id": "ibuag5pd0nq0tvrnnfqe878d0s",
    "groups": [],
    "hash": "391f8304ddb0bbb541bd211dbffa2536e53da223",
    "location": "Attālināti",
@@ -4623,12 +4623,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-05|2|*687": {
+  "2026-11-05|2|*661": {
    "date": "2026-11-05",
    "dayType": "midweek",
    "description": "Skolotājs: Datorium\nStundas: 2.–3.\nStundu saraksts v521",
    "end": "2026-11-05T10:30:00+02:00",
-   "gcal_id": "b40r168uuu269gbvop345k7trc",
+   "gcal_id": "jtes9nvbn2at0pre8cepre6a8o",
    "groups": [],
    "hash": "acd9dbbaab84ff30e1e2ae4b94da91bd301c9b6e",
    "location": "355.",
@@ -4650,12 +4650,12 @@
    ],
    "version": "521"
   },
-  "2026-11-05|4|*361": {
+  "2026-11-05|4|*336": {
    "date": "2026-11-05",
    "dayType": "midweek",
    "description": "Skolotājs: K.Tomsons\nStundas: 4.\nStundu saraksts v521",
    "end": "2026-11-05T11:30:00+02:00",
-   "gcal_id": "j9qdigrgtes54q4g5p1pgdh88k",
+   "gcal_id": "di2k9ir3chuog5beo09ka8ij9g",
    "groups": [],
    "hash": "02635c3d3c6a82a80fdb146d051b23edbd09c639",
    "location": "206.",
@@ -4694,12 +4694,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-05|6|*184": {
+  "2026-11-05|6|*164": {
    "date": "2026-11-05",
    "dayType": "midweek",
    "description": "Skolotājs: E.Millere\nStundas: 6.–7.\nStundu saraksts v521",
    "end": "2026-11-05T14:00:00+02:00",
-   "gcal_id": "i76q45ffsncujha7dv8rn29ge4",
+   "gcal_id": "ua3ubjqqfek43gco900jmokk28",
    "groups": [],
    "hash": "71fc0b32244e33ccf7a479984473b540991120b8",
    "location": "356.",
@@ -4748,12 +4748,12 @@
    ],
    "version": "521"
   },
-  "2026-11-06|1|*354": {
+  "2026-11-06|1|*329": {
    "date": "2026-11-06",
    "dayType": "friday",
    "description": "Skolotājs: I.Kobiaka\nStundas: 1.–2.\nStundu saraksts v521",
    "end": "2026-11-06T09:40:00+02:00",
-   "gcal_id": "ub8qf0p1bp962ul1ilg5rjehmo",
+   "gcal_id": "5fitrsqo7l8rql03eai6bh5ce0",
    "groups": [],
    "hash": "4ebb7ca3289c0e8ba91336490e083f506db93d9a",
    "location": "245.",
@@ -4823,12 +4823,12 @@
    "teachers": [],
    "version": "521"
   },
-  "2026-11-06|6|*842": {
+  "2026-11-06|6|*815": {
    "date": "2026-11-06",
    "dayType": "friday",
    "description": "Skolotājs: L.Māziņa\nStundas: 6.–7.\nStundu saraksts v521",
    "end": "2026-11-06T13:25:00+02:00",
-   "gcal_id": "hffiipk8d5hk0snd71v41t64ik",
+   "gcal_id": "9ugnst1hpl7tl2tmf1j6uuk6q4",
    "groups": [],
    "hash": "ce91730431301e06356c9afe8d2cc7bf635a4a22",
    "location": "303.",
@@ -4850,12 +4850,12 @@
    ],
    "version": "521"
   },
-  "2026-11-06|8|*343": {
+  "2026-11-06|8|*318": {
    "date": "2026-11-06",
    "dayType": "friday",
    "description": "Skolotājs: A.Eiklone\nStundas: 8.–9.\nStundu saraksts v521",
    "end": "2026-11-06T14:55:00+02:00",
-   "gcal_id": "qcst72vn8qajtq675kqrngugeo",
+   "gcal_id": "sabiu0fmin71au82bt2pjalreg",
    "groups": [],
    "hash": "6f194021783ecd44d2c047f1d159979bc0bf0b30",
    "location": "354.",

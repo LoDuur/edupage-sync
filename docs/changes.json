@@ -1,5 +1,48 @@
 [
  {
+  "time": "2026-10-30T15:09:39+02:00",
+  "versions": [
+   "518",
+   "519",
+   "521"
+  ],
+  "added": [
+   "Pr 02.11 3.–4. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 02.11 6.–7. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Ot 03.11 2.–3. Dabaszinības (212.)",
+   "Ot 03.11 5.–6. Sociālās zin. un vēsture (355.)",
+   "Ot 03.11 7.–8. Matemātika I (356.)",
+   "Tr 04.11 1. Matemātikas speciālās nodaļas (223.)",
+   "Tr 04.11 2.–3. Matemātika I (356.)",
+   "Tr 04.11 5. Grupas stunda (118.)",
+   "Ce 05.11 2.–3. Fizika I (355.)",
+   "Ce 05.11 10. Fizika I (Attālināti)",
+   "Ce 05.11 4. Datu bāzu tehnoloģijas (206.)",
+   "Ce 05.11 6.–7. Matemātika I (356.)",
+   "Pk 06.11 1.–2. Iniciatīva un uzņēmējdarb. (1.l.) (245.)",
+   "Pk 06.11 6.–7. Sports (303.)",
+   "Pk 06.11 8.–9. Literatūra I (354.)"
+  ],
+  "changed": [],
+  "removed": [
+   "Pr 02.11 3.–4. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 02.11 6.–7. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Ot 03.11 2.–3. Dabaszinības (212.)",
+   "Ot 03.11 5.–6. Sociālās zin. un vēsture (355.)",
+   "Ot 03.11 7.–8. Matemātika I (356.)",
+   "Tr 04.11 1. Matemātikas speciālās nodaļas (223.)",
+   "Tr 04.11 2.–3. Matemātika I (356.)",
+   "Tr 04.11 5. Grupas stunda (118.)",
+   "Ce 05.11 10. Fizika I (Attālināti)",
+   "Ce 05.11 2.–3. Fizika I (355.)",
+   "Ce 05.11 4. Datu bāzu tehnoloģijas (206.)",
+   "Ce 05.11 6.–7. Matemātika I (356.)",
+   "Pk 06.11 1.–2. Iniciatīva un uzņēmējdarb. (1.l.) (245.)",
+   "Pk 06.11 6.–7. Sports (303.)",
+   "Pk 06.11 8.–9. Literatūra I (354.)"
+  ]
+ },
+ {
   "time": "2026-10-28T21:06:22+02:00",
   "versions": [
    "518",
