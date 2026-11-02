@@ -271,6 +271,142 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
 .lesson.subbed::after{content:"↻";position:absolute;top:1px;right:2px;font-size:.6rem;color:#7a5200}
 .lesson.cancelled{text-decoration:line-through;opacity:.7}
 @media (prefers-reduced-motion:reduce){.subpop,.subbtn{transition:none}}
+
+.weeknote{margin:.9rem 1rem 0;padding:.75rem 1rem;border-radius:.85rem;background:var(--surface);border:1px solid var(--line);color:var(--text-2);font-size:.85rem;line-height:1.45}
+.weeknote b{color:var(--text);font-weight:600}
+
+body.design-claude{
+  --bg:#faf9f5;--surface:#efe9de;--surface-2:#f5f0e8;--text:#141413;--text-2:#6c6a64;--text-3:#8e8b82;
+  --line:#e6dfd8;--line-strong:rgba(20,20,19,.2);--accent:#cc785c;--red:#c64545;--amber:#d4a017;--green:#5db872;
+  --chrome:rgba(250,249,245,.86);--card-shadow:none;--con-text:#141413;--con-dim:#6c6a64;--con-bg:rgba(250,249,245,.94);
+  --accent-active:#a9583e;--ag-card:#efe9de;--ag-hover:#e8e0d2;--ag-now-bg:#181715;--ag-now-fg:#faf9f5;--ag-now-dim:#a09d96;--ag-chip:#e8e0d2;
+  --font:"StyreneB",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --serif:"Copernicus","Tiempos Headline","Iowan Old Style","Charter","Georgia",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--bg);color:var(--text);font-family:var(--font);
+}
+:root:is([data-theme=dark],[data-theme=nord],[data-theme=dracula],[data-theme=rose],[data-theme=juarch]) body.design-claude{
+  --bg:#181715;--surface:#1f1e1b;--surface-2:#252320;--text:#faf9f5;--text-2:#a09d96;--text-3:#77746c;
+  --line:rgba(250,249,245,.1);--line-strong:rgba(250,249,245,.24);--red:#e06a5f;--amber:#e8a55a;
+  --chrome:rgba(24,23,21,.86);--con-text:#faf9f5;--con-dim:#a09d96;--con-bg:rgba(24,23,21,.94);
+  --ag-card:#1f1e1b;--ag-hover:#252320;--ag-now-bg:#faf9f5;--ag-now-fg:#141413;--ag-now-dim:#6c6a64;--ag-chip:#2e2b27;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme]) body.design-claude{
+  --bg:#181715;--surface:#1f1e1b;--surface-2:#252320;--text:#faf9f5;--text-2:#a09d96;--text-3:#77746c;
+  --line:rgba(250,249,245,.1);--line-strong:rgba(250,249,245,.24);--red:#e06a5f;--amber:#e8a55a;
+  --chrome:rgba(24,23,21,.86);--con-text:#faf9f5;--con-dim:#a09d96;--con-bg:rgba(24,23,21,.94);
+  --ag-card:#1f1e1b;--ag-hover:#252320;--ag-now-bg:#faf9f5;--ag-now-fg:#141413;--ag-now-dim:#6c6a64;--ag-chip:#2e2b27;
+}}
+body.design-claude .grid{display:none}
+body.design-claude h1{font-family:var(--serif);font-weight:400;font-size:1.85rem;letter-spacing:-.025em;line-height:1.05}
+body.design-claude h1::after{font-family:var(--font)}
+body.design-claude .sub{color:var(--text-3);margin-top:.2rem}
+body.design-claude .range{font-family:var(--mono);font-weight:400;font-size:.82rem;color:var(--text-2)}
+body.design-claude .seg{background:var(--surface);border-radius:8px;padding:3px}
+body.design-claude .seg button{border-radius:6px;font-weight:500;color:var(--text-2);padding:.4rem .8rem;transition:background .15s,color .15s,transform .1s ease-out}
+body.design-claude .seg button:hover{background:var(--bg);color:var(--text)}
+body.design-claude .seg #today{background:var(--accent);color:#fff}
+body.design-claude .seg #today:hover{background:var(--accent-active)}
+body.design-claude .seg #today:active{background:var(--accent-active);transform:scale(.96)}
+body.design-claude .conbtn{background:var(--surface);border-radius:8px;font-family:var(--mono);font-weight:500}
+body.design-claude .picker button b{font-family:var(--serif);font-weight:400;font-size:1.05rem}
+body.design-claude .picker button.active b{background:var(--text);color:var(--bg)}
+body.design-claude .picker button.istoday b{color:var(--accent)}
+body.design-claude .picker button.istoday.active b{background:var(--accent);color:#fff}
+body.design-claude h2{font-size:.72rem;font-weight:500;letter-spacing:.14em;color:var(--text-2);margin-top:3rem}
+body.design-claude .inset{border-radius:12px;background:var(--surface)}
+body.design-claude .inset>*{border-bottom-color:var(--line)}
+body.design-claude .inset a:hover{background:var(--ag-hover)}
+body.design-claude .weeknote{background:var(--ag-card);border:0;border-radius:12px;padding:1rem 1.15rem;color:var(--text-2)}
+body.design-claude .weeknote b{display:block;font-family:var(--serif);font-weight:400;font-size:1.15rem;letter-spacing:-.01em;margin-bottom:.15rem}
+body.design-claude .con-in b,body.design-claude .con-out .cmd{color:var(--accent)}
+
+.agenda{display:none;padding:.9rem 1rem 0}
+body.design-claude .agenda{display:block}
+.ag-days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem;align-items:start}
+.ag-day{min-width:0}
+.ag-card{background:var(--ag-card);border:1px solid transparent;border-radius:12px;padding:1.1rem .75rem .75rem}
+.ag-day.today .ag-card{background:var(--bg);border-color:var(--line)}
+.ag-head{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"num wd" "num mo" "span span";column-gap:.65rem;row-gap:.1rem;align-items:end;padding:0 .4rem .85rem;margin-bottom:.45rem;border-bottom:1px solid var(--line)}
+.ag-num{grid-area:num;font-family:var(--serif);font-weight:400;font-size:2.2rem;line-height:.9;letter-spacing:-.04em;font-variant-numeric:lining-nums}
+.ag-wd{grid-area:wd;font-size:.64rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-day.today .ag-wd{color:var(--accent)}
+.ag-mo{grid-area:mo;font-family:var(--serif);font-size:.9rem;color:var(--text-3);line-height:1.2}
+.ag-span{grid-area:span;font-family:var(--mono);font-size:.66rem;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:.55rem}
+.ag-span:empty{display:none}
+.ag-flag{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .55rem;border-radius:999px;background:var(--accent);color:#fff;white-space:nowrap;line-height:1.3}
+.ag-card .pill{display:inline-block;margin:0 .4rem .45rem;color:var(--text-2);border-color:var(--line-strong);font-weight:500}
+.ag-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.ag-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"time side" "body body";column-gap:.6rem;row-gap:.2rem;align-items:center;padding:.6rem .55rem .65rem;border-radius:8px;overflow:hidden;
+  transition:background .18s ease,color .18s ease,opacity .3s ease,transform .12s ease-out;animation:ag-in .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 28ms)}
+.ag-row:hover{background:var(--ag-hover)}
+.ag-row:active{transform:scale(.99)}
+.ag-time{grid-area:time;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.3rem;white-space:nowrap;min-width:0;font-family:var(--mono);font-size:.7rem;line-height:1.35;font-variant-numeric:tabular-nums;color:var(--text-2)}
+.ag-time b{font-weight:500;color:var(--text)}
+.ag-time small{font-size:inherit;color:var(--text-3)}
+.ag-time small::before{content:"– "}
+.ag-body{grid-area:body;display:flex;flex-direction:column;min-width:0}
+.ag-t{display:flex;align-items:baseline;gap:.45rem;font-size:.9rem;font-weight:500;line-height:1.3;overflow-wrap:break-word;hyphens:auto}
+.ag-t>*,.ag-t{min-width:0}
+.ag-lesson .ag-t::before{content:"";flex:none;width:.45rem;height:.45rem;border-radius:50%;background:var(--base);transform:translateY(-.05rem)}
+.ag-m{font-size:.75rem;color:var(--text-2);line-height:1.4;margin-top:.1rem;padding-left:.9rem;overflow-wrap:break-word}
+.ag-side{grid-area:side;display:flex;align-items:center;gap:.35rem}
+.ag-per{font-family:var(--mono);font-size:.66rem;color:var(--text-3)}
+.ag-flag:empty{display:none}
+.ag-flag:not(:empty)+.ag-per{display:none}
+.ag-row.next .ag-flag{background:var(--ag-chip);color:var(--text)}
+.ag-row .subbtn{position:relative;top:auto;right:auto;box-shadow:none}
+.ag-bar{position:absolute;left:0;bottom:0;height:3px;width:calc(var(--p,0) * 100%);background:var(--accent);opacity:0;transition:width .6s ease,opacity .3s ease}
+.ag-row.now{background:var(--ag-now-bg);color:var(--ag-now-fg)}
+.ag-row.now .ag-time,.ag-row.now .ag-time b{color:var(--ag-now-fg)}
+.ag-row.now .ag-time small,.ag-row.now .ag-m,.ag-row.now .ag-per{color:var(--ag-now-dim)}
+.ag-row.now .ag-bar{opacity:1}
+.ag-row.past{opacity:.45}
+.ag-row.past:hover{opacity:.8}
+.ag-row.lunch .ag-t{font-family:var(--serif);font-weight:400;font-style:italic;font-size:.95rem}
+.ag-row.lunch .ag-t::before{display:none}
+.ag-row.lunch .ag-m{padding-left:0}
+.ag-row.cancelled .ag-t{text-decoration:line-through;text-decoration-color:var(--red)}
+.ag-row.cancelled .ag-t,.ag-row.cancelled .ag-m{opacity:.65}
+.ag-row.sub-change{box-shadow:inset 2px 0 0 var(--amber)}
+.ag-row.sub-add{box-shadow:inset 2px 0 0 var(--green)}
+.ag-row.sub-cancel{box-shadow:inset 2px 0 0 var(--red)}
+.ag-free{border:1px dashed var(--line-strong);color:var(--text-3);margin:2px 0}
+.ag-free:hover{background:none}
+.ag-free .ag-t{font-family:var(--serif);font-weight:400;font-style:italic;color:var(--text-2)}
+.ag-free .ag-time,.ag-free .ag-time small{color:var(--text-3)}
+.ag-free.now{background:none;color:var(--text);border-color:var(--accent)}
+.ag-free.now .ag-time{color:var(--text)}
+.ag-gap{display:flex;align-items:center;gap:.6rem;padding:.15rem .55rem;white-space:nowrap;font-size:.66rem;color:var(--text-3);letter-spacing:.02em;transition:opacity .3s ease;animation:ag-in .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 28ms)}
+.ag-gap::after{content:"";flex:1;height:1px;background:var(--line)}
+.ag-gap.now{color:var(--accent)}
+.ag-gap.now::after{background:color-mix(in srgb,var(--accent) 45%,transparent)}
+.ag-gap.past{opacity:.5}
+.ag-empty{padding:2.25rem .5rem 2rem;text-align:center;font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--text-3)}
+.ag-card .subs{margin:.6rem 0 0;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:.76rem}
+.ag-card .subs b{color:var(--text-2);font-weight:500;letter-spacing:.12em}
+@keyframes ag-in{from{opacity:0;transform:translateY(6px)}}
+@media (min-width:900px) and (max-width:1199px){
+  .ag-head{grid-template-areas:"num mo" "wd wd" "span span";row-gap:.35rem}
+  .ag-mo{align-self:end}
+}
+@media (max-width:899px){
+  body.design-claude h1{font-size:1.55rem}
+  .agenda{padding:.6rem .5rem 0}
+  .ag-days{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .ag-days::-webkit-scrollbar{display:none}
+  .ag-day{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0 .25rem}
+  .ag-card{padding:1.25rem .9rem .9rem}
+  .ag-row{grid-template-columns:3.3rem minmax(0,1fr) auto;grid-template-areas:"time body side";align-items:start;padding:.75rem .6rem .75rem .5rem}
+  .ag-time{flex-direction:column;gap:0;font-size:.74rem;padding-top:.1rem}
+  .ag-time small{font-size:.66rem}
+  .ag-time small::before{content:none}
+  .ag-side{padding-top:.1rem}
+  .ag-flag:not(:empty)+.ag-per{display:inline}
+  .ag-t{font-size:.98rem}
+  .ag-gap{padding-left:3.95rem}
+}
+@media (prefers-reduced-motion:reduce){.ag-row,.ag-gap{animation:none}}
 </style>
 </head>
 <body>
@@ -295,11 +431,13 @@ footer kbd{font:inherit;border:1px solid var(--line-strong);border-radius:.3rem;
 </header>
 
 <main>
+  <div class="weeknote" id="weeknote" role="status" hidden></div>
   <div class="grid">
     <div class="axis" id="axis"></div>
     <div class="days" id="days"></div>
   </div>
   <div class="classic" id="classic"></div>
+  <div class="agenda" id="agenda"><div class="ag-days" id="ag-days"></div></div>
 
   <section>
     <h2>Pievienot kalendāram</h2>
@@ -331,6 +469,7 @@ const fmtD=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
 const isoD=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const monday=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const currentWeekStart=()=>{const d=new Date();return monday([0,6].includes(d.getDay())?addDays(d,2):d)};
 const hm=iso=>iso.slice(11,16);
 const toMin=t=>{const [h,m]=t.split(":").map(Number);return h*60+m};
 const minOf=iso=>toMin(hm(iso));
@@ -349,8 +488,8 @@ function savePrefs(){try{localStorage.setItem("prefs",JSON.stringify(prefs))}cat
 const juarch=()=>!!(prefs.juarch&&prefs.juarch.installed);
 const THEMES={auto:"seko sistēmai",light:"gaišā",dark:"tumšā",nord:"Nord – arktiski zils",dracula:"Dracula – violets",forest:"Forest – gaišs, zaļš",sunset:"Sunset – gaišs, silts",rose:"Rosé Pine – tumšs, maigs"};
 const themeList=()=>Object.keys(THEMES).concat(juarch()?["juarch"]:[]);
-const DESIGNS={default:"klasiskais EduPage režģis",remastered:"jaunais dizains ar laika asi"};
-function applyDesign(){if(!DESIGNS[prefs.design])prefs.design="remastered";document.body.classList.toggle("design-default",prefs.design==="default");document.getElementById("classic").classList.toggle("on",prefs.design==="default")}
+const DESIGNS={default:"klasiskais EduPage režģis",remastered:"jaunais dizains ar laika asi",claude:"silts, redakcionāls dizains ar dienu kartītēm"};
+function applyDesign(){if(!DESIGNS[prefs.design])prefs.design="remastered";for(const d in DESIGNS)document.body.classList.toggle("design-"+d,prefs.design===d);document.getElementById("classic").classList.toggle("on",prefs.design==="default")}
 function applyTheme(){if(!themeList().includes(prefs.theme))prefs.theme="auto";if(prefs.theme==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=prefs.theme}
 applyTheme();
 
@@ -372,7 +511,7 @@ async function load(){
   document.title=data.className+" · Stundu saraksts";
   setUpdated();
   document.getElementById("src").href=`https://${data.school}.edupage.org/timetable/view.php`;
-  weekStart=monday(new Date());
+  weekStart=currentWeekStart();
   render();
   fetch("changes.json?"+Date.now()).then(r=>r.json()).then(j=>changesData=j).catch(()=>{});
   requestAnimationFrame(()=>scrollToNow(true));
@@ -591,6 +730,12 @@ function render(){
   document.getElementById("range").textContent=`${fmtD(weekStart)} – ${fmtD(end)}${end.getFullYear()}`;
   document.getElementById("prev").disabled=!data.events.some(e=>e.date<isoD(weekStart));
   document.getElementById("next").disabled=!data.events.some(e=>e.date>isoD(end))&&!manualOverrides.some(o=>o.date>isoD(end));
+  const lastEventDate=data.events.reduce((a,e)=>e.date>a?e.date:a,"");
+  const isUnpublished=!weekEvs.length&&isoD(weekStart)>lastEventDate;
+  const emptyText=isUnpublished?"Saraksts vēl nav publicēts":"Nav stundu";
+  const note=document.getElementById("weeknote");
+  note.hidden=!isUnpublished;
+  note.innerHTML=isUnpublished?`<b>Saraksts ${fmtD(weekStart)}–${fmtD(end)} vēl nav publicēts.</b> Tiklīdz EduPage to publicēs, tas parādīsies šeit automātiski.`:"";
 
   const axis=document.getElementById("axis");
   axis.innerHTML="";
@@ -605,10 +750,9 @@ function render(){
     day.className="day"+(iso===todayIso?" today":"");day.dataset.iso=iso;day.dataset.idx=i;
     const short=evs.some(e=>e.dayType==="short");
     const subs=unmatchedSubs(iso,evs);
-    const subsHtml=subs.length?`<div class="subs"><b>Aizvietošana</b>${subs.map(s=>`<div><span>${esc(s.period)}.</span>${esc(s.text)}</div>`).join("")}</div>`:"";
-    day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>${subsHtml}`;
+    day.innerHTML=`<div class="dayhead"><span class="wd">${WD[i]}</span><span class="num">${d.getDate()}</span>${short?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}</div><div class="canvas"></div>${subsBox(subs)}`;
     const canvas=day.querySelector(".canvas");
-    if(!evs.length)canvas.innerHTML='<div class="empty">Nav stundu</div>';
+    if(!evs.length)canvas.innerHTML=`<div class="empty">${emptyText}</div>`;
     layoutOverlaps(evs);
     for(const e of evs){
       const el=document.createElement("div");
@@ -622,10 +766,9 @@ function render(){
       const time=`${hm(e.start)}–${hm(e.end)} · ${esc(e.periods)} st.`;
       if(e.subKind)el.classList.add("sub","sub-"+e.subKind);
       if(e.cancelled)el.classList.add("cancelled");
-      const badge=e.subKind?`<button class="subbtn" type="button" aria-label="${e.subKind==="cancel"?"Atcelta stunda":e.subKind==="add"?"Pievienota stunda":"Mainīta stunda"} – rādīt detaļas" aria-expanded="false">${e.subKind==="cancel"?"✕":e.subKind==="add"?"+":"↻"}</button>`:"";
       el.innerHTML=(dur<60
         ?`<div class="t">${esc(e.summary)}</div><div class="tm">${time}${meta?" · "+esc(meta):""}</div>`
-        :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`)+badge;
+        :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`)+subBadge(e);
       if(e.subKind){const b=el.querySelector(".subbtn");b.onclick=ev=>{ev.stopPropagation();openSubPop(b,e)}}
       canvas.appendChild(el);
     }
@@ -658,13 +801,60 @@ function render(){
     b.onclick=()=>scrollToDay(i,true);
     picker.appendChild(b);
   }
+  renderClassic();
+  renderAgenda(todayIso,emptyText);
+  applyDesign();
   tick();
   if(isMobile()){
     const todayIdx=Math.round((new Date(todayIso)-weekStart)/864e5);
     scrollToDay(todayIdx>=0&&todayIdx<5?todayIdx:0,false);
   }
-  renderClassic();
-  applyDesign();
+}
+function subBadge(e){
+  if(!e.subKind)return "";
+  return `<button class="subbtn" type="button" aria-label="${e.subKind==="cancel"?"Atcelta stunda":e.subKind==="add"?"Pievienota stunda":"Mainīta stunda"} – rādīt detaļas" aria-expanded="false">${e.subKind==="cancel"?"✕":e.subKind==="add"?"+":"↻"}</button>`;
+}
+function subsBox(subs){return subs.length?`<div class="subs"><b>Aizvietošana</b>${subs.map(s=>`<div><span>${esc(s.period)}.</span>${esc(s.text)}</div>`).join("")}</div>`:""}
+
+function renderAgenda(todayIso,emptyText){
+  const wrap=document.getElementById("ag-days");wrap.innerHTML="";
+  for(let i=0;i<5;i++){
+    const d=addDays(weekStart,i),iso=isoD(d),evs=eventsFor(iso);
+    const isToday=iso===todayIso;
+    const lastEnd=evs.reduce((a,e)=>e.end>a?e.end:a,"");
+    const day=document.createElement("article");
+    day.className="ag-day"+(isToday?" today":"");day.dataset.iso=iso;day.dataset.idx=i;
+    day.innerHTML=`<div class="ag-card"><header class="ag-head"><span class="ag-num">${d.getDate()}</span><span class="ag-wd">${WD[i]}</span><span class="ag-mo">${d.toLocaleString("lv-LV",{month:"long"})}</span><span class="ag-span">${evs.length?`${hm(evs[0].start)}–${hm(lastEnd)}`:""}</span></header>${evs.some(e=>e.dayType==="short")?'<span class="pill">Pirmssvētku diena · 30 min</span>':""}<ol class="ag-list"></ol>${subsBox(unmatchedSubs(iso,evs))}</div>`;
+    const list=day.querySelector(".ag-list");
+    if(!evs.length)list.innerHTML=`<li class="ag-empty">${emptyText}</li>`;
+    const items=[...evs.map(e=>({e,s:minOf(e.start),en:minOf(e.end)})),...freeBlocks(evs,evs[0]?.dayType).map(f=>({f,s:f.start,en:f.end}))].sort((a,b)=>a.s-b.s);
+    let prevEnd=null,order=0;
+    for(const it of items){
+      if(prevEnd!==null&&it.s-prevEnd>=3)list.appendChild(agendaGap(prevEnd,it.s,order++));
+      list.appendChild(it.e?agendaLesson(it.e,it.s,it.en,order++):agendaFree(it.f,order++));
+      prevEnd=Math.max(prevEnd??0,it.en);
+    }
+    wrap.appendChild(day);
+  }
+}
+function agendaItem(cls,s,e,order,html){
+  const li=document.createElement("li");
+  li.className=cls;li.dataset.s=s;li.dataset.e=e;li.style.setProperty("--i",order);li.innerHTML=html;
+  return li;
+}
+function agendaLesson(e,s,en,order){
+  const meta=[e.location,(e.teachers||[]).join(", ")].filter(Boolean).join(" · ");
+  const cls="ag-row ag-lesson"+(/pusdienas/i.test(e.summary)?" lunch":"")+(e.subKind?" sub-"+e.subKind:"")+(e.cancelled?" cancelled":"");
+  const li=agendaItem(cls,s,en,order,`<span class="ag-time"><b>${hm(e.start)}</b><small>${hm(e.end)}</small></span><span class="ag-body"><span class="ag-t"><span>${esc(e.summary)}</span></span>${meta?`<span class="ag-m">${esc(meta)}</span>`:""}</span><span class="ag-side"><span class="ag-flag"></span><span class="ag-per">${esc(e.periods)}</span>${subBadge(e)}</span><span class="ag-bar"></span>`);
+  li.style.setProperty("--base",baseColor(e.summary));
+  if(e.subKind){const b=li.querySelector(".subbtn");b.onclick=ev=>{ev.stopPropagation();openSubPop(b,e)}}
+  return li;
+}
+function agendaFree(f,order){
+  return agendaItem("ag-row ag-free",f.start,f.end,order,`<span class="ag-time"><b>${fromMin(f.start)}</b><small>${fromMin(f.end)}</small></span><span class="ag-body"><span class="ag-t">Brīvstunda${f.count>1?` · ${f.count} st.`:""}</span></span>`);
+}
+function agendaGap(s,e,order){
+  return agendaItem("ag-gap",s,e,order,`<span>Starpbrīdis · ${e-s} min</span>`);
 }
 
 const SCHOOL_NAME="Valmieras tehnikums, Vadu iela 3, Valmiera, Latvija";
@@ -748,13 +938,21 @@ document.addEventListener("scroll",()=>{const p=document.getElementById("subpop"
 function tick(){
   const now=new Date(),m=now.getHours()*60+now.getMinutes();
   const todayIso=isoD(now);
-  document.querySelectorAll(".day").forEach(day=>{
+  document.querySelectorAll(".day,.ag-day").forEach(day=>{
     const isToday=day.dataset.iso===todayIso,isPast=day.dataset.iso<todayIso;
-    day.querySelectorAll(".ev,.free,.brk").forEach(el=>{
-      const s=+el.dataset.s,e=+el.dataset.e;
-      el.classList.toggle("now",isToday&&m>=s&&m<e);
+    day.querySelectorAll(".ev,.free,.brk,.ag-row,.ag-gap").forEach(el=>{
+      const s=+el.dataset.s,e=+el.dataset.e,isNow=isToday&&m>=s&&m<e;
+      el.classList.toggle("now",isNow);
       el.classList.toggle("past",isPast||(isToday&&m>=e));
+      if(isNow)el.style.setProperty("--p",((m-s)/(e-s)).toFixed(3));
     });
+    const lessons=[...day.querySelectorAll(".ag-lesson")];
+    if(!lessons.length)return;
+    const next=isToday&&!lessons.some(r=>r.classList.contains("now"))?lessons.find(r=>+r.dataset.s>m&&!r.classList.contains("cancelled")):null;
+    for(const r of lessons){
+      r.classList.toggle("next",r===next);
+      r.querySelector(".ag-flag").textContent=r.classList.contains("now")?"Tagad":r===next?"Nākamā":"";
+    }
   });
   const nl=document.getElementById("nowline"),chip=document.getElementById("nowchip");
   const visible=m>=rangeStart&&m<=rangeEnd;
@@ -775,7 +973,7 @@ function scrollToNow(initial){
   window.scrollTo({top:Math.max(0,y),behavior:initial||reduced?"auto":"smooth"});
 }
 function scrollToDay(i,smooth){
-  const wrap=document.getElementById("days");
+  const wrap=document.getElementById(prefs.design==="claude"?"ag-days":"days");
   wrap.scrollTo({left:wrap.clientWidth*i,behavior:smooth&&!reduced?"smooth":"auto"});
   setPicker(i);
 }
@@ -784,8 +982,8 @@ function setPicker(i){
   const chip=document.getElementById("nowchip"),nl=document.getElementById("nowline");
   if(chip)chip.style.display=(nl&&nl.style.display!=="none"&&todayVisible())?"":"none";
 }
-document.getElementById("days").addEventListener("scroll",()=>{
-  const w=document.getElementById("days");
+for(const id of ["days","ag-days"])document.getElementById(id).addEventListener("scroll",e=>{
+  const w=e.currentTarget;
   if(w.clientWidth)setPicker(Math.round(w.scrollLeft/w.clientWidth));
 },{passive:true});
 const ICS_URL=location.href.replace(/index\.html$/,"").replace(/[#?].*$/,"")+"timetable.ics";
@@ -824,7 +1022,7 @@ document.querySelectorAll("[data-cal]").forEach(a=>a.onclick=e=>{e.preventDefaul
 document.getElementById("sheet-bg").onclick=e=>{if(e.target.id==="sheet-bg")e.target.classList.remove("on")};
 document.getElementById("prev").onclick=()=>{weekStart=addDays(weekStart,-7);render()};
 document.getElementById("next").onclick=()=>{weekStart=addDays(weekStart,7);render()};
-document.getElementById("today").onclick=()=>{weekStart=monday(new Date());render();scrollToNow(false)};
+document.getElementById("today").onclick=()=>{weekStart=currentWeekStart();render();scrollToNow(false)};
 matchMedia("(max-width: 899px)").addEventListener("change",render);
 new ResizeObserver(([e])=>document.documentElement.style.setProperty("--toolbar",e.target.offsetHeight+"px")).observe(document.querySelector(".toolbar"));
 
@@ -1002,10 +1200,10 @@ const CMDS={
   }},
   reset:{g:"Saraksts",u:"[priekšmets]",d:"atiestata krāsas",f(a){if(!a.length){prefs.colors={}}else{const name=pickSubject(a.join(" "));if(!name)return;delete prefs.colors[name]}savePrefs();render();print("ok","ok")}},
   theme:{g:"Saraksts",u:"[nosaukums]",d:"tēma; bez argumenta parāda sarakstu",m:"Tēmas: "+Object.keys(THEMES).join(", ")+" (+ juarch pēc instalēšanas).",f(a){if(!a.length)return FILES.themes().forEach(l=>print(l));if(!themeList().includes(a[0]))return print(`nezināma tēma · ${themeList().join(" | ")}`,"err");prefs.theme=a[0];savePrefs();applyTheme();setPrompt();print("ok","ok")}},
-  design:{g:"Saraksts",u:"[default|remastered]",d:"dizains: klasiskais EduPage vai jaunais; saglabājas",m:"default – klasiskais EduPage režģis (dienas rindās, stundas kolonnās). remastered – jaunais dizains ar laika asi, starpbrīžiem un tagadnes līniju.",f(a){if(!a.length)return FILES.designs().forEach(l=>print(l));if(!DESIGNS[a[0]])return print("lietojums: design default|remastered","err");prefs.design=a[0];savePrefs();applyDesign();print("ok","ok")}},
+  design:{g:"Saraksts",u:"[default|remastered|claude]",d:"dizains: klasiskais EduPage, jaunais vai claude; saglabājas",m:"default – klasiskais EduPage režģis (dienas rindās, stundas kolonnās). remastered – jaunais dizains ar laika asi, starpbrīžiem un tagadnes līniju. claude – silts, redakcionāls dizains: krēmkrāsas fons, serif virsraksti, katra diena kā kartīte ar stundu sarakstu un pašreizējās stundas progresu.",f(a){if(!a.length)return FILES.designs().forEach(l=>print(l));if(!DESIGNS[a[0]])return print("lietojums: design default|remastered|claude","err");prefs.design=a[0];savePrefs();render();print("ok","ok")}},
   compiler:{g:"Kods",u:"[python|java|c|cpp|csharp|lua|pil|js|bash|list|<id>]",d:"atver 28teh – kodu redaktoru ar termināli (Python, Java, C, C++, C#, Lua, PIL, JavaScript, Bash; vajag piekļuves kodu)",m:"compiler – atver 28teh: redaktors ar īstu termināli, saglabātiem projektiem, kopīgošanu ar saiti un AI palīgu. compiler <valoda> izveido jaunu projektu šajā valodā (piem. compiler pil, compiler java). compiler list – projektu saraksts. compiler <id> – atver kopīgotu projektu. Terminālī jebkuru failu palaiž ar vienu komandu: compiler main.py. Saīsinājumi: java, pil.",f(a){const langs=["python","java","c","cpp","csharp","lua","pil","js","bash"];const arg=(a[0]||"").toLowerCase();const lang=arg==="js"?"javascript":arg;const url=!arg?"compiler/":arg==="list"||arg==="works"?"compiler/?list":langs.includes(arg)?`compiler/?lang=${lang}`:`compiler/?p=${encodeURIComponent(a[0])}`;const w=window.open(url,"_blank");if(!w)location.href=url;print(`atver ${url}`,"ok")}},
   works:{g:"Kods",d:"saglabāto darbu arhīvs (vajag piekļuves kodu)",f(){CMDS.compiler.f(["works"])}},
-  week:{g:"Saraksts",u:"today|next|prev",d:"pārslēdz nedēļu",f(a){if(a[0]==="next")weekStart=addDays(weekStart,7);else if(a[0]==="prev")weekStart=addDays(weekStart,-7);else weekStart=monday(new Date());render();print(document.getElementById("range").textContent)}},
+  week:{g:"Saraksts",u:"today|next|prev",d:"pārslēdz nedēļu",f(a){if(a[0]==="next")weekStart=addDays(weekStart,7);else if(a[0]==="prev")weekStart=addDays(weekStart,-7);else weekStart=currentWeekStart();render();print(document.getElementById("range").textContent)}},
   cal:{g:"Saraksts",d:"mēneša kalendārs",f(){const now=new Date(),y=now.getFullYear(),mo=now.getMonth(),first=new Date(y,mo,1),days=new Date(y,mo+1,0).getDate();const title=first.toLocaleString("lv-LV",{month:"long",year:"numeric"});const lines=[`<b>${title.padStart(Math.floor((20+title.length)/2)).padEnd(20)}</b>`,"Pr Ot Tr Ce Pk Se Sv"];let row=" ".repeat(((first.getDay()+6)%7)*3);for(let d=1;d<=days;d++){const iso=isoD(new Date(y,mo,d)),has=data.events.some(e=>e.date===iso);let cell=String(d).padStart(2);if(d===now.getDate())cell=`<span style="background:var(--accent);color:#fff;border-radius:3px">${cell}</span>`;else if(has)cell=`<b>${cell}</b>`;else cell=`<span class="dim">${cell}</span>`;row+=cell+" ";if((first.getDay()+6+d)%7===0){lines.push(row);row=""}}if(row.trim())lines.push(row);pre(lines)}},
   top:{g:"Saraksts",d:"šodienas stundas kā procesi",f(){const now=new Date(),m=now.getHours()*60+now.getMinutes(),evs=eventsFor(isoD(now));if(!evs.length)return print("nav procesu (šodien nav stundu)");print(`<span class="dim">top - ${fromMin(m)} · ${evs.length} procesi · slodze: ${evs.filter(e=>minOf(e.start)<=m&&m<minOf(e.end)).length} aktīvs</span>`);print("<b>  PID  STAT  %CPU  LAIKS        KOMANDA</b>");evs.forEach((e,i)=>{const s=minOf(e.start),en=minOf(e.end),pc=m<s?0:m>=en?100:Math.round((m-s)/(en-s)*100),st=m<s?"S":m>=en?"Z":"R";print(`${String(1000+i).padStart(5)}  ${st}     ${String(pc).padStart(3)}%  ${hm(e.start)}–${hm(e.end)}  ${esc(e.summary)}`)})}},
   df:{g:"Saraksts",d:"nedēļas noslodze pa dienām",f(){print("<b>Fails       Izmērs  Lietots  Brīvs  Liet%  Piemontēts</b>");for(let i=0;i<5;i++){const iso=isoD(addDays(weekStart,i)),evs=eventsFor(iso),table=bells[evs[0]?.dayType||"midweek"]||[],size=table.length||10,used=evs.length,pc=Math.round(used/size*100);print(`/dev/${WD2[i].toLowerCase().padEnd(6)} ${String(size).padStart(5)}st ${String(used).padStart(6)}st ${String(size-used).padStart(5)}st ${String(pc).padStart(4)}%  /${WD[i].toLowerCase()}`)}}},
