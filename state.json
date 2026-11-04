@@ -4892,5 +4892,12 @@
   "519",
   "521"
  ],
- "substitutions": {}
+ "substitutions": {
+  "2026-11-05|6|(Matemātika I) ➔ Dabaszinības - Aizvietošana: (Millere Elīna) ➔ Ārne Dace, Mainīt kabinetu: (356.) ➔ 212., Priekšmeta maiņa": {
+   "date": "2026-11-05",
+   "kind": "change",
+   "period": "6",
+   "text": "(Matemātika I) ➔ Dabaszinības - Aizvietošana: (Millere Elīna) ➔ Ārne Dace, Mainīt kabinetu: (356.) ➔ 212., Priekšmeta maiņa"
+  }
+ }
 }
