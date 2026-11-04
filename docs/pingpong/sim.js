@@ -26,7 +26,19 @@ const MAX_SUBSTEP_PX = 5;
 const FIRST_SERVE_MS = 3200;
 const SERVE_MS = 1200;
 const FIRST_EVENT_DELAY_MS = 8000;
-const PORTAL_RADIUS = 26;
+const PORTAL_RADIUS = 56;
+const PORTAL_MIN_NET_DISTANCE = 90;
+const METEOR_INTERVAL_MS = 950;
+const METEOR_WARN_MS = 1000;
+const METEOR_SPEED = 640;
+const METEOR_RADIUS = 14;
+const METEOR_BLAST_RADIUS = 58;
+const METEOR_LAST_SPAWN_MS = 1700;
+const METEOR_KNOCK_PX = 34;
+const METEOR_BALL_LOCK_MS = 300;
+const FREE_MOVE_EDGE = 8;
+const FREE_MOVE_NET_GAP = 40;
+const HOME_SLIDE_SCALE = 1.5;
 const PORTAL_LOCK_MS = 500;
 const BOX_SIZE = 28;
 const OBJECT_MARGIN_X = 170;
@@ -244,8 +256,8 @@ const EVENT_LIST = [
   {
     id: "portal", group: "arena", label: "Portāli", info: "Divi portāli teleportē bumbu", weight: 6, duration: 14000, slot: "arenaObjects",
     start(m) {
-      const first = spawnPosition(m, x => x < ARENA_WIDTH / 2) || { x: 240, y: 120 };
-      const second = spawnPosition(m, x => x > ARENA_WIDTH / 2) || { x: 560, y: 380 };
+      const first = spawnPosition(m, x => x < ARENA_WIDTH / 2 - PORTAL_MIN_NET_DISTANCE) || { x: 240, y: 120 };
+      const second = spawnPosition(m, x => x > ARENA_WIDTH / 2 + PORTAL_MIN_NET_DISTANCE) || { x: 560, y: 380 };
       m.objects.portals = [first, second].map(spot => ({ x: Math.round(spot.x), y: Math.round(spot.y), r: PORTAL_RADIUS }));
     },
     end(m) { m.objects.portals = []; },
@@ -282,6 +294,7 @@ const EVENT_LIST = [
   },
   {
     id: "flip", group: "wild", label: "Kājām gaisā", info: "Visa arēna apgriežas otrādi", weight: 4, duration: 8000,
+    avoids: ["spam", "meteor"],
     mod(mods) { mods.flip = true; },
   },
   {
@@ -329,6 +342,21 @@ const EVENT_LIST = [
     },
   },
   {
+    id: "meteor", group: "arena", label: "Meteorīti", info: "No debesīm krīt meteorīti. Skaties uz brīdinājumiem un bēdz", weight: 7, duration: 13000, shake: 1, avoids: ["flip"],
+    start(m, ev) { ev.nextMeteorAt = m.t + 300; },
+    tick(m, ev) {
+      if (m.t < ev.nextMeteorAt || m.t > ev.endsAt - METEOR_LAST_SPAWN_MS) return;
+      ev.nextMeteorAt = m.t + METEOR_INTERVAL_MS / ev.strength;
+      spawnMeteor(m);
+    },
+    end(m) { m.meteors = []; },
+  },
+  {
+    id: "freeMove", group: "player", label: "Brīvā kustība", info: "Raketes var kustēties arī pa kreisi un pa labi", weight: 7, duration: 12000, slot: "control",
+    canStart: m => m.settings.mode !== "free2d",
+    mod(mods) { mods.free2d = true; },
+  },
+  {
     id: "kingTerry", group: "wild", label: "King Terry Davis", info: "Boss pārņem arēnu. Kopīgi sitiet viņu ar bumbu un izvairieties no uzbrukumiem", weight: 2, duration: NEVER, shake: 3,
     canStart: m => m.t >= BOSS_EVENT_MIN_MATCH_MS && !m.boss && !MODES[m.settings.mode].blocksBossEvent && !m.mods.suddenDeath && Math.max(...m.scores) < m.target - BOSS_MATCH_POINT_MARGIN,
     start(m) {
@@ -338,6 +366,70 @@ const EVENT_LIST = [
     end(m) { clearBoss(m); },
   },
 ];
+
+function spawnMeteor(m) {
+  const { top, bottom } = m.mods;
+  const paddle = m.paddles.length && m.rng() < 0.6 ? m.paddles[Math.floor(m.rng() * m.paddles.length)] : null;
+  const targetX = paddle ? paddle.x + PADDLE_WIDTH / 2 + randomBetween(m, -24, 24) : randomBetween(m, 90, ARENA_WIDTH - 90);
+  const rawTargetY = paddle ? paddle.y + randomBetween(m, -30, 30) : randomBetween(m, top + 60, bottom - 30);
+  const targetY = Math.max(top + METEOR_RADIUS, Math.min(bottom - METEOR_RADIUS, rawTargetY));
+  const startX = targetX + randomBetween(m, -70, 70);
+  const startY = -METEOR_RADIUS * 2;
+  const warnUntil = m.t + METEOR_WARN_MS;
+  m.meteors.push({
+    id: ++m.nextId, x: startX, y: startY, startX, startY, targetX, targetY, warnUntil,
+    landsAt: warnUntil + (targetY - startY) / METEOR_SPEED * 1000, r: METEOR_RADIUS, blast: METEOR_BLAST_RADIUS,
+  });
+  m.fx.push(["meteorWarn"]);
+}
+
+function distanceToPaddle(paddle, x, y) {
+  const nearestX = Math.max(paddle.x, Math.min(paddle.x + PADDLE_WIDTH, x));
+  const nearestY = Math.max(paddle.y - paddle.h / 2, Math.min(paddle.y + paddle.h / 2, y));
+  return Math.hypot(x - nearestX, y - nearestY);
+}
+
+function meteorStrikesPaddle(m, paddle, meteor) {
+  if (m.t < paddle.stunUntil) return;
+  paddle.stunUntil = m.t + STUN_MS;
+  paddle.y += paddle.y < meteor.y ? -METEOR_KNOCK_PX : METEOR_KNOCK_PX;
+  johnSay(m, paddle, "meteor", 0.4);
+}
+
+function meteorStrikesBall(m, ball) {
+  if (m.t < ball.meteorLockUntil) return;
+  ball.meteorLockUntil = m.t + METEOR_BALL_LOCK_MS;
+  rotateVelocity(ball, randomBetween(m, 0.5, 1) * (m.rng() < 0.5 ? -1 : 1));
+  keepHorizontal(ball);
+  m.fx.push(["meteorHit", Math.round(ball.x), Math.round(ball.y)]);
+}
+
+function explodeMeteor(m, meteor) {
+  const { x, y, blast } = meteor;
+  m.meteors = m.meteors.filter(other => other !== meteor);
+  m.fx.push(["meteorImpact", Math.round(x), Math.round(y)]);
+  for (const paddle of m.paddles) if (distanceToPaddle(paddle, x, y) <= blast) meteorStrikesPaddle(m, paddle, meteor);
+  for (const ball of m.balls) if (!ball.isHeld && !ball.isGrabbed && Math.hypot(ball.x - x, ball.y - y) <= blast) meteorStrikesBall(m, ball);
+  m.objects.obstacles = m.objects.obstacles.filter(block => Math.hypot(block.x + block.w / 2 - x, block.y + block.h / 2 - y) > blast);
+  m.objects.bumpers = m.objects.bumpers.filter(bumper => Math.hypot(bumper.x - x, bumper.y - y) > blast);
+}
+
+function updateMeteors(m) {
+  for (const meteor of [...m.meteors]) {
+    if (m.t < meteor.warnUntil) continue;
+    const progress = Math.min(1, (m.t - meteor.warnUntil) / (meteor.landsAt - meteor.warnUntil));
+    meteor.x = meteor.startX + (meteor.targetX - meteor.startX) * progress;
+    meteor.y = meteor.startY + (meteor.targetY - meteor.startY) * progress;
+    const isTouchingPaddle = m.paddles.some(paddle => distanceToPaddle(paddle, meteor.x, meteor.y) <= meteor.r);
+    if (progress >= 1 || isTouchingPaddle) {
+      explodeMeteor(m, meteor);
+      continue;
+    }
+    for (const ball of m.balls) {
+      if (!ball.isHeld && !ball.isGrabbed && Math.hypot(ball.x - meteor.x, ball.y - meteor.y) <= meteor.r + BALL_SIZE / 2) meteorStrikesBall(m, ball);
+    }
+  }
+}
 
 const TWOFA_WORDS = ["bumba", "rakete", "trijstūris"];
 
@@ -787,6 +879,8 @@ function placePaddle(paddle, side, lane) {
   const inset = PADDLE_INSET + lane * LANE_GAP;
   paddle.side = side;
   paddle.x = side === 0 ? inset : ARENA_WIDTH - inset - PADDLE_WIDTH;
+  paddle.homeX = paddle.x;
+  paddle.aiTargetX = paddle.x;
 }
 
 function rebalancePaddles(m) {
@@ -850,7 +944,7 @@ export const MODES = {
   hardcore: {
     label: "Hardcore", info: "Ātrāka bumba, mazākas raketes, tikai bīstami notikumi. Trīs kļūdas, un viss.", usesEvents: true, minPlayers: 1, forcesEvents: true, fixedTarget: 3,
     blunderScale: 0, blocksBossEvent: true, firstEventMs: 5000,
-    eventPool: ["speed", "curve", "ghost", "tiny", "confusion", "frozen", "spam", "twofa", "quake", "blackout", "reverse", "fake", "walls"],
+    eventPool: ["speed", "curve", "ghost", "tiny", "confusion", "frozen", "spam", "twofa", "quake", "blackout", "reverse", "fake", "walls", "meteor"],
     pressure: () => ({ intervalScale: 0.55, strengthScale: 1.25, maxActive: 2 }),
     mod(mods) {
       mods.ballSpeed *= 1.22;
@@ -927,6 +1021,10 @@ export const MODES = {
       return { intervalScale: 0.26 - 0.12 * progress, strengthScale: 1.1 + 0.3 * progress, maxActive: 4 + Math.round(progress * 3) };
     },
   },
+  free2d: {
+    label: "2D Pong", info: "Raketes kustas brīvi pa visu savu arēnas pusi. Dodies pretī bumbai, bet neatstāj vārtus tukšus.", usesEvents: true, minPlayers: 1,
+    mod(mods) { mods.free2d = true; },
+  },
   team: {
     label: "Komandas", info: "Stafete: pēc sava sitiena rakete atdziest, un nākamo sit komandas biedrs. Trūkstošos aizstāj John Pong.", usesEvents: true, minPlayers: 1, restingMood: "calm", tauntOnScore: "team",
     setup(m) {
@@ -991,7 +1089,7 @@ function baseMods() {
   return {
     ballSpeed: 1, gravity: 0, gravityDirection: 0, curve: 0, deflectNoise: 0,
     ghost: false, flip: false, reverseScoring: false, suddenDeath: false,
-    bassBoost: false, twofa: false, spam: false, redSea: false, palette: false, lowRes: false, rightWall: false,
+    bassBoost: false, twofa: false, spam: false, redSea: false, palette: false, lowRes: false, rightWall: false, free2d: false,
     paddleScale: [1, 1], paddleSpeed: [1, 1], invert: [false, false], frozen: [false, false],
     top: 0, bottom: ARENA_HEIGHT,
   };
@@ -1021,7 +1119,11 @@ function addPaddle(m, { side, lane, owner = null, ai = null, scale = 1, isBoss =
     y: ARENA_HEIGHT / 2,
     h: PADDLE_HEIGHT * scale,
     dir: 0,
+    dirX: 0,
     target: null,
+    targetX: null,
+    homeX: 0,
+    aiTargetX: 0,
     aiTarget: ARENA_HEIGHT / 2,
     aiThinkAt: 0,
     aiError: 0,
@@ -1038,6 +1140,8 @@ function addPaddle(m, { side, lane, owner = null, ai = null, scale = 1, isBoss =
     growUntil: 0,
     john: ai && owner === null ? { mood: MODES[m.settings.mode].restingMood ?? "calm", moodUntil: 0, plan: "straight", planKey: "", planUntil: 0, trickSign: 1, isLunging: false, joinedAt: m.t } : null,
   };
+  paddle.homeX = paddle.x;
+  paddle.aiTargetX = paddle.x;
   m.paddles.push(paddle);
   if (paddle.john) {
     m.fx.push(["john", paddle.id]);
@@ -1060,6 +1164,7 @@ export function createMatch({ settings, teams, seed = Math.floor(Math.random() *
     scores: [0, 0],
     paddles: [],
     balls: [],
+    meteors: [],
     active: [],
     objects: { bumpers: [], obstacles: [], portals: [], box: null },
     mods: baseMods(),
@@ -1590,6 +1695,13 @@ function johnShotTarget(m, paddle, level, ball, expected) {
   }
 }
 
+function chooseFreeMoveX(m, paddle, threat) {
+  const forward = paddle.side === 0 ? 1 : -1;
+  if (!threat) return paddle.homeX + forward * (70 + Math.sin(m.t / 1100 + paddle.id) * 50);
+  if (forward * (threat.x - paddle.x) < 0) return paddle.homeX;
+  return paddle.john?.plan === "trick" ? paddle.homeX + forward * 190 : paddle.x;
+}
+
 function thinkAi(m, paddle) {
   if (m.t < paddle.aiThinkAt) return;
   const level = AI_LEVELS[paddle.ai];
@@ -1605,6 +1717,7 @@ function thinkAi(m, paddle) {
     paddle.aiErrorAt = m.t + 900;
   }
   const threat = threatFor(m, paddle, level);
+  paddle.aiTargetX = chooseFreeMoveX(m, paddle, threat);
   if (!threat || isPaddleCooling(m, paddle)) {
     if (john) john.isLunging = false;
     paddle.aiTarget = johnIdleTarget(m, paddle, level);
@@ -1632,19 +1745,50 @@ function dropPaddle(m, paddle, seconds) {
   paddle.y += paddle.fall * seconds;
 }
 
+function moveFreely(paddle, step, dir, dirX, target, targetX) {
+  const gapY = target !== null ? target - paddle.y : dir * step;
+  const gapX = targetX !== null ? targetX - paddle.x : dirX * step;
+  const distance = Math.hypot(gapX, gapY);
+  if (!distance) return;
+  const scale = Math.min(1, step / distance);
+  paddle.x += gapX * scale;
+  paddle.y += gapY * scale;
+}
+
+function keepPaddleOnOwnHalf(paddle) {
+  const low = paddle.side === 0 ? FREE_MOVE_EDGE : ARENA_WIDTH / 2 + FREE_MOVE_NET_GAP;
+  const high = paddle.side === 0 ? ARENA_WIDTH / 2 - FREE_MOVE_NET_GAP - PADDLE_WIDTH : ARENA_WIDTH - FREE_MOVE_EDGE - PADDLE_WIDTH;
+  paddle.x = Math.max(low, Math.min(high, paddle.x));
+}
+
+function slidePaddleHome(paddle, seconds) {
+  const gap = paddle.homeX - paddle.x;
+  paddle.x += Math.sign(gap) * Math.min(Math.abs(gap), PADDLE_SPEED * HOME_SLIDE_SCALE * seconds);
+}
+
 function steerPaddle(m, paddle, seconds) {
   const isInverted = m.mods.invert[paddle.side];
   let speed = PADDLE_SPEED * m.mods.paddleSpeed[paddle.side];
   let dir = 0;
+  let dirX = 0;
   let target = null;
+  let targetX = null;
   if (paddle.ai) {
     thinkAi(m, paddle);
     speed *= AI_LEVELS[paddle.ai].speed * johnSpeedScale(paddle.john);
     target = paddle.aiTarget;
+    targetX = paddle.aiTargetX;
   } else if (paddle.target !== null) {
     target = isInverted ? ARENA_HEIGHT - paddle.target : paddle.target;
+    targetX = paddle.targetX;
+    if (isInverted && targetX !== null) targetX = ARENA_WIDTH - targetX;
   } else {
     dir = isInverted ? -paddle.dir : paddle.dir;
+    dirX = isInverted ? -paddle.dirX : paddle.dirX;
+  }
+  if (m.mods.free2d) {
+    moveFreely(paddle, speed * seconds, dir, dirX, target, targetX);
+    return;
   }
   if (target !== null) {
     const gap = target - paddle.y;
@@ -1666,6 +1810,8 @@ function updatePaddle(m, paddle, stepMs) {
   const isDisabled = m.mods.frozen[paddle.side] || paddle.challenge || m.t < paddle.stunUntil;
   if (m.mods.spam && !isDisabled) dropPaddle(m, paddle, seconds);
   else if (!isDisabled) steerPaddle(m, paddle, seconds);
+  if (m.mods.free2d) keepPaddleOnOwnHalf(paddle);
+  else if (paddle.x !== paddle.homeX) slidePaddleHome(paddle, seconds);
   const half = paddle.h / 2;
   paddle.y = Math.max(m.mods.top + half, Math.min(m.mods.bottom - half, paddle.y));
 }
@@ -1683,6 +1829,7 @@ export function stepMatch(m, stepMs = STEP_MS) {
   m.t += stepMs;
   updateEvents(m);
   for (const paddle of m.paddles) updatePaddle(m, paddle, stepMs);
+  updateMeteors(m);
   if (m.boss) stepBoss(m, stepMs);
   if (!m.isPrediction) {
     MODES[m.settings.mode].step?.(m);
@@ -1701,7 +1848,12 @@ export function stepMatch(m, stepMs = STEP_MS) {
 export function sanitizeInput(raw) {
   if (!raw || typeof raw !== "object") return null;
   if (raw.dir === -1 || raw.dir === 0 || raw.dir === 1) return { dir: raw.dir };
-  if (Number.isFinite(raw.target)) return { target: Math.max(0, Math.min(ARENA_HEIGHT, Math.round(raw.target))) };
+  if (raw.dirX === -1 || raw.dirX === 0 || raw.dirX === 1) return { dirX: raw.dirX };
+  if (Number.isFinite(raw.target)) {
+    const input = { target: Math.max(0, Math.min(ARENA_HEIGHT, Math.round(raw.target))) };
+    if (Number.isFinite(raw.targetX)) input.targetX = Math.max(0, Math.min(ARENA_WIDTH, Math.round(raw.targetX)));
+    return input;
+  }
   if (raw.spam === true) return { spam: true };
   if (raw.ability === true) return { ability: true };
   if (typeof raw.answer === "string" && /^[0-9]{1,6}$/.test(raw.answer)) return { answer: raw.answer };
@@ -1714,9 +1866,16 @@ export function applyInput(m, owner, input) {
   if (input.dir !== undefined) {
     paddle.dir = input.dir;
     paddle.target = null;
+    paddle.targetX = null;
+  } else if (input.dirX !== undefined) {
+    paddle.dirX = input.dirX;
+    paddle.target = null;
+    paddle.targetX = null;
   } else if (input.target !== undefined) {
     paddle.target = input.target;
+    paddle.targetX = input.targetX ?? null;
     paddle.dir = 0;
+    paddle.dirX = 0;
   } else if (input.spam) {
     if (m.mods.spam && m.t >= paddle.spamReadyAt) liftPaddle(m, paddle, SPAM_MIN_PRESS_MS);
   } else if (input.ability) {
@@ -1731,7 +1890,9 @@ export function setOwnerAi(m, owner, level) {
     if (paddle.owner !== owner) continue;
     paddle.ai = level;
     paddle.dir = 0;
+    paddle.dirX = 0;
     paddle.target = null;
+    paddle.targetX = null;
     if (level && paddle.challenge) paddle.challenge = null;
   }
 }
@@ -1768,6 +1929,7 @@ export function serializeMatch(m) {
     mods: m.mods,
     boss: m.boss,
     hazards: m.boss?.hazards ?? [],
+    meteors: m.meteors,
     lives: m.lives,
     rules: m.rules,
     johnLevel: m.johnLevel,

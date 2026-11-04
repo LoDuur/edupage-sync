@@ -72,7 +72,7 @@ The timetable console has `doom` (and `games`): DOOM shareware v1.9 runs in js-d
 
 ## Ping Pong
 
-The console command `PingPong` (also `pingpong`, `pong`; `pingpong <code>` joins directly) opens `docs/pingpong/` in a full-screen iframe over the timetable, so leaving it restores the page and console exactly as they were. One player creates a lobby and shares its 5-character code or invite link; up to 8 players join, and the host picks the mode, score, event frequency and strength, John Pong's difficulty and which of the 30 events can happen. Modes: Klasika, Haoss, Izdzīvošana, Boss cīņa, Turnīrs, Boss maratons, Hardcore, Nejaušība, Spējas, Pēdējā rakete, John Pong izaicinājums, Notikumu vētra and Komandas.
+The console command `PingPong` (also `pingpong`, `pong`; `pingpong <code>` joins directly) opens `docs/pingpong/` in a full-screen iframe over the timetable, so leaving it restores the page and console exactly as they were. One player creates a lobby and shares its 5-character code or invite link; up to 8 players join, and the host picks the mode, score, event frequency and strength, John Pong's difficulty and which of the 32 events can happen. Modes: Klasika, Haoss, Izdzīvošana, Boss cīņa, Turnīrs, Boss maratons, Hardcore, Nejaušība, Spējas, Pēdējā rakete, John Pong izaicinājums, Notikumu vētra, 2D Pong and Komandas.
 
 `docs/pingpong/sim.js` is the only copy of the rules: a pure module with no DOM, run by both the Worker and every browser. `/pingpong/create` and `/pingpong/lobbies/<code>` upgrade to a WebSocket handled by one `PingPongLobby` Durable Object per code (`proxy/pingpong.js`). New modes are one entry in `MODES`, new events one entry in `EVENT_LIST`, new boss attacks one entry in `ATTACKS`.
 

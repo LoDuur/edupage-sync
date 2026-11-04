@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  AUTHORITATIVE_EFFECTS, ARENA_HEIGHT, EVENT_IDS, MODES, STEP_MS, applyInput, assignTeams, createMatch, defaultSettings, encodeMatchState, predictBallY, restoreMatch,
+  AUTHORITATIVE_EFFECTS, ARENA_HEIGHT, ARENA_WIDTH, EVENT_IDS, MODES, STEP_MS, applyInput, assignTeams, createMatch, defaultSettings, encodeMatchState, predictBallY, restoreMatch,
   sanitizeInput, sanitizeSettings, serializeMatch, setOwnerAi, startEvent, stepMatch,
 } from "../docs/pingpong/sim.js";
 import { MatchPredictor } from "../docs/pingpong/predict.js";
@@ -585,4 +585,143 @@ test("input from the wire is whitelisted", () => {
   assert.equal(sanitizeInput({ dir: 7 }), null);
   assert.equal(sanitizeInput({ y: 100, score: 99 }), null);
   assert.equal(sanitizeInput(null), null);
+});
+
+test("meteors warn first, then strike, stun a paddle that stays and spare one that moves", () => {
+  const m = humanMatch("classic", { targetScore: 21 });
+  while (m.phase === "serve") stepMatch(m);
+  const ev = startEvent(m, "meteor");
+  ev.nextMeteorAt = Infinity;
+  stepMatch(m);
+  const stayer = m.paddles.find(paddle => paddle.owner === "a");
+  const dodger = m.paddles.find(paddle => paddle.owner === "b");
+  m.fx.length = 0;
+  const landsAtFor = (paddle, id) => ({
+    id, x: paddle.x, y: -28, startX: paddle.x, startY: -28, targetX: paddle.x + 6, targetY: paddle.y, warnUntil: m.t + 1000, landsAt: m.t + 1500, r: 14, blast: 58,
+  });
+  m.meteors = [landsAtFor(stayer, 9001), landsAtFor(dodger, 9002)];
+  applyInput(m, "b", { dir: 1 });
+  m.balls = [];
+  for (let step = 0; step < 50; step++) {
+    stepMatch(m);
+    assert.equal(stayer.stunUntil, 0, "nothing lands during the warning");
+  }
+  m.fx.length = 0;
+  for (let step = 0; step < 60; step++) stepMatch(m);
+  assert.ok(stayer.stunUntil > 0, "paddle that stayed was hit");
+  assert.equal(dodger.stunUntil, 0, "paddle that moved got away");
+  assert.ok(m.fx.some(effect => effect[0] === "meteorImpact"));
+  assert.equal(m.meteors.length, 0);
+});
+
+test("meteors deflect balls, smash obstacles and clear when the event ends", () => {
+  const m = humanMatch("classic", { targetScore: 21 });
+  while (m.phase === "serve") stepMatch(m);
+  startEvent(m, "obstacles");
+  stepMatch(m);
+  const block = m.objects.obstacles[0];
+  const ev = startEvent(m, "meteor");
+  ev.nextMeteorAt = Infinity;
+  const centerX = block.x + block.w / 2;
+  const centerY = block.y + block.h / 2;
+  const ball = m.balls[0];
+  Object.assign(ball, { x: centerX + 20, y: centerY, vx: 0.01, vy: 340 });
+  const headingBefore = Math.atan2(ball.vy, ball.vx);
+  m.meteors = [{ id: 9001, x: centerX, y: centerY, startX: centerX, startY: centerY - 1, targetX: centerX, targetY: centerY, warnUntil: m.t - 1, landsAt: m.t + 1, r: 14, blast: 58 }];
+  stepMatch(m);
+  assert.equal(m.objects.obstacles.includes(block), false, "obstacle destroyed");
+  assert.notEqual(Math.atan2(ball.vy, ball.vx), headingBefore, "ball knocked off course");
+  ev.nextMeteorAt = 0;
+  for (let step = 0; step < 60 * 14 && m.active.some(running => running.id === "meteor"); step++) {
+    stepMatch(m);
+    if (m.phase === "over") break;
+  }
+  assert.equal(m.active.some(running => running.id === "meteor"), false);
+  assert.equal(m.meteors.length, 0);
+});
+
+test("portals are big enough to catch a ball that would have missed the old size", () => {
+  const m = humanMatch("classic", { targetScore: 21 });
+  while (m.phase === "serve") stepMatch(m);
+  startEvent(m, "portal");
+  stepMatch(m);
+  const [entry, exit] = m.objects.portals;
+  assert.ok(entry.r >= 50);
+  assert.ok(Math.hypot(entry.x - exit.x, entry.y - exit.y) >= 180, "portals keep apart");
+  const ball = m.balls[0];
+  Object.assign(ball, { x: entry.x - 80, y: entry.y + 40, vx: 340, vy: 0 });
+  for (let step = 0; step < 15; step++) stepMatch(m);
+  assert.ok(Math.abs(ball.x - exit.x) < 120, `ball should have jumped to the exit, at ${ball.x}`);
+});
+
+test("horizontal input does nothing in normal pong", () => {
+  const m = humanMatch("classic", { targetScore: 21 });
+  const paddle = m.paddles.find(candidate => candidate.owner === "a");
+  const homeX = paddle.x;
+  applyInput(m, "a", { dirX: 1 });
+  for (let step = 0; step < 30; step++) stepMatch(m);
+  assert.equal(paddle.x, homeX);
+  applyInput(m, "a", { target: 100, targetX: 300 });
+  for (let step = 0; step < 30; step++) stepMatch(m);
+  assert.equal(paddle.x, homeX);
+  assert.ok(paddle.y < ARENA_HEIGHT / 2, "vertical target still works");
+});
+
+test("2D mode moves diagonally at normal speed and stays on its own half", () => {
+  const m = humanMatch("free2d", { targetScore: 21, frequency: "off" });
+  stepMatch(m);
+  const paddle = m.paddles.find(candidate => candidate.owner === "a");
+  const other = m.paddles.find(candidate => candidate.owner === "b");
+  const startX = paddle.x;
+  const startY = paddle.y;
+  applyInput(m, "a", { dirX: 1 });
+  applyInput(m, "a", { dir: 1 });
+  for (let step = 0; step < 6; step++) stepMatch(m);
+  const travelled = Math.hypot(paddle.x - startX, paddle.y - startY);
+  assert.ok(paddle.x > startX && paddle.y > startY);
+  assert.ok(Math.abs(travelled - 460 * 0.1) < 2, `diagonal must not be faster, went ${travelled}`);
+  applyInput(m, "a", { dir: 0 });
+  for (let step = 0; step < 120; step++) stepMatch(m);
+  assert.ok(paddle.x + 12 <= ARENA_WIDTH / 2 - 40, `crossed the net limit at ${paddle.x}`);
+  applyInput(m, "b", { target: 40, targetX: 2 });
+  for (let step = 0; step < 120; step++) stepMatch(m);
+  assert.ok(other.x >= ARENA_WIDTH / 2 + 40, `right paddle crossed at ${other.x}`);
+  assert.ok(other.y < 100, "pointer steers both axes");
+});
+
+test("a forward paddle returns the ball, and the event sends paddles home", () => {
+  const m = humanMatch("classic", { targetScore: 21, frequency: "off" });
+  while (m.phase === "serve") stepMatch(m);
+  startEvent(m, "freeMove");
+  stepMatch(m);
+  const paddle = m.paddles.find(candidate => candidate.owner === "a");
+  const homeX = paddle.x;
+  applyInput(m, "a", { target: 250, targetX: 280 });
+  for (let step = 0; step < 90; step++) stepMatch(m);
+  assert.ok(paddle.x > homeX + 150, `moved forward to ${paddle.x}`);
+  while (m.phase === "serve") stepMatch(m);
+  const ball = m.balls[0];
+  Object.assign(ball, { x: paddle.x + 60, y: paddle.y, vx: -340, vy: 0, lastSide: null });
+  for (let step = 0; step < 12; step++) stepMatch(m);
+  assert.ok(ball.vx > 0, "forward paddle hits the ball");
+  m.active[0].endsAt = m.t;
+  m.balls = [];
+  for (let step = 0; step < 60; step++) stepMatch(m);
+  assert.equal(m.mods.free2d, false);
+  assert.equal(paddle.x, homeX, "slid back to its lane");
+});
+
+test("2D movement predicts correctly under lag and confused controls mirror both axes", () => {
+  const settings = { ...defaultSettings(), mode: "free2d", frequency: "off", targetScore: 21 };
+  const rig = networkRig({ rttMs: 150, jitterMs: 40, settings });
+  rig.run(1000);
+  let frames = 0;
+  rig.run(1500, { gather: () => (frames++ === 0 ? [{ target: 120, targetX: 300 }] : []) });
+  const predicted = rig.client.match.paddles.find(paddle => paddle.owner === "me");
+  const authoritative = rig.server.paddles.find(paddle => paddle.owner === "me");
+  assert.ok(Math.hypot(predicted.x - authoritative.x, predicted.y - authoritative.y) < 1);
+  assert.ok(predicted.x > 200, "moved forward on both sides of the wire");
+  assert.deepEqual(sanitizeInput({ target: 50, targetX: 99999 }), { target: 50, targetX: ARENA_WIDTH });
+  assert.deepEqual(sanitizeInput({ dirX: -1 }), { dirX: -1 });
+  assert.equal(sanitizeInput({ dirX: 5 }), null);
 });

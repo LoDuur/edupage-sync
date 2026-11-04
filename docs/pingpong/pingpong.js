@@ -2,8 +2,8 @@ import { PaintConnection } from "../paint/connection.js?v=2";
 import {
   AI_LEVELS, ARENA_HEIGHT, ARENA_WIDTH, BALL_SIZE, EVENTS, EVENT_GROUPS, EVENT_IDS, FREQUENCIES, INTENSITIES, JOHN_ID, MAX_PLAYERS,
   MODES, PADDLE_WIDTH, SCORE_OPTIONS, STEP_MS, createMatch, defaultSettings, serializeMatch, stepMatch,
-} from "./sim.js?v=2";
-import { MatchPredictor } from "./predict.js?v=2";
+} from "./sim.js?v=3";
+import { MatchPredictor } from "./predict.js?v=3";
 
 const PRODUCTION_SOCKET = "wss://edupage-proxy.loduur.workers.dev";
 const LOCAL_SOCKET = "ws://localhost:8790";
@@ -27,10 +27,12 @@ const JOHN_JOIN_MS = 900;
 const TYPE_MS_PER_CHAR = 26;
 const ATTACK_LINE_MS = 2400;
 const ANNOUNCEMENT_MS = 1900;
-const MAX_PARTICLES = 70;
+const MAX_PARTICLES = 110;
+const SHOCKWAVE_MS = 450;
 const EVENT_LIST_X = 150;
 const SHAKE_STRENGTH = [0, 4, 7, 12];
 const IS_REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const METEOR_COLORS = ["#ffff55", "#ffaa00", "#ff5500", "#a81f1f"];
 const COLOR = { white: "#f1f4ec", dim: "#626b60", faint: "#2a322a", accent: "#72ff91", ice: "#7fd6ff", danger: "#ff6a5e", black: "#000" };
 const FONT_FAMILY = '"Press Start 2P", "Courier New", monospace';
 const VGA_COLORS = ["#ffff55", "#55ffff", "#ff55ff", "#55ff55", "#ff5555", "#5555ff", "#ffffff", "#ffaa00"];
@@ -43,6 +45,7 @@ const JOHN_LINES = {
   trick: ["Šis būs skaisti.", "Mērķēju stūrī.", "Skaties un mācies."],
   idle: ["Cik ilgi vēl?", "Man šodien vēl trīs spēles.", "Tev labas kurpes. Nekas cits.", "Vai bumbai ir jābūt tik lēnai?"],
   team: ["Labs darbs, komanda!", "Es piespēlēju!", "Tagad tava kārta.", "Mēs! Galvenokārt es."],
+  meteor: ["Kurš tur met akmeņus?!", "Tas bija tuvu. Pārāk tuvu.", "Es to speciāli pieļāvu.", "Mana rakete! Mana cepure!"],
   twofa: ["Mans kods vienmēr ir 1234.", "Man atnāca uz pulksteni.", "Nokārtots. Kur tu paliec?"],
   level: ["Labi. Tagad nopietni.", "Uzvilkšu nopietnās zeķes.", "Iesildīšanās beigusies."],
 };
@@ -105,8 +108,11 @@ const state = {
   flash: 0,
   pressedKeys: new Set(),
   sentDir: 0,
+  sentDirX: 0,
   pointerTarget: null,
+  pointerTargetX: null,
   isPointerDirty: false,
+  shockwaves: [],
   lastTargetSentAt: 0,
   queuedActions: [],
   nextPingAt: 0,
@@ -306,8 +312,11 @@ function resetMatchView() {
   state.trails.clear();
   state.countdownShown = 0;
   state.sentDir = 0;
+  state.sentDirX = 0;
   state.pointerTarget = null;
+  state.pointerTargetX = null;
   state.isPointerDirty = false;
+  state.shockwaves = [];
   state.queuedActions = [];
   state.nextPingAt = 0;
   state.pingCount = 0;
@@ -653,7 +662,22 @@ function playEffect([kind, a, b, c]) {
       return;
     case "portal":
       sound.beep(300, 0.2, { slideTo: 1400, type: "sawtooth", gain: 0.03 });
-      addParticles(a, b, 12, COLOR.accent);
+      addParticles(a, b, 30, COLOR.accent);
+      state.shockwaves.push({ x: a, y: b, startedAt: performance.now(), color: COLOR.ice });
+      state.flash = Math.max(state.flash, 0.25);
+      return;
+    case "meteorWarn":
+      sound.sequence([1046, 784], 0.08, { gain: 0.03 });
+      return;
+    case "meteorHit":
+      sound.beep(320, 0.1, { slideTo: 140 });
+      addParticles(a, b, 10, METEOR_COLORS[1]);
+      return;
+    case "meteorImpact":
+      sound.beep(95, 0.34, { slideTo: 35, type: "sawtooth", gain: 0.08 });
+      for (const color of METEOR_COLORS) addParticles(a, b, 10, color);
+      state.shockwaves.push({ x: a, y: b, startedAt: performance.now(), color: METEOR_COLORS[1] });
+      addShake(2);
       return;
     case "puff":
       sound.beep(1200, 0.14, { slideTo: 200, type: "triangle" });
@@ -684,6 +708,12 @@ function playEffect([kind, a, b, c]) {
   }
 }
 
+function currentKeyDirX() {
+  const left = state.pressedKeys.has("left");
+  const right = state.pressedKeys.has("right");
+  return left === right ? 0 : left ? -1 : 1;
+}
+
 function currentKeyDir() {
   const up = state.pressedKeys.has("up");
   const down = state.pressedKeys.has("down");
@@ -693,6 +723,7 @@ function currentKeyDir() {
 function gatherLocalInputs() {
   if (state.lobby?.phase !== "match" || !state.predictor?.match?.paddles.some(paddle => paddle.owner === state.me)) return [];
   const inputs = [];
+  const isFree = Boolean(state.predictor.match.mods.free2d);
   const dir = currentKeyDir();
   if (dir !== state.sentDir) {
     state.sentDir = dir;
@@ -700,11 +731,20 @@ function gatherLocalInputs() {
     state.isPointerDirty = false;
     inputs.push({ dir });
   }
+  const dirX = isFree ? currentKeyDirX() : 0;
+  if (dirX !== state.sentDirX) {
+    state.sentDirX = dirX;
+    state.pointerTarget = null;
+    state.isPointerDirty = false;
+    inputs.push({ dirX });
+  }
   const now = performance.now();
-  if (state.isPointerDirty && dir === 0 && now - state.lastTargetSentAt >= TARGET_SEND_INTERVAL_MS) {
+  if (state.isPointerDirty && dir === 0 && dirX === 0 && now - state.lastTargetSentAt >= TARGET_SEND_INTERVAL_MS) {
     state.lastTargetSentAt = now;
     state.isPointerDirty = false;
-    inputs.push({ target: Math.round(state.pointerTarget) });
+    const input = { target: Math.round(state.pointerTarget) };
+    if (isFree) input.targetX = Math.round(state.pointerTargetX);
+    inputs.push(input);
   }
   inputs.push(...state.queuedActions);
   state.queuedActions = [];
@@ -741,7 +781,7 @@ function enterTwofaDigit(digit) {
   state.twofaEntry = "";
 }
 
-const KEY_DIRECTIONS = { ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down" };
+const KEY_DIRECTIONS = { ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down", ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right" };
 
 function isTypingTarget(target) {
   return target instanceof HTMLInputElement && target.type !== "radio" && target.type !== "checkbox";
@@ -783,6 +823,7 @@ function handlePointer(event) {
   const bounds = canvas.getBoundingClientRect();
   const rawY = (event.clientY - bounds.top) / bounds.height * ARENA_HEIGHT;
   state.pointerTarget = state.view.mods.flip ? ARENA_HEIGHT - rawY : rawY;
+  state.pointerTargetX = (event.clientX - bounds.left) / bounds.width * ARENA_WIDTH;
   state.isPointerDirty = true;
 }
 
@@ -804,8 +845,8 @@ function drawText(text, x, y, size, color = COLOR.white, align = "center") {
   ctx.fillText(text, x, y);
 }
 
-function drawNet() {
-  ctx.fillStyle = COLOR.faint;
+function drawNet(view) {
+  ctx.fillStyle = view.mods.free2d ? COLOR.accent : COLOR.faint;
   for (let y = 10; y < ARENA_HEIGHT; y += 26) ctx.fillRect(ARENA_WIDTH / 2 - 2, y, 4, 14);
 }
 
@@ -831,6 +872,107 @@ function drawHatchedWall(y, height, color) {
   ctx.fillRect(0, y === 0 ? height - 3 : y, ARENA_WIDTH, 3);
 }
 
+function drawPortal(portal, index, now) {
+  const color = index === 0 ? COLOR.accent : COLOR.ice;
+  const spin = index === 0 ? 1 : -1;
+  const pulse = 1 + Math.sin(now / 170) * 0.05;
+  ctx.globalAlpha = 0.16 + Math.abs(Math.sin(now / 300)) * 0.12;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(portal.x, portal.y, portal.r * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = color;
+  for (const [ratio, width, dash] of [[1, 6, 18], [0.7, 4, 12], [0.4, 3, 7]]) {
+    ctx.lineWidth = width;
+    ctx.setLineDash([dash, dash * 0.6]);
+    ctx.lineDashOffset = now / (18 * ratio) * spin;
+    ctx.beginPath();
+    ctx.arc(portal.x, portal.y, portal.r * ratio * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  for (let spark = 0; spark < 8; spark++) {
+    const angle = spark / 8 * Math.PI * 2 + now / 260 * spin;
+    const reach = portal.r * (1.12 + Math.sin(now / 200 + spark) * 0.1);
+    ctx.fillRect(portal.x + Math.cos(angle) * reach - 2, portal.y + Math.sin(angle) * reach - 2, 4, 4);
+  }
+  ctx.fillStyle = COLOR.white;
+  ctx.fillRect(portal.x - 4, portal.y - 4, 8, 8);
+  ctx.lineWidth = 3;
+}
+
+function drawMeteorWarning(meteor, view, now) {
+  const leftMs = meteor.landsAt - view.t;
+  const urgency = Math.max(0, Math.min(1, 1 - leftMs / 1500));
+  const isBright = Math.floor(now / (130 - urgency * 80)) % 2 === 0;
+  ctx.strokeStyle = isBright ? COLOR.danger : METEOR_COLORS[0];
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  ctx.lineDashOffset = -now / 25;
+  ctx.beginPath();
+  ctx.moveTo(meteor.startX, 0);
+  ctx.lineTo(meteor.targetX, meteor.targetY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(meteor.targetX, meteor.targetY, meteor.blast, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 0.08 + urgency * 0.22;
+  ctx.beginPath();
+  ctx.arc(meteor.targetX, meteor.targetY, meteor.blast * urgency, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillRect(meteor.targetX - 12, meteor.targetY - 1, 24, 3);
+  ctx.fillRect(meteor.targetX - 1, meteor.targetY - 12, 3, 24);
+}
+
+function drawMeteorBody(meteor, now) {
+  const dx = meteor.targetX - meteor.startX;
+  const dy = meteor.targetY - meteor.startY;
+  const length = Math.hypot(dx, dy) || 1;
+  for (let segment = 8; segment >= 1; segment--) {
+    const flicker = (segment * 7 + Math.floor(now / 40)) % 5 - 2;
+    const size = Math.max(3, meteor.r * 1.7 - segment * 2.1);
+    ctx.fillStyle = METEOR_COLORS[Math.min(METEOR_COLORS.length - 1, Math.floor(segment / 2.4))];
+    ctx.globalAlpha = 1 - segment * 0.09;
+    ctx.fillRect(meteor.x - dx / length * segment * 13 + flicker * 2 - size / 2, meteor.y - dy / length * segment * 13 - size / 2, size, size);
+  }
+  ctx.globalAlpha = 1;
+  const size = meteor.r * 2;
+  ctx.fillStyle = "#3b2a20";
+  ctx.fillRect(meteor.x - meteor.r, meteor.y - meteor.r, size, size);
+  ctx.fillStyle = METEOR_COLORS[1];
+  ctx.fillRect(meteor.x - meteor.r, meteor.y + meteor.r - 5, size, 5);
+  ctx.fillRect(meteor.x - 4, meteor.y - 4, 7, 7);
+  ctx.strokeStyle = METEOR_COLORS[0];
+  ctx.lineWidth = 2;
+  ctx.strokeRect(meteor.x - meteor.r, meteor.y - meteor.r, size, size);
+}
+
+function drawMeteors(view, now) {
+  for (const meteor of view.meteors) {
+    drawMeteorWarning(meteor, view, now);
+    if (view.t >= meteor.warnUntil) drawMeteorBody(meteor, now);
+  }
+}
+
+function drawShockwaves(now) {
+  state.shockwaves = state.shockwaves.filter(wave => now - wave.startedAt < SHOCKWAVE_MS);
+  for (const wave of state.shockwaves) {
+    const progress = (now - wave.startedAt) / SHOCKWAVE_MS;
+    ctx.globalAlpha = 1 - progress;
+    ctx.strokeStyle = wave.color;
+    ctx.lineWidth = 8 * (1 - progress) + 1;
+    ctx.beginPath();
+    ctx.arc(wave.x, wave.y, 12 + progress * 80, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
 function drawObjects(objects, now) {
   if (!objects) return;
   ctx.lineWidth = 3;
@@ -844,18 +986,7 @@ function drawObjects(objects, now) {
   }
   ctx.fillStyle = COLOR.dim;
   for (const block of objects.obstacles) ctx.fillRect(block.x, block.y, block.w, block.h);
-  objects.portals.forEach((portal, index) => {
-    ctx.strokeStyle = index === 0 ? COLOR.accent : COLOR.ice;
-    ctx.setLineDash([8, 6]);
-    ctx.lineDashOffset = now / 30 * (index === 0 ? 1 : -1);
-    ctx.beginPath();
-    ctx.arc(portal.x, portal.y, portal.r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(portal.x, portal.y, portal.r * 0.45, 0, Math.PI * 2);
-    ctx.stroke();
-  });
+  objects.portals.forEach((portal, index) => drawPortal(portal, index, now));
   if (objects.box) {
     const { x, y, s } = objects.box;
     const isBright = Math.floor(now / 250) % 2 === 0;
@@ -947,7 +1078,7 @@ function drawPaddles(view, now) {
     if (paddle.lives !== null) drawHearts(x - 8, top - 24, paddle.lives);
     if (paddle.challenge) drawText("2FA", x + PADDLE_WIDTH / 2, top - (paddle.john ? 24 : 12), 8, COLOR.ice);
     else if (isBoss) drawText("BOSS", x - 18, top - 8, 9, COLOR.danger, "right");
-    else if (paddle.john) drawText(joinAge < 3000 ? "JOHN PONG" : "JOHN", x + PADDLE_WIDTH / 2, top - 22, 8, COLOR.dim);
+    else if (paddle.john) drawText(joinAge < 3000 ? "JOHN PONG" : "JOHN", Math.max(42, Math.min(ARENA_WIDTH - 42, x + PADDLE_WIDTH / 2)), top - 22, 8, COLOR.dim);
     else if (isAi) drawText("ATVIENOTS", x + PADDLE_WIDTH / 2, top - 12, 8, COLOR.dim);
     if (king === side) drawCrown(x + PADDLE_WIDTH / 2, top - (paddle.john ? 34 : 14));
   }
@@ -1338,6 +1469,7 @@ function drawStatusLines(view) {
   if (side >= 0 && view.mods.invert[side]) lines.push(["VADĪBA APGRIEZTA", COLOR.accent]);
   if (side >= 0 && view.mods.frozen[side]) lines.push(["TU ESI SASALIS", COLOR.ice]);
   if (view.mods.suddenDeath) lines.push(["NĀKAMAIS PUNKTS UZVAR", COLOR.danger]);
+  if (side >= 0 && view.mods.free2d) lines.push([IS_COARSE_POINTER ? "VELC RAKETI AR PIRKSTU" : "BRĪVI: W A S D · BULTAS · PELE", COLOR.accent]);
   if (view.rules.length) lines.push([view.rules.map(id => RULE_LABELS[id]).join(" + ").toLocaleUpperCase("lv"), COLOR.dim]);
   if (state.lobby?.settings.mode === "johnChallenge") lines.push([`${view.johnLevel + 1}. LĪMENIS: ${JOHN_LEVEL_NAMES[Object.keys(JOHN_LEVEL_NAMES)[view.johnLevel]].toLocaleUpperCase("lv")}`, COLOR.dim]);
   if (view.t < view.slowUntil) lines.push(["BUMBA PALĒNINĀTA", COLOR.ice]);
@@ -1354,7 +1486,7 @@ function drawServeCountdown(view) {
   drawText(String(seconds), ARENA_WIDTH / 2, ARENA_HEIGHT / 2, 60, COLOR.white);
   const side = myTeam();
   drawText(side < 0 ? "TU SKATIES" : side === 0 ? "TU ESI PA KREISI" : "TU ESI PA LABI", ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 58, 11, COLOR.accent);
-  drawText("W / S · ↑ / ↓ · PELE", ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 82, 9, COLOR.dim);
+  drawText(view.mods.free2d ? "W A S D · BULTAS · PELE" : "W / S · ↑ / ↓ · PELE", ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 82, 9, COLOR.dim);
 }
 
 function announcementProgress(now) {
@@ -1434,7 +1566,7 @@ function drawFrame(view, now, deltaMs, { hasHud }) {
     ctx.translate(0, ARENA_HEIGHT);
     ctx.scale(1, -1);
   }
-  drawNet();
+  drawNet(view);
   drawGravityHint(view, now);
   drawWalls(view);
   ctx.restore();
@@ -1449,6 +1581,8 @@ function drawFrame(view, now, deltaMs, { hasHud }) {
   drawBoss(view, now);
   drawPaddles(view, now);
   drawBalls(view, now);
+  drawMeteors(view, now);
+  drawShockwaves(now);
   updateAndDrawParticles(deltaMs);
   drawBlackout(view);
   drawLowRes(view, now);

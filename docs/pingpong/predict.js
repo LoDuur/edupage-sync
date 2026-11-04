@@ -1,4 +1,4 @@
-import { AUTHORITATIVE_EFFECTS, STEP_MS, applyInput, restoreMatch, serializeMatch, stepMatch } from "./sim.js?v=2";
+import { AUTHORITATIVE_EFFECTS, STEP_MS, applyInput, restoreMatch, serializeMatch, stepMatch } from "./sim.js?v=3";
 
 const LEAD_MARGIN_MS = 45;
 const DEFAULT_RTT_MS = 120;
