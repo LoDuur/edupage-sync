@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<title>Ping Pong</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='black'/><rect x='10' y='30' width='10' height='40' fill='white'/><rect x='80' y='30' width='10' height='40' fill='white'/><rect x='46' y='46' width='10' height='10' fill='white'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap&subset=latin-ext">
+<link rel="stylesheet" href="pingpong.css?v=1">
+<script type="module" src="pingpong.js?v=1"></script>
+</head>
+<body data-screen="menu">
+
+<div id="stage" aria-hidden="true"><canvas id="arena"></canvas></div>
+
+<header id="bar">
+  <button class="ghost-button" id="exit" type="button">◄ Iziet</button>
+  <span id="bar-code"></span>
+  <span class="spacer"></span>
+  <span id="status" role="status"></span>
+  <button class="ghost-button" id="mute" type="button" aria-pressed="false">Skaņa: jā</button>
+</header>
+
+<main id="menu" class="screen">
+  <h1 class="logo">Ping<br>Pong</h1>
+  <p class="tagline">Neprognozējams arkādes Pong visai klasei</p>
+  <form id="menu-form" class="menu-card" autocomplete="off">
+    <label class="field">
+      <span>Tavs vārds</span>
+      <input id="name" maxlength="16" required spellcheck="false" placeholder="Vārds">
+    </label>
+    <button class="button primary" id="create" type="button">Izveidot istabu</button>
+    <div class="divider"><span>vai</span></div>
+    <label class="field">
+      <span>Istabas kods</span>
+      <input id="code" maxlength="5" spellcheck="false" autocapitalize="characters" placeholder="ABCDE">
+    </label>
+    <button class="button" id="join" type="submit">Pievienoties</button>
+    <p class="message" id="menu-message" role="alert"></p>
+  </form>
+  <p class="hint">Vadība: W / S, ↑ / ↓, pele vai skāriens</p>
+</main>
+
+<main id="lobby" class="screen" hidden>
+  <section class="panel lobby-side">
+    <h2>Istabas kods</h2>
+    <button class="code-button" id="copy-code" type="button" title="Kopēt uzaicinājuma saiti"><span id="lobby-code">-----</span><small id="copy-note">Klikšķini, lai kopētu saiti</small></button>
+    <h2>Spēlētāji <span id="player-count"></span></h2>
+    <ul class="players" id="players"></ul>
+    <button class="button primary" id="start" type="button">Sākt spēli</button>
+    <p class="message" id="lobby-message" role="status"></p>
+  </section>
+  <section class="panel lobby-settings">
+    <h2>Iestatījumi <small id="settings-owner"></small></h2>
+    <fieldset id="settings-form">
+      <div class="setting"><span class="setting-label">Režīms</span><div class="modes" id="modes"></div><p class="setting-info" id="mode-info"></p></div>
+      <div class="setting"><span class="setting-label">Punkti līdz uzvarai</span><div class="segments" id="target-score"></div></div>
+      <div class="setting-block" id="event-settings">
+        <div class="setting"><span class="setting-label">Notikumu biežums</span><div class="segments" id="frequency"></div></div>
+        <div class="setting"><span class="setting-label">Notikumu stiprums</span><div class="segments" id="intensity"></div></div>
+        <label class="toggle"><input type="checkbox" id="chaotic"><span>Trakais režīms <small>Var notikt gandrīz viss, ļoti bieži</small></span></label>
+        <label class="toggle"><input type="checkbox" id="ai-enabled"><span>AI izaicinātāji <small>Reizēm spēlē iesaistās AI rakete</small></span></label>
+      </div>
+      <div class="setting"><span class="setting-label">AI grūtība</span><div class="segments" id="ai-difficulty"></div></div>
+      <details class="events-panel" id="events-panel">
+        <summary>Atļautie notikumi <span id="event-count"></span></summary>
+        <div id="event-groups"></div>
+      </details>
+    </fieldset>
+  </section>
+</main>
+
+<div id="overlay" class="overlay" hidden>
+  <div class="overlay-card">
+    <p class="overlay-kicker" id="overlay-kicker"></p>
+    <h2 id="overlay-title"></h2>
+    <p class="overlay-score" id="overlay-score"></p>
+    <p class="overlay-detail" id="overlay-detail"></p>
+    <div class="overlay-actions" id="overlay-actions">
+      <button class="button primary" id="rematch" type="button">Vēlreiz</button>
+      <button class="button" id="to-lobby" type="button">Uz istabu</button>
+    </div>
+  </div>
+</div>
+
+<div id="crt" aria-hidden="true"></div>
+</body>
+</html>

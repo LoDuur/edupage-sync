@@ -20,3 +20,11 @@ class_name = "PaintRoom"
 [[migrations]]
 tag = "paint-v1"
 new_sqlite_classes = ["PaintRoom"]
+
+[[durable_objects.bindings]]
+name = "PINGPONG"
+class_name = "PingPongLobby"
+
+[[migrations]]
+tag = "pingpong-v1"
+new_sqlite_classes = ["PingPongLobby"]
