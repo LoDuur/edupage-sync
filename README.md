@@ -70,6 +70,16 @@ What is sent (as a rendered image + one-line caption with the website link):
 
 The timetable console has `doom` (and `games`): DOOM shareware v1.9 runs in js-dos v8 (emulator from v8.js-dos.com, CORS-enabled) inside the console panel itself (an isolated iframe appended to the console output, so the timetable stays visible); the bundle `docs/games/doom.jsdos` was built from the official `doom19s.zip` shareware release (DOOM1.WAD 4,196,020 bytes) with a `.jsdos/dosbox.conf` autoexec. Only redistributable shareware files are included. Close with Ctrl+Q.
 
+## Ping Pong
+
+The console command `PingPong` (also `pingpong`, `pong`; `pingpong <code>` joins directly) opens `docs/pingpong/` in a full-screen iframe over the timetable, so leaving it restores the page and console exactly as they were. One player creates a lobby and shares its 5-character code or invite link; up to 8 players split into two teams, and the host picks the mode (Klasika, Haoss, Izdzīvošana, Boss cīņa, Turnīrs), score, event frequency and strength, AI difficulty and which of the 26 events can happen.
+
+The match runs on the server. `docs/pingpong/sim.js` is the only copy of the rules: a pure module with no DOM, bundled into the Worker and also imported by the page for its event names and constants. `/pingpong/create` and `/pingpong/lobbies/<code>` upgrade to a WebSocket handled by one `PingPongLobby` Durable Object per code (`proxy/pingpong.js`). It simulates at 60 Hz and sends snapshots about 30 times a second; clients send only input. New modes are one entry in `MODES`, new events one entry in `EVENT_LIST`.
+
+Lobbies live only in memory and use no hibernation, so an open lobby keeps its Durable Object running. A disconnected player has 20 seconds to reconnect while an AI plays their paddle. A lobby closes when its last player leaves, after 60 seconds with nobody connected, or after 15 minutes idle in the lobby screen. A Worker restart ends any running lobby.
+
+Tests: `node --test proxy/pingpong.test.js`. When changing files in `docs/pingpong/`, bump the `?v=` numbers in `index.html` and the imports at the top of `pingpong.js`. Deploy the Worker after changing `sim.js` or `proxy/pingpong.js` (`cd proxy && npx wrangler deploy`; the first deploy runs the `pingpong-v1` migration).
+
 ## Collaborative drawing
 
 The console command `paint [room]` (alias `draw`) opens `docs/paint/`, a shared canvas the whole class draws on in real time. Rooms are separate canvases (`paint fizika`); the default room is `klase`. Joining asks once for a name; there is no access code, only the Worker's origin check.

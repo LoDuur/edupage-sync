@@ -1,8 +1,10 @@
 import { handleSchedule } from "./schedule.js";
 import { handlePaint } from "./paint.js";
 import { handleIde } from "./ide.js";
+import { handlePingPong } from "./pingpong.js";
 
 export { PaintRoom } from "./paint.js";
+export { PingPongLobby } from "./pingpong.js";
 
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
 const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
@@ -94,6 +96,7 @@ export default {
     if (url.pathname.startsWith("/ide/")) return handleIde(request, env, url, cors, env.OPENROUTER_KEY ? MODELS.map(m => ({ id: m.id, label: m.name, provider: "openrouter" })) : []);
     if (url.pathname.startsWith("/schedule/")) return handleSchedule(request, env, url, cors);
     if (url.pathname.startsWith("/paint/")) return handlePaint(request, env, url, ORIGINS);
+    if (url.pathname.startsWith("/pingpong/")) return handlePingPong(request, env, url, ORIGINS);
 
     if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
     if (request.headers.get("X-Proxy-Key") !== env.PROXY_KEY) return new Response("forbidden", { status: 403 });
