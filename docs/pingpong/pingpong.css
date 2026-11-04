@@ -313,11 +313,75 @@ body[data-screen="lobby"] #stage { display: none; }
 .overlay-detail:empty { display: none; }
 .overlay-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
 
+.twofa {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 25;
+  width: min(330px, calc(100vw - 16px));
+  transform: translateX(-50%);
+  padding: 10px 12px;
+  background: #000;
+  border: 3px solid var(--text);
+  text-align: center;
+  font-size: 9px;
+}
+
+.twofa.is-wrong { animation: twofa-shake .24s steps(4); border-color: var(--danger); }
+
+@keyframes twofa-shake {
+  25% { transform: translateX(calc(-50% - 7px)); }
+  75% { transform: translateX(calc(-50% + 7px)); }
+}
+
+.twofa p { margin: 0 0 6px; }
+.twofa-title { color: var(--accent); font-size: 8px; text-transform: uppercase; }
+.twofa-shown { font-size: 18px; letter-spacing: 3px; font-family: var(--pixel), "Segoe UI Symbol", sans-serif; }
+.twofa-entry { color: var(--accent); font-size: 16px; letter-spacing: 6px; }
+.twofa-footer { color: var(--dim); font-size: 7px; margin: 6px 0 0 !important; }
+.twofa-timer { height: 5px; margin-bottom: 8px; background: var(--line); }
+.twofa-timer span { display: block; height: 100%; background: var(--danger); }
+.twofa-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+
+.twofa-keys button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  padding: 7px 0;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.twofa-keys button:hover, .twofa-keys button:active { border-color: var(--accent); }
+
+.ability-button {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 25;
+  font-size: 10px;
+  padding: 10px 12px;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (min-height: 700px) {
+  .twofa-keys { display: none; }
+}
+
+@media (max-height: 480px) {
+  .twofa { bottom: 4px; padding: 6px 8px; }
+  .twofa-title, .twofa-footer { display: none; }
+  .twofa-keys { grid-template-columns: repeat(6, 1fr); }
+  .twofa-keys button { padding: 4px 0; }
+}
+
 @media (max-width: 760px) {
   #lobby { grid-template-columns: minmax(0, 1fr); }
   #stage { inset: 48px 8px 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen, .overlay { animation: none; }
+  .screen, .overlay, .twofa.is-wrong { animation: none; }
 }

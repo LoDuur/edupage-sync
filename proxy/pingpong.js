@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import {
-  MAX_PLAYERS, MODES, STEP_MS, applyInput, assignTeams, createMatch, defaultSettings, forfeitMatch, removeOwner,
-  sanitizeSettings, serializeMatch, setOwnerAi, sideHasHumans, stepMatch,
+  AUTHORITATIVE_EFFECTS, MAX_PLAYERS, MODES, STEP_MS, applyInput, assignTeams, createMatch, defaultSettings, encodeMatchState, forfeitMatch,
+  removeOwner, sanitizeInput, sanitizeSettings, setOwnerAi, sideHasHumans, stepMatch,
 } from "../docs/pingpong/sim.js";
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -13,6 +13,9 @@ const MAX_MESSAGE_CHARS = 4096;
 const MAX_NAME_CHARS = 16;
 const TICK_MS = 33;
 const MAX_CATCHUP_MS = 250;
+const SYNC_INTERVAL_MS = 200;
+const MAX_INPUT_LEAD_STEPS = 60;
+const MAX_QUEUED_INPUTS = 256;
 const SWEEP_MS = 1000;
 const RECONNECT_GRACE_MS = 20000;
 const EMPTY_LOBBY_MS = 60000;
@@ -85,6 +88,9 @@ export class PingPongLobby extends DurableObject {
     this.emptySince = 0;
     this.lastActivityAt = Date.now();
     this.nextPlayerNumber = 1;
+    this.inputQueue = [];
+    this.pendingEffects = [];
+    this.lastSyncAt = 0;
     this.tickTimer = 0;
     this.sweepTimer = 0;
   }
@@ -186,6 +192,7 @@ export class PingPongLobby extends DurableObject {
     if (!player) return;
     switch (message.type) {
       case "input": return this.handleInput(player, message);
+      case "ping": return this.handlePing(socket, message);
       case "settings": return this.handleSettings(player, message);
       case "start": return this.handleStart(player);
       case "toLobby": return this.handleToLobby(player);
@@ -204,6 +211,8 @@ export class PingPongLobby extends DurableObject {
       name: cleanName(message.name) || `Spēlētājs ${this.nextPlayerNumber - 1}`,
       socket,
       goneAt: 0,
+      lastInputSeq: 0,
+      ackedInputSeq: 0,
     };
     this.players.set(player.id, player);
     this.hostId ??= player.id;
@@ -228,9 +237,17 @@ export class PingPongLobby extends DurableObject {
     player.goneAt = 0;
     session.playerId = player.id;
     this.emptySince = 0;
+    this.resetInputTracking(player);
     if (this.match) setOwnerAi(this.match, player.id, null);
     this.welcome(socket, player);
     this.broadcastLobby();
+    if (this.match) this.send(socket, this.syncMessage([]));
+  }
+
+  resetInputTracking(player) {
+    player.lastInputSeq = 0;
+    player.ackedInputSeq = 0;
+    this.inputQueue = this.inputQueue.filter(entry => entry.owner !== player.id);
   }
 
   welcome(socket, player) {
@@ -240,7 +257,48 @@ export class PingPongLobby extends DurableObject {
   }
 
   handleInput(player, message) {
-    if (this.match) applyInput(this.match, player.id, message);
+    if (!this.match || !Number.isInteger(message.q) || !Number.isInteger(message.s) || message.q <= player.lastInputSeq) return;
+    const input = sanitizeInput(message.i);
+    if (!input || this.inputQueue.length >= MAX_QUEUED_INPUTS) return;
+    player.lastInputSeq = message.q;
+    const step = Math.max(this.match.step + 1, Math.min(this.match.step + MAX_INPUT_LEAD_STEPS, message.s));
+    this.inputQueue.push({ owner: player.id, seq: message.q, step, input });
+    const relay = JSON.stringify({ type: "i", o: player.id, q: message.q, s: step, i: input });
+    for (const [socket, session] of this.sockets) if (session.playerId && session.playerId !== player.id) this.send(socket, relay);
+  }
+
+  handlePing(socket, message) {
+    if (!Number.isFinite(message.c)) return;
+    const elapsedMs = this.match ? this.unsimulatedMs + Date.now() - this.lastTickAt : 0;
+    this.send(socket, { type: "pong", c: message.c, s: this.match ? this.match.step + elapsedMs / STEP_MS : 0 });
+  }
+
+  applyDueInputs(nextStep) {
+    this.inputQueue = this.inputQueue.filter(entry => {
+      if (entry.step > nextStep) return true;
+      applyInput(this.match, entry.owner, entry.input);
+      const owner = this.players.get(entry.owner);
+      if (owner) owner.ackedInputSeq = entry.seq;
+      return false;
+    });
+  }
+
+  syncMessage(effects) {
+    const acks = Object.fromEntries([...this.players.values()].map(player => [player.id, player.ackedInputSeq]));
+    return `{"type":"sync","acks":${JSON.stringify(acks)},"effects":${JSON.stringify(effects)},"state":${encodeMatchState(this.match)}}`;
+  }
+
+  broadcastSync() {
+    const effects = this.pendingEffects;
+    this.pendingEffects = [];
+    this.lastSyncAt = Date.now();
+    const message = this.syncMessage(effects);
+    for (const [socket, session] of this.sockets) if (session.playerId) this.send(socket, message);
+  }
+
+  collectEffects() {
+    for (const effect of this.match.fx) if (AUTHORITATIVE_EFFECTS.has(effect[0])) this.pendingEffects.push(effect);
+    this.match.fx.length = 0;
   }
 
   handleSettings(player, message) {
@@ -284,10 +342,15 @@ export class PingPongLobby extends DurableObject {
     this.teams = teams;
     this.phase = "match";
     this.match = createMatch({ settings: this.settings, teams });
+    this.inputQueue = [];
+    this.pendingEffects = [];
+    for (const player of this.players.values()) this.resetInputTracking(player);
     for (const id of teams.flat()) if (!this.players.get(id)?.socket) setOwnerAi(this.match, id, STAND_IN_AI);
     this.lastTickAt = Date.now();
     this.unsimulatedMs = 0;
     this.broadcastLobby();
+    this.collectEffects();
+    this.broadcastSync();
     this.tickTimer = setInterval(() => this.tick(), TICK_MS);
   }
 
@@ -297,20 +360,23 @@ export class PingPongLobby extends DurableObject {
     this.unsimulatedMs = Math.min(MAX_CATCHUP_MS, this.unsimulatedMs + now - this.lastTickAt);
     this.lastTickAt = now;
     while (this.unsimulatedMs >= STEP_MS) {
+      this.applyDueInputs(this.match.step + 1);
       stepMatch(this.match);
       this.unsimulatedMs -= STEP_MS;
     }
-    this.broadcast(serializeMatch(this.match));
-    if (this.match.phase === "over") this.finishMatch();
+    this.collectEffects();
+    const isOver = this.match.phase === "over";
+    if (isOver || this.pendingEffects.length || now - this.lastSyncAt >= SYNC_INTERVAL_MS) this.broadcastSync();
+    if (isOver) this.finishMatch();
   }
 
   finishMatch() {
     clearInterval(this.tickTimer);
-    const { winner, scores, isForfeit } = this.match;
+    const { winner, scores, isForfeit, champion, johnLevel } = this.match;
     const teams = this.teams;
     this.match = null;
-    const summary = { winner, scores, isForfeit, teams, isBoss: this.settings.mode === "boss" };
-    if (!this.bracket) return this.showResults({ ...summary, champion: null });
+    const summary = { winner, scores, isForfeit, teams, johnLevel, isBoss: Boolean(MODES[this.settings.mode].isBossFight) };
+    if (!this.bracket) return this.showResults({ ...summary, champion });
     this.bracket.winners.push(...teams[winner].filter(id => this.players.has(id)));
     this.lastBracketSummary = summary;
     this.startNextBracketMatch();
@@ -396,11 +462,17 @@ export class PingPongLobby extends DurableObject {
   removeFromMatch(id) {
     const team = this.teams.findIndex(ids => ids.includes(id));
     removeOwner(this.match, id);
+    const mode = MODES[this.settings.mode];
+    if (mode.isFreeForAll) {
+      if (!this.match.paddles.some(paddle => paddle.owner !== null)) return this.returnFromAbandonedMatch();
+      if (this.match.phase === "over") this.finishMatch();
+      return;
+    }
     if (team < 0 || sideHasHumans(this.match, team)) return;
     if (this.match.phase === "over") return;
-    if (MODES[this.settings.mode].assignTeams && team === 0) return this.returnFromAbandonedMatch();
+    if (mode.assignTeams && team === 0) return this.returnFromAbandonedMatch();
     forfeitMatch(this.match, 1 - team);
-    this.broadcast(serializeMatch(this.match));
+    this.broadcastSync();
     this.finishMatch();
   }
 

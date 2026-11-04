@@ -7,6 +7,10 @@ export const BALL_SIZE = 12;
 export const STEP_MS = 1000 / 60;
 export const MAX_PLAYERS = 8;
 export const SCORE_OPTIONS = [3, 5, 7, 11, 15, 21];
+export const JOHN_ID = "john";
+export const AUTHORITATIVE_EFFECTS = new Set(["score", "event", "bonus", "boss", "taunt", "john", "bossIntro", "bossDown", "drop", "level", "rules", "heart", "out"]);
+
+const NEVER = 1e12;
 
 const PADDLE_INSET = 26;
 const LANE_GAP = 30;
@@ -28,12 +32,38 @@ const BOX_SIZE = 28;
 const OBJECT_MARGIN_X = 170;
 const OBJECT_MARGIN_Y = 60;
 const OBJECT_CENTER_CLEARANCE = 70;
+const SPAM_FALL_ACCEL = 900;
+const SPAM_MAX_FALL = 420;
+const SPAM_LIFT_PX = 24;
+const SPAM_MIN_PRESS_MS = 50;
+const TWOFA_AI_SOLVE_MS = [1200, 3600];
+const TAUNT_COOLDOWN_MS = 4500;
+const IDLE_TAUNT_MS = [14000, 26000];
+const MOOD_MS = 6000;
+const LATE_LUNGE_S = 0.38;
+const WRONG_WAY_MS = 320;
+const BOSS_INTRO_MS = 4200;
+const BOSS_DEFEAT_MS = 3400;
+const BOSS_LEAVE_MS = 2200;
+const BOSS_EVENT_MAX_MS = 75000;
+const BOSS_EVENT_MIN_MATCH_MS = 40000;
+const BOSS_RELAUNCH_MS = 1000;
+const BOSS_HIT_INVULNERABLE_MS = 500;
+const BOSS_MATCH_POINT_MARGIN = 1;
+const RUSH_BOSS_X = 610;
+const RUSH_LIVES = 5;
+const MAX_HAZARDS = 48;
+const STUN_MS = 650;
+const ABILITY_COOLDOWN_MS = 9000;
+const RULE_INTERVAL_MS = 15000;
+const LAST_STANDING_LIVES = 3;
+const LAST_STANDING_MIN_PADDLES = 3;
 
 export const AI_LEVELS = {
-  easy: { label: "Viegls", reactMs: 420, errorPx: 60, speed: 0.55, predicts: false, seesFakes: false },
-  normal: { label: "Normāls", reactMs: 200, errorPx: 30, speed: 0.8, predicts: false, seesFakes: false },
-  hard: { label: "Grūts", reactMs: 90, errorPx: 16, speed: 1, predicts: true, seesFakes: false },
-  unfair: { label: "Negodīgs", reactMs: 16, errorPx: 3, speed: 1.7, predicts: true, seesFakes: true },
+  easy: { label: "Viegls", reactMs: 420, errorPx: 60, speed: 0.55, predicts: false, seesFakes: false, blunderChance: 0.18, trickChance: 0, lateChance: 0, spamMs: 240 },
+  normal: { label: "Normāls", reactMs: 200, errorPx: 30, speed: 0.8, predicts: false, seesFakes: false, blunderChance: 0.07, trickChance: 0.1, lateChance: 0.1, spamMs: 150 },
+  hard: { label: "Grūts", reactMs: 90, errorPx: 16, speed: 1, predicts: true, seesFakes: false, blunderChance: 0.02, trickChance: 0.3, lateChance: 0.2, spamMs: 100 },
+  unfair: { label: "Negodīgs", reactMs: 16, errorPx: 3, speed: 1.7, predicts: true, seesFakes: true, blunderChance: 0, trickChance: 0.5, lateChance: 0.3, spamMs: 60 },
 };
 const AI_LADDER = Object.keys(AI_LEVELS);
 
@@ -65,7 +95,8 @@ function spawnPosition(m, isClear) {
     const x = randomBetween(m, OBJECT_MARGIN_X, ARENA_WIDTH - OBJECT_MARGIN_X);
     const y = randomBetween(m, OBJECT_MARGIN_Y, ARENA_HEIGHT - OBJECT_MARGIN_Y);
     const isNearCenter = Math.hypot(x - ARENA_WIDTH / 2, y - ARENA_HEIGHT / 2) < OBJECT_CENTER_CLEARANCE;
-    if (!isNearCenter && isClear(x, y)) return { x, y };
+    const isNearBoss = m.boss && Math.abs(x - m.boss.x) < 110;
+    if (!isNearCenter && !isNearBoss && isClear(x, y)) return { x, y };
   }
   return null;
 }
@@ -152,7 +183,7 @@ const EVENT_LIST = [
     },
   },
   {
-    id: "ai", group: "player", label: "AI izaicinātājs", info: "Spēlē uz brīdi iesaistās AI rakete", weight: 6, duration: 14000,
+    id: "ai", group: "player", label: "John Pong ielaužas", info: "Spēlē uz brīdi iesaistās John Pong", weight: 6, duration: 14000,
     canStart: m => m.settings.aiEnabled,
     start(m, ev) {
       const weakerSide = m.scores[0] === m.scores[1] ? randomSide(m) : (m.scores[0] < m.scores[1] ? 0 : 1);
@@ -171,7 +202,7 @@ const EVENT_LIST = [
     mod(mods, ev) { eachSide(ev, side => { mods.paddleScale[side] *= 1 + 0.7 * ev.strength; }); },
   },
   {
-    id: "confusion", group: "player", label: "Apjukums", info: "Vadība apgriežas otrādi", weight: 8, duration: 8000, slot: "invert",
+    id: "confusion", group: "player", label: "Apjukums", info: "Vadība apgriežas otrādi", weight: 8, duration: 8000, slot: "control",
     mod(mods, ev) { eachSide(ev, side => { mods.invert[side] = true; }); },
   },
   {
@@ -179,7 +210,7 @@ const EVENT_LIST = [
     mod(mods, ev) { eachSide(ev, side => { mods.paddleSpeed[side] *= 1 + 0.7 * ev.strength; }); },
   },
   {
-    id: "frozen", group: "player", label: "Sasalis!", info: "Vienas puses raketes uz brīdi sasalst", weight: 7, duration: strength => 2200 * strength, slot: "frozen",
+    id: "frozen", group: "player", label: "Sasalis!", info: "Vienas puses raketes uz brīdi sasalst", weight: 7, duration: strength => 2200 * strength, slot: "control",
     start(m, ev) { ev.side ??= randomSide(m); },
     mod(mods, ev) { mods.frozen[ev.side] = true; },
   },
@@ -266,14 +297,516 @@ const EVENT_LIST = [
     },
   },
   {
-    id: "suddenDeath", group: "wild", label: "Pēkšņā nāve", info: "Nākamais punkts uzvar, un arēna kļūst arvien trakāka", weight: 2, duration: Infinity, shake: 3,
+    id: "suddenDeath", group: "wild", label: "Pēkšņā nāve", info: "Nākamais punkts uzvar, un arēna kļūst arvien trakāka", weight: 2, duration: NEVER, shake: 3,
     canStart: m => Math.max(...m.scores) >= m.target - 2,
     mod(mods, ev, m) {
       mods.ballSpeed *= Math.min(1.8, 1 + (m.t - ev.startedAt) / 25000);
       mods.suddenDeath = true;
     },
   },
+  {
+    id: "bassBoost", group: "wild", label: "Bass Boost", info: "Skaļums 1000%. Skaņa atgriežas, kad notikums beidzas", weight: 6, duration: 8000, shake: 2,
+    mod(mods) { mods.bassBoost = true; },
+  },
+  {
+    id: "twofa", group: "player", label: "2FA", info: "Ievadi kodu, citādi rakete nekustas", weight: 6, duration: 7500, slot: "control",
+    start(m) {
+      for (const paddle of m.paddles) paddle.challenge = makeChallenge(m);
+    },
+    tick(m, ev) {
+      if (!m.paddles.some(paddle => paddle.challenge)) ev.endsAt = m.t;
+    },
+    mod(mods) { mods.twofa = true; },
+    end(m) {
+      for (const paddle of m.paddles) paddle.challenge = null;
+    },
+  },
+  {
+    id: "spam", group: "player", label: "Spam!", info: "Raketes krīt. Spied atstarpi, peli vai ekrānu, lai tās noturētu", weight: 7, duration: 8000, slot: "control", avoids: ["flip"],
+    mod(mods) { mods.spam = true; },
+    end(m) {
+      for (const paddle of m.paddles) paddle.fall = 0;
+    },
+  },
+  {
+    id: "kingTerry", group: "wild", label: "King Terry Davis", info: "Boss pārņem arēnu. Kopīgi sitiet viņu ar bumbu un izvairieties no uzbrukumiem", weight: 2, duration: NEVER, shake: 3,
+    canStart: m => m.t >= BOSS_EVENT_MIN_MATCH_MS && !m.boss && !MODES[m.settings.mode].blocksBossEvent && !m.mods.suddenDeath && Math.max(...m.scores) < m.target - BOSS_MATCH_POINT_MARGIN,
+    start(m) {
+      for (const running of [...m.active]) endEvent(m, running);
+      startBoss(m, "terry");
+    },
+    end(m) { clearBoss(m); },
+  },
 ];
+
+const TWOFA_WORDS = ["bumba", "rakete", "trijstūris"];
+
+function randomDigits(m, count) {
+  let digits = "";
+  for (let index = 0; index < count; index++) digits += Math.floor(m.rng() * 10);
+  return digits;
+}
+
+function makeChallenge(m) {
+  const aiSolveAt = m.t + randomBetween(m, TWOFA_AI_SOLVE_MS[0], TWOFA_AI_SOLVE_MS[1]);
+  const roll = m.rng();
+  if (roll < 0.35) {
+    const shown = randomDigits(m, 4);
+    return { kind: "code", shown, answer: shown, aiSolveAt, wrong: 0 };
+  }
+  if (roll < 0.6) {
+    const shown = randomDigits(m, 3);
+    return { kind: "reverse", shown, answer: [...shown].reverse().join(""), aiSolveAt, wrong: 0 };
+  }
+  if (roll < 0.8) {
+    const first = 2 + Math.floor(m.rng() * 8);
+    const second = 2 + Math.floor(m.rng() * 8);
+    return { kind: "math", shown: `${first} + ${second}`, answer: String(first + second), aiSolveAt, wrong: 0 };
+  }
+  const options = [...TWOFA_WORDS];
+  for (let index = options.length - 1; index > 0; index--) {
+    const swapWith = Math.floor(m.rng() * (index + 1));
+    [options[index], options[swapWith]] = [options[swapWith], options[index]];
+  }
+  const picked = Math.floor(m.rng() * options.length);
+  return { kind: "pick", shown: options[picked], options, answer: String(picked + 1), aiSolveAt, wrong: 0 };
+}
+
+function answerChallenge(m, paddle, answer) {
+  if (!paddle.challenge) return;
+  if (answer === paddle.challenge.answer) {
+    paddle.challenge = null;
+    m.fx.push(["twofaOk", paddle.id]);
+    return;
+  }
+  paddle.challenge.wrong++;
+  m.fx.push(["twofaBad", paddle.id]);
+}
+
+const CHIP_COUNT = 8;
+
+function spawnHazard(m, boss, x, y, vx, vy, kind, r = 8) {
+  if (boss.hazards.length >= MAX_HAZARDS) return;
+  boss.hazards.push({ id: ++m.nextId, x, y, vx, vy, r, kind, chip: Math.floor(m.rng() * CHIP_COUNT) });
+}
+
+function aimAtRandomPaddle(m, boss, speed, spread = 30) {
+  const targets = m.paddles;
+  const target = targets[Math.floor(m.rng() * targets.length)];
+  if (!target) return null;
+  const dx = target.x - boss.x;
+  const dy = target.y + randomBetween(m, -spread, spread) - boss.y;
+  const distance = Math.hypot(dx, dy) || 1;
+  return { vx: dx / distance * speed, vy: dy / distance * speed };
+}
+
+function isPastAttackInterval(atk, m, intervalMs) {
+  if (m.t < atk.nextShotAt) return false;
+  atk.nextShotAt = m.t + intervalMs;
+  return true;
+}
+
+function fireAimedShot(m, boss, atk, intervalMs, speed, kind) {
+  if (!isPastAttackInterval(atk, m, intervalMs)) return;
+  const velocity = aimAtRandomPaddle(m, boss, speed);
+  if (velocity) spawnHazard(m, boss, boss.x, boss.y, velocity.vx, velocity.vy, kind);
+}
+
+function fireRing(m, boss, atk, count, speed) {
+  atk.spin = (atk.spin ?? 0) + 0.55;
+  const gapStart = Math.floor(m.rng() * count);
+  for (let index = 0; index < count; index++) {
+    const distanceFromGap = (index - gapStart + count) % count;
+    if (distanceFromGap < 3) continue;
+    const angle = atk.spin + index / count * Math.PI * 2;
+    spawnHazard(m, boss, boss.x, boss.y, Math.cos(angle) * speed, Math.sin(angle) * speed, "ring", 7);
+  }
+}
+
+function removeBossBalls(m) {
+  const hasOwnRealBall = m.balls.some(ball => !ball.fromBoss && !ball.isFake);
+  let hasKeeper = hasOwnRealBall;
+  m.balls = m.balls.filter(ball => {
+    if (!ball.fromBoss) return true;
+    if (ball.isFake || hasKeeper) return false;
+    hasKeeper = true;
+    ball.fromBoss = false;
+    ball.isExtra = false;
+    return true;
+  });
+}
+
+function launchFromBoss(m, boss, options) {
+  const ball = launchBall(m, m.rush ? 0 : randomSide(m), { ...options });
+  ball.x = boss.x;
+  ball.y = boss.y;
+  ball.fromBoss = true;
+  return ball;
+}
+
+const ATTACKS = {
+  holyC: {
+    ms: 4600,
+    tick(m, boss, atk) { fireAimedShot(m, boss, atk, 480 - boss.stage * 80, 210 + boss.stage * 50, "code"); },
+  },
+  ring0: {
+    ms: 3900,
+    tick(m, boss, atk) {
+      if (isPastAttackInterval(atk, m, 1150 - boss.stage * 170)) fireRing(m, boss, atk, 12 + boss.stage * 2, 150 + boss.stage * 30);
+    },
+  },
+  temple: {
+    ms: 6500,
+    start(m, boss) { m.objects.obstacles = spawnObstacles(m, 2 + boss.stage); },
+    end(m) { m.objects.obstacles = []; },
+  },
+  redSea: {
+    ms: 6400,
+    mod(mods, m, boss, atk) {
+      const elapsed = m.t - atk.startedAt;
+      const fade = Math.max(0, Math.min(1, elapsed / 900, (atk.endsAt - m.t) / 700));
+      const corridor = 250 - boss.stage * 20;
+      const center = ARENA_HEIGHT / 2 + Math.sin(elapsed / 900 + atk.seed * 6) * (ARENA_HEIGHT - corridor) * 0.32;
+      mods.top = (center - corridor / 2) * fade;
+      mods.bottom = ARENA_HEIGHT - (ARENA_HEIGHT - center - corridor / 2) * fade;
+      mods.redSea = true;
+    },
+  },
+  sixteen: {
+    ms: 6000,
+    start(m, boss) {
+      for (let index = 0; index < boss.stage; index++) launchFromBoss(m, boss, { isFake: true });
+      if (boss.stage >= 3) launchFromBoss(m, boss, { isExtra: true });
+    },
+    mod(mods) { mods.palette = true; },
+    end(m) { removeBossBalls(m); },
+  },
+  oracle: {
+    ms: 4200,
+    start(m, boss, atk) {
+      const ball = m.balls.find(candidate => !candidate.isFake);
+      if (!ball) return;
+      ball.isGrabbed = true;
+      atk.ballId = ball.id;
+    },
+    tick(m, boss, atk) {
+      const ball = m.balls.find(candidate => candidate.id === atk.ballId);
+      if (!ball || !ball.isGrabbed) return;
+      if (m.t - atk.startedAt < 1300) {
+        ball.x += (boss.x - ball.x) * 0.09;
+        ball.y += (boss.y - ball.y) * 0.09;
+        return;
+      }
+      const velocity = aimAtRandomPaddle(m, boss, Math.min(BALL_MAX_SPEED, 420 + boss.stage * 70), 40);
+      ball.isGrabbed = false;
+      ball.lastSide = null;
+      if (velocity) {
+        ball.vx = velocity.vx;
+        ball.vy = velocity.vy;
+        keepHorizontal(ball);
+      }
+      m.fx.push(["oracle", Math.round(ball.x), Math.round(ball.y)]);
+    },
+    end(m) { releaseGrabbedBalls(m); },
+  },
+  lowres: {
+    ms: 5400,
+    mod(mods, m, boss) {
+      mods.lowRes = true;
+      if (boss.stage >= 3) mods.ghost = true;
+    },
+  },
+  rockfall: {
+    ms: 5000,
+    tick(m, boss, atk) {
+      if (!isPastAttackInterval(atk, m, 460 - boss.stage * 70)) return;
+      const target = m.paddles[Math.floor(m.rng() * m.paddles.length)];
+      const x = target ? target.x + randomBetween(m, -40, 40) : randomBetween(m, 60, ARENA_WIDTH - 60);
+      spawnHazard(m, boss, Math.max(20, Math.min(ARENA_WIDTH - 20, x)), -10, 0, 230 + boss.stage * 40, "rock", 11);
+    },
+  },
+  pillars: {
+    ms: 6000,
+    start(m, boss) { m.objects.obstacles = spawnObstacles(m, 3 + boss.stage); },
+    end(m) { m.objects.obstacles = []; },
+  },
+  stomp: {
+    ms: 3600,
+    start(m) {
+      m.fx.push(["stomp"]);
+      for (const ball of m.balls) {
+        rotateVelocity(ball, randomBetween(m, -0.7, 0.7));
+        keepHorizontal(ball);
+      }
+    },
+    mod(mods, m, boss, atk) {
+      const reach = 90 * Math.max(0, Math.min(1, (m.t - atk.startedAt) / 500, (atk.endsAt - m.t) / 500));
+      mods.top = reach;
+      mods.bottom = ARENA_HEIGHT - reach;
+    },
+  },
+  tauntVolley: {
+    ms: 4400,
+    tick(m, boss, atk) { fireAimedShot(m, boss, atk, 520 - boss.stage * 80, 230 + boss.stage * 40, "word"); },
+  },
+  tripleServe: {
+    ms: 6500,
+    start(m, boss) {
+      for (let index = 0; index < 2; index++) launchFromBoss(m, boss, { isExtra: true });
+    },
+    end(m) { removeBossBalls(m); },
+  },
+  mirror: {
+    ms: 4200,
+    mod(mods) { mods.invert = [true, true]; },
+  },
+};
+
+const BOSSES = {
+  golem: { hp: 6, w: 76, h: 92, hover: 60, restMs: 2600, attacks: [["rockfall", 1], ["pillars", 1], ["stomp", 2]] },
+  johnPrime: { hp: 8, w: 40, h: 130, hover: 130, restMs: 2200, attacks: [["tauntVolley", 1], ["tripleServe", 1], ["mirror", 2], ["ring0", 2]] },
+  terry: { hp: 12, w: 64, h: 84, hover: 90, restMs: 1900, attacks: [["holyC", 1], ["ring0", 1], ["temple", 1], ["redSea", 2], ["sixteen", 2], ["oracle", 3], ["lowres", 3]] },
+};
+
+const RUSH_ORDER = ["golem", "johnPrime", "terry"];
+
+function startBoss(m, id) {
+  const def = BOSSES[id];
+  m.balls = [];
+  m.objects = { bumpers: [], obstacles: [], portals: [], box: null };
+  m.boss = {
+    id, hp: def.hp, maxHp: def.hp, phase: "intro", phaseEndsAt: m.t + BOSS_INTRO_MS, stage: 1,
+    x: m.rush ? RUSH_BOSS_X : ARENA_WIDTH / 2, y: ARENA_HEIGHT / 2, w: def.w, h: def.h, startedAt: m.t,
+    attack: null, lastAttack: null, seen: [], nextAttackAt: 0, relaunchAt: 0, invulnerableUntil: 0, hazards: [], tally: [0, 0],
+  };
+  m.fx.push(["bossIntro", id]);
+}
+
+function releaseGrabbedBalls(m) {
+  for (const ball of m.balls) ball.isGrabbed = false;
+}
+
+function endBossAttack(m, boss) {
+  if (!boss.attack) return;
+  ATTACKS[boss.attack.id].end?.(m, boss, boss.attack);
+  boss.attack = null;
+}
+
+function clearBoss(m) {
+  if (!m.boss) return;
+  endBossAttack(m, m.boss);
+  removeBossBalls(m);
+  releaseGrabbedBalls(m);
+  m.objects.obstacles = [];
+  m.boss = null;
+}
+
+function pickBossAttack(m, boss) {
+  const available = BOSSES[boss.id].attacks.filter(([id, stage]) => stage <= boss.stage && id !== boss.lastAttack).map(([id]) => id);
+  const unseen = available.filter(id => !boss.seen.includes(id));
+  const pool = unseen.length ? unseen : available;
+  return pool[Math.floor(m.rng() * pool.length)];
+}
+
+function startBossAttack(m, boss) {
+  const id = pickBossAttack(m, boss);
+  const def = ATTACKS[id];
+  const atk = { id, startedAt: m.t, endsAt: m.t + def.ms, nextShotAt: m.t + 300, seed: m.rng(), word: Math.floor(m.rng() * 16) };
+  boss.attack = atk;
+  boss.lastAttack = id;
+  if (!boss.seen.includes(id)) boss.seen.push(id);
+  def.start?.(m, boss, atk);
+}
+
+function launchBossServe(m, boss) {
+  const ball = launchBall(m, m.rush ? 0 : randomSide(m));
+  ball.x = boss.x;
+  ball.y = boss.y;
+}
+
+function updateHazards(m, boss, stepMs) {
+  const seconds = stepMs / 1000;
+  boss.hazards = boss.hazards.filter(hazard => {
+    hazard.x += hazard.vx * seconds;
+    hazard.y += hazard.vy * seconds;
+    if (hazard.x < -30 || hazard.x > ARENA_WIDTH + 30 || hazard.y < -40 || hazard.y > ARENA_HEIGHT + 30) return false;
+    for (const paddle of m.paddles) {
+      if (m.t < paddle.stunUntil) continue;
+      const isTouching = hazard.x + hazard.r >= paddle.x && hazard.x - hazard.r <= paddle.x + PADDLE_WIDTH &&
+        hazard.y + hazard.r >= paddle.y - paddle.h / 2 && hazard.y - hazard.r <= paddle.y + paddle.h / 2;
+      if (!isTouching) continue;
+      paddle.stunUntil = m.t + STUN_MS;
+      boss.tally[paddle.side]--;
+      m.fx.push(["zap", Math.round(hazard.x), Math.round(hazard.y)]);
+      return false;
+    }
+    return true;
+  });
+}
+
+function beginBossExit(m, boss, phase, durationMs) {
+  endBossAttack(m, boss);
+  boss.phase = phase;
+  boss.phaseEndsAt = m.t + durationMs;
+  boss.hazards = [];
+  m.balls = [];
+  if (phase === "defeat") m.fx.push(["bossDown", boss.id]);
+}
+
+function resolveBoss(m, boss) {
+  if (m.rush) {
+    m.scores[0]++;
+    m.rush.index++;
+    m.boss = null;
+    const next = RUSH_ORDER[m.rush.index];
+    if (next) startBoss(m, next);
+    else finishMatch(m, 0);
+    return;
+  }
+  const [left, right] = boss.tally;
+  const running = m.active.find(ev => ev.id === "kingTerry");
+  if (running) endEvent(m, running);
+  else clearBoss(m);
+  scheduleNextEvent(m);
+  if (left === right) beginServe(m, randomSide(m));
+  else awardPoint(m, left > right ? 0 : 1);
+}
+
+function stepBoss(m, stepMs) {
+  const boss = m.boss;
+  const def = BOSSES[boss.id];
+  if (boss.attack?.id !== "oracle") boss.y = ARENA_HEIGHT / 2 + Math.sin((m.t - boss.startedAt) / 1400) * def.hover;
+  updateHazards(m, boss, stepMs);
+  if (boss.phase === "intro") {
+    if (m.t < boss.phaseEndsAt) return;
+    boss.phase = "fight";
+    boss.nextAttackAt = m.t + 1800;
+    launchBossServe(m, boss);
+    return;
+  }
+  if (boss.phase !== "fight") {
+    if (!m.isPrediction && m.t >= boss.phaseEndsAt) resolveBoss(m, boss);
+    return;
+  }
+  if (!m.isPrediction && !m.rush && m.t >= boss.startedAt + BOSS_EVENT_MAX_MS) return beginBossExit(m, boss, "leave", BOSS_LEAVE_MS);
+  if (!m.balls.some(ball => !ball.isFake) && m.t >= boss.relaunchAt) launchBossServe(m, boss);
+  const atk = boss.attack;
+  if (atk) {
+    ATTACKS[atk.id].tick?.(m, boss, atk, stepMs);
+    if (m.t >= atk.endsAt) {
+      endBossAttack(m, boss);
+      boss.nextAttackAt = m.t + Math.max(800, def.restMs - boss.stage * 300);
+    }
+  } else if (m.t >= boss.nextAttackAt) {
+    startBossAttack(m, boss);
+  }
+}
+
+function collideBoss(m, ball) {
+  const boss = m.boss;
+  if (!boss || boss.phase !== "fight" || ball.isFake) return;
+  const half = BALL_SIZE / 2;
+  const reachX = boss.w / 2 + half;
+  const reachY = boss.h / 2 + half;
+  const dx = ball.x - boss.x;
+  const dy = ball.y - boss.y;
+  if (Math.abs(dx) >= reachX || Math.abs(dy) >= reachY) return;
+  const direction = dx < 0 ? -1 : 1;
+  ball.x = boss.x + direction * reachX;
+  ball.vx = direction * Math.abs(ball.vx);
+  ball.vy += dy * 2;
+  keepHorizontal(ball);
+  if (m.t < boss.invulnerableUntil) return;
+  boss.invulnerableUntil = m.t + BOSS_HIT_INVULNERABLE_MS;
+  m.fx.push(["bossHit", Math.round(ball.x), Math.round(ball.y)]);
+  const creditedSide = ball.lastSide ?? (direction < 0 ? 0 : 1);
+  boss.tally[creditedSide]++;
+  boss.hp = Math.max(m.isPrediction ? 1 : 0, boss.hp - 1);
+  boss.stage = boss.hp / boss.maxHp > 0.66 ? 1 : boss.hp / boss.maxHp > 0.33 ? 2 : 3;
+  if (boss.hp <= 0) beginBossExit(m, boss, "defeat", BOSS_DEFEAT_MS);
+}
+
+function dropBallDuringBoss(m, concedingSide) {
+  const boss = m.boss;
+  boss.tally[concedingSide] -= 2;
+  boss.relaunchAt = m.t + BOSS_RELAUNCH_MS;
+  m.fx.push(["drop", concedingSide]);
+  if (!m.rush) return;
+  m.lives--;
+  m.scores[1]++;
+  if (m.lives <= 0) finishMatch(m, 1);
+}
+
+const ABILITIES = {
+  smash(m, paddle) { paddle.smashUntil = m.t + 5000; },
+  shield(m, paddle) { paddle.shieldUntil = m.t + 3500; },
+  blink(m, paddle) {
+    const threat = threatFor(m, paddle, AI_LEVELS.unfair);
+    if (threat) paddle.y = threat.y;
+  },
+  grow(m, paddle) { paddle.growUntil = m.t + 5000; },
+  slow(m) { m.slowUntil = m.t + 2500; },
+};
+export const ABILITY_IDS = Object.keys(ABILITIES);
+
+function rollAbility(m) {
+  return ABILITY_IDS[Math.floor(m.rng() * ABILITY_IDS.length)];
+}
+
+function useAbility(m, paddle) {
+  if (!paddle.ability || m.t < paddle.abilityReadyAt) return;
+  ABILITIES[paddle.ability](m, paddle);
+  m.fx.push(["ability", paddle.id, paddle.ability]);
+  paddle.ability = rollAbility(m);
+  paddle.abilityReadyAt = m.t + ABILITY_COOLDOWN_MS;
+}
+
+const RULES = {
+  fastBall(mods) { mods.ballSpeed *= 1.45; },
+  slowBall(mods) { mods.ballSpeed *= 0.7; },
+  tinyPaddles(mods) { mods.paddleScale = mods.paddleScale.map(scale => scale * 0.6); },
+  giantPaddles(mods) { mods.paddleScale = mods.paddleScale.map(scale => scale * 1.5); },
+  moonGravity(mods) { mods.gravity += 260; },
+  curveBall(mods) { mods.curve = Math.max(mods.curve, 1); },
+  reverseGoals(mods) { mods.reverseScoring = true; },
+  swiftPaddles(mods) { mods.paddleSpeed = mods.paddleSpeed.map(speed => speed * 1.5); },
+  heavyPaddles(mods) { mods.paddleSpeed = mods.paddleSpeed.map(speed => speed * 0.65); },
+  mirrored(mods) { mods.invert = [true, true]; },
+};
+const RULE_IDS = Object.keys(RULES);
+
+function rollRules(m) {
+  const first = RULE_IDS[Math.floor(m.rng() * RULE_IDS.length)];
+  const rest = RULE_IDS.filter(id => id !== first);
+  m.rules = m.rng() < 0.4 ? [first, rest[Math.floor(m.rng() * rest.length)]] : [first];
+  m.nextRuleAt = m.t + RULE_INTERVAL_MS;
+  m.fx.push(["rules", m.rules]);
+}
+
+function placePaddle(paddle, side, lane) {
+  const inset = PADDLE_INSET + lane * LANE_GAP;
+  paddle.side = side;
+  paddle.x = side === 0 ? inset : ARENA_WIDTH - inset - PADDLE_WIDTH;
+}
+
+function rebalancePaddles(m) {
+  const order = [...m.paddles].sort((a, b) => a.id - b.id);
+  const lanes = [0, 0];
+  const counts = [Math.ceil(order.length / 2), Math.floor(order.length / 2)];
+  order.forEach((paddle, index) => {
+    const side = index % 2;
+    placePaddle(paddle, side, lanes[side]++);
+    paddle.scale = TEAM_PADDLE_SCALE[Math.min(counts[side], TEAM_PADDLE_SCALE.length) - 1];
+  });
+}
+
+function settleFreeForAll(m) {
+  if (m.paddles.length > 1 || m.phase === "over") return false;
+  const survivor = m.paddles[0];
+  m.champion = survivor ? survivor.owner ?? JOHN_ID : null;
+  finishMatch(m, survivor?.side ?? 0);
+  return true;
+}
 
 export const EVENTS = Object.fromEntries(EVENT_LIST.map(def => [def.id, def]));
 export const EVENT_IDS = EVENT_LIST.map(def => def.id);
@@ -289,7 +822,8 @@ export const MODES = {
     },
   },
   boss: {
-    label: "Boss cīņa", info: "Visi kopā pret AI, kurš ar katru jūsu punktu kļūst stiprāks.", usesEvents: true, minPlayers: 1,
+    label: "Boss cīņa", info: "Visi kopā pret John Pong, kurš ar katru jūsu punktu kļūst stiprāks.", usesEvents: true, minPlayers: 1, isBossFight: true,
+    restingMood: "cocky",
     assignTeams: ids => [ids, []],
     onPoint(m, side) {
       if (side !== 0) return;
@@ -298,11 +832,119 @@ export const MODES = {
       const stage = bossStage(m);
       if (boss.ai !== stage) m.fx.push(["boss", stage]);
       boss.ai = stage;
-      if (m.nextEventAt !== Infinity) m.nextEventAt = m.t + SERVE_MS + 500;
+      if (m.nextEventAt < NEVER) m.nextEventAt = m.t + SERVE_MS + 500;
     },
   },
   tournament: { label: "Turnīrs", info: "Izslēgšanas spēles viens pret vienu, līdz paliek viens čempions.", usesEvents: true, minPlayers: 2, isBracket: true },
+  bossRush: {
+    label: "Boss maratons", info: "Visi kopā pret trim bosiem pēc kārtas ar piecām kopīgām sirdīm. Beigās gaida King Terry Davis.", usesEvents: false, minPlayers: 1,
+    isBossFight: true, hasNoOpponent: true, fixedTarget: 99,
+    assignTeams: ids => [ids, []],
+    setup(m) {
+      m.lives = RUSH_LIVES;
+      m.rush = { index: 0 };
+      m.phase = "play";
+      startBoss(m, RUSH_ORDER[0]);
+    },
+  },
+  hardcore: {
+    label: "Hardcore", info: "Ātrāka bumba, mazākas raketes, tikai bīstami notikumi. Trīs kļūdas, un viss.", usesEvents: true, minPlayers: 1, forcesEvents: true, fixedTarget: 3,
+    blunderScale: 0, blocksBossEvent: true, firstEventMs: 5000,
+    eventPool: ["speed", "curve", "ghost", "tiny", "confusion", "frozen", "spam", "twofa", "quake", "blackout", "reverse", "fake", "walls"],
+    pressure: () => ({ intervalScale: 0.55, strengthScale: 1.25, maxActive: 2 }),
+    mod(mods) {
+      mods.ballSpeed *= 1.22;
+      mods.paddleScale = mods.paddleScale.map(scale => scale * 0.8);
+    },
+  },
+  randomizer: {
+    label: "Nejaušība", info: "Ik pa 15 sekundēm noteikumi mainās pilnīgi nejauši, un notikumi nāk klāt.", usesEvents: true, minPlayers: 1, forcesEvents: true,
+    step(m) {
+      if (m.phase === "play" && m.t >= m.nextRuleAt) rollRules(m);
+    },
+    mod(mods, m) {
+      for (const id of m.rules) RULES[id](mods);
+    },
+  },
+  ability: {
+    label: "Spējas", info: "Katram ir speciāla spēja. Spied E vai pogu īstajā brīdī, un pēc atdzišanas saņem nākamo.", usesEvents: false, minPlayers: 1,
+    setup(m) {
+      for (const paddle of m.paddles) paddle.ability = rollAbility(m);
+    },
+    mod(mods, m) {
+      if (m.t < m.slowUntil) mods.ballSpeed *= 0.5;
+    },
+  },
+  lastStanding: {
+    label: "Pēdējā rakete", info: "Visi pret visiem. Katram 3 sirdis, un izdzīvo tikai pēdējais. Trūkstošos aizstāj John Pong.", usesEvents: true, minPlayers: 1, isFreeForAll: true, fixedTarget: 99, blocksBossEvent: true,
+    setup(m) {
+      while (m.paddles.length < LAST_STANDING_MIN_PADDLES) addPaddle(m, { side: 0, lane: 0, ai: m.settings.aiDifficulty });
+      for (const paddle of m.paddles) paddle.lives = LAST_STANDING_LIVES;
+      rebalancePaddles(m);
+    },
+    onGoal(m, concedingSide, ball) {
+      const defenders = m.paddles.filter(paddle => paddle.side === concedingSide);
+      const blamed = defenders.reduce((nearest, paddle) => (!nearest || Math.abs(paddle.y - ball.y) < Math.abs(nearest.y - ball.y) ? paddle : nearest), null);
+      if (blamed) {
+        blamed.lives--;
+        m.fx.push(["heart", blamed.id]);
+        if (blamed.lives <= 0) {
+          m.fx.push(["out", blamed.owner ?? JOHN_ID]);
+          m.paddles = m.paddles.filter(paddle => paddle !== blamed);
+          rebalancePaddles(m);
+        }
+      }
+      if (settleFreeForAll(m)) return;
+      if (!m.balls.some(other => !other.isFake)) beginServe(m, 1 - concedingSide);
+    },
+  },
+  johnChallenge: {
+    label: "John Pong izaicinājums", info: "Uzvari John Pong četros aizvien grūtākos līmeņos. Katrā līmenī spēle līdz 3.", usesEvents: false, minPlayers: 1, fixedTarget: 3,
+    assignTeams: ids => [ids, []],
+    setup(m) {
+      for (const paddle of m.paddles) if (paddle.owner === null) paddle.ai = AI_LADDER[0];
+    },
+    onTarget(m, side) {
+      if (side !== 0) return false;
+      const next = AI_LADDER[m.johnLevel + 1];
+      if (!next) return false;
+      m.johnLevel++;
+      m.scores = [0, 0];
+      const john = m.paddles.find(paddle => paddle.owner === null);
+      if (john) {
+        john.ai = next;
+        johnSay(m, john, "level");
+      }
+      m.fx.push(["level", next]);
+      beginServe(m, 0);
+      return true;
+    },
+  },
+  frenzy: {
+    label: "Notikumu vētra", info: "Notikumi pārklājas un nāk arvien ātrāk. Vienīgais noteikums ir izdzīvot līdz beigām.", usesEvents: true, minPlayers: 1, forcesEvents: true, blocksBossEvent: true, firstEventMs: 3000,
+    pressure(m) {
+      const progress = Math.min(1, m.t / 120000);
+      return { intervalScale: 0.26 - 0.12 * progress, strengthScale: 1.1 + 0.3 * progress, maxActive: 4 + Math.round(progress * 3) };
+    },
+  },
+  team: {
+    label: "Komandas", info: "Stafete: pēc sava sitiena rakete atdziest, un nākamo sit komandas biedrs. Trūkstošos aizstāj John Pong.", usesEvents: true, minPlayers: 1, restingMood: "calm", tauntOnScore: "team",
+    setup(m) {
+      const size = Math.max(2, ...[0, 1].map(side => m.paddles.filter(paddle => paddle.side === side && paddle.owner !== null).length));
+      for (const side of [0, 1]) {
+        let lane = m.paddles.filter(paddle => paddle.side === side).length;
+        while (lane < size) addPaddle(m, { side, lane: lane++, ai: m.settings.aiDifficulty });
+        const scale = TEAM_PADDLE_SCALE[Math.min(size, TEAM_PADDLE_SCALE.length) - 1];
+        for (const paddle of m.paddles) if (paddle.side === side) paddle.scale = scale;
+      }
+    },
+    blocksHit: (m, paddle) => isPaddleCooling(m, paddle),
+  },
 };
+
+export function isPaddleCooling(m, paddle) {
+  return m.settings.mode === "team" && m.relay[paddle.side] === paddle.id && m.paddles.some(other => other.side === paddle.side && other !== paddle);
+}
 
 export function bossStage(m) {
   const start = AI_LADDER.indexOf(m.settings.aiDifficulty);
@@ -349,9 +991,21 @@ function baseMods() {
   return {
     ballSpeed: 1, gravity: 0, gravityDirection: 0, curve: 0, deflectNoise: 0,
     ghost: false, flip: false, reverseScoring: false, suddenDeath: false,
+    bassBoost: false, twofa: false, spam: false, redSea: false, palette: false, lowRes: false, rightWall: false,
     paddleScale: [1, 1], paddleSpeed: [1, 1], invert: [false, false], frozen: [false, false],
     top: 0, bottom: ARENA_HEIGHT,
   };
+}
+
+function attachRandom(m) {
+  m.rng = () => {
+    m.rngState = (m.rngState + 0x6d2b79f5) >>> 0;
+    let mixed = m.rngState;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+  return m;
 }
 
 function addPaddle(m, { side, lane, owner = null, ai = null, scale = 1, isBoss = false }) {
@@ -372,19 +1026,37 @@ function addPaddle(m, { side, lane, owner = null, ai = null, scale = 1, isBoss =
     aiThinkAt: 0,
     aiError: 0,
     aiErrorAt: 0,
+    stunUntil: 0,
+    fall: 0,
+    spamReadyAt: 0,
+    challenge: null,
+    lives: null,
+    ability: null,
+    abilityReadyAt: 0,
+    smashUntil: 0,
+    shieldUntil: 0,
+    growUntil: 0,
+    john: ai && owner === null ? { mood: MODES[m.settings.mode].restingMood ?? "calm", moodUntil: 0, plan: "straight", planKey: "", planUntil: 0, trickSign: 1, isLunging: false, joinedAt: m.t } : null,
   };
   m.paddles.push(paddle);
+  if (paddle.john) {
+    m.fx.push(["john", paddle.id]);
+    johnSay(m, paddle, "join", 0.7);
+  }
   return paddle;
 }
 
-export function createMatch({ settings, teams, rng = Math.random }) {
-  const m = {
+export function createMatch({ settings, teams, seed = Math.floor(Math.random() * 4294967296) }) {
+  const mode = MODES[settings.mode];
+  const m = attachRandom({
     settings,
-    rng,
+    rngState: seed >>> 0,
+    isPrediction: false,
+    step: 0,
     t: 0,
     phase: "serve",
     serveAt: FIRST_SERVE_MS,
-    target: settings.targetScore,
+    target: mode.fixedTarget ?? settings.targetScore,
     scores: [0, 0],
     paddles: [],
     balls: [],
@@ -393,19 +1065,49 @@ export function createMatch({ settings, teams, rng = Math.random }) {
     mods: baseMods(),
     fx: [],
     nextId: 0,
-    nextEventAt: Infinity,
+    nextEventAt: NEVER,
     winner: null,
+    champion: null,
     isForfeit: false,
-  };
+    boss: null,
+    rush: null,
+    lives: null,
+    relay: [null, null],
+    rules: [],
+    nextRuleAt: FIRST_SERVE_MS,
+    johnLevel: 0,
+    slowUntil: 0,
+    nextTauntAt: 0,
+    nextIdleTauntAt: 12000,
+  });
   teams.forEach((team, side) => {
     const scale = TEAM_PADDLE_SCALE[Math.min(team.length, TEAM_PADDLE_SCALE.length) - 1] ?? 1;
     team.forEach((owner, lane) => addPaddle(m, { side, lane, owner, scale }));
   });
   if (settings.mode === "boss") addPaddle(m, { side: 1, lane: 0, ai: bossStage(m), scale: BOSS_PADDLE_SCALE, isBoss: true });
-  else for (const side of [0, 1]) if (!teams[side].length) addPaddle(m, { side, lane: 0, ai: settings.aiDifficulty });
-  scheduleNextEvent(m, FIRST_EVENT_DELAY_MS);
+  else if (!mode.hasNoOpponent && !mode.isFreeForAll) for (const side of [0, 1]) if (!teams[side].length) addPaddle(m, { side, lane: 0, ai: settings.aiDifficulty });
+  scheduleNextEvent(m, mode.firstEventMs ?? FIRST_EVENT_DELAY_MS);
   launchBall(m, randomSide(m));
+  mode.setup?.(m);
   return m;
+}
+
+const NON_STATE_KEYS = new Set(["settings", "fx"]);
+
+function encodeStateValue(key, value) {
+  if (NON_STATE_KEYS.has(key)) return undefined;
+  return typeof value === "number" && !Number.isInteger(value) ? Math.round(value * 1000) / 1000 : value;
+}
+
+export function encodeMatchState(m) {
+  return JSON.stringify(m, encodeStateValue);
+}
+
+export function restoreMatch(state, settings) {
+  state.settings = settings;
+  state.fx = [];
+  state.isPrediction = true;
+  return attachRandom(state);
 }
 
 function eventPressure(m) {
@@ -436,16 +1138,19 @@ function eventInterval(m) {
 
 function scheduleNextEvent(m, minimumDelay = 0) {
   const interval = eventInterval(m);
-  m.nextEventAt = interval === null ? Infinity : m.t + Math.max(minimumDelay, interval * eventPressure(m).intervalScale);
+  m.nextEventAt = interval === null ? NEVER : m.t + Math.max(minimumDelay, interval * eventPressure(m).intervalScale);
 }
 
 function rollEvent(m) {
   const activeIds = new Set(m.active.map(ev => ev.id));
   const activeSlots = new Set(m.active.map(ev => EVENTS[ev.id].slot).filter(Boolean));
+  const modePool = MODES[m.settings.mode].eventPool;
   const pool = EVENT_LIST.filter(def =>
     (m.settings.chaotic || m.settings.events.includes(def.id)) &&
+    (!modePool || modePool.includes(def.id)) &&
     !activeIds.has(def.id) &&
     !(def.slot && activeSlots.has(def.slot)) &&
+    !def.avoids?.some(id => activeIds.has(id)) &&
     (!def.canStart || def.canStart(m)));
   let remaining = m.rng() * pool.reduce((sum, def) => sum + def.weight, 0);
   for (const def of pool) {
@@ -475,8 +1180,9 @@ function endEvent(m, ev) {
 }
 
 function updateEvents(m) {
+  for (const ev of m.active) EVENTS[ev.id].tick?.(m, ev);
   for (const ev of [...m.active]) if (m.t >= ev.endsAt) endEvent(m, ev);
-  if (m.phase === "play" && m.t >= m.nextEventAt) {
+  if (!m.isPrediction && !m.boss && m.phase === "play" && m.t >= m.nextEventAt) {
     if (m.active.length < eventPressure(m).maxActive) {
       const id = rollEvent(m);
       if (id) startEvent(m, id);
@@ -485,6 +1191,9 @@ function updateEvents(m) {
   }
   const mods = baseMods();
   for (const ev of m.active) EVENTS[ev.id].mod?.(mods, ev, m);
+  MODES[m.settings.mode].mod?.(mods, m);
+  if (m.rush) mods.rightWall = true;
+  if (m.boss?.attack) ATTACKS[m.boss.attack.id].mod?.(mods, m, m.boss, m.boss.attack);
   m.mods = mods;
 }
 
@@ -550,14 +1259,27 @@ function collideWalls(m, ball) {
       m.fx.push(["wall"]);
     }
   }
+  if (m.mods.rightWall && ball.x + half > ARENA_WIDTH) {
+    ball.x = ARENA_WIDTH - half;
+    if (ball.vx > 0) {
+      ball.vx = -ball.vx;
+      m.fx.push(["wall"]);
+    }
+  }
 }
 
 function bounceOffPaddle(m, ball, paddle) {
   const offset = Math.max(-1, Math.min(1, (ball.y - paddle.y) / (paddle.h / 2)));
   const noise = m.mods.deflectNoise ? randomBetween(m, -m.mods.deflectNoise, m.mods.deflectNoise) : 0;
   const angle = Math.max(-MAX_BOUNCE_ANGLE, Math.min(MAX_BOUNCE_ANGLE, offset * MAX_BOUNCE_ANGLE + noise));
-  const speed = Math.min(BALL_MAX_SPEED, Math.hypot(ball.vx, ball.vy) * RALLY_GROWTH);
+  const isSmash = m.t < paddle.smashUntil;
+  const speed = Math.min(BALL_MAX_SPEED, Math.hypot(ball.vx, ball.vy) * (isSmash ? 1.5 : RALLY_GROWTH));
   const direction = paddle.side === 0 ? 1 : -1;
+  if (isSmash) {
+    paddle.smashUntil = 0;
+    m.fx.push(["smash", Math.round(ball.x), Math.round(ball.y)]);
+  }
+  m.relay[paddle.side] = paddle.id;
   ball.vx = Math.cos(angle) * speed * direction;
   ball.vy = Math.sin(angle) * speed;
   ball.x = direction > 0 ? paddle.x + PADDLE_WIDTH + BALL_SIZE / 2 : paddle.x - BALL_SIZE / 2;
@@ -575,8 +1297,9 @@ function hitsPaddle(ball, paddle) {
 }
 
 function collidePaddles(m, ball) {
+  const blocksHit = MODES[m.settings.mode].blocksHit;
   for (const paddle of m.paddles) {
-    if (!hitsPaddle(ball, paddle)) continue;
+    if (!hitsPaddle(ball, paddle) || blocksHit?.(m, paddle)) continue;
     if (ball.isFake) {
       m.fx.push(["puff", Math.round(ball.x), Math.round(ball.y)]);
       m.balls = m.balls.filter(other => other !== ball);
@@ -647,7 +1370,7 @@ function collidePortals(m, ball) {
 
 function collideBox(m, ball) {
   const box = m.objects.box;
-  if (!box || ball.isFake) return;
+  if (!box || ball.isFake || m.isPrediction) return;
   const reach = box.s / 2 + BALL_SIZE / 2;
   if (Math.abs(ball.x - box.x) >= reach || Math.abs(ball.y - box.y) >= reach) return;
   const running = m.active.find(ev => ev.id === "mystery");
@@ -661,12 +1384,34 @@ function checkGoal(m, ball) {
   const isPastLeft = ball.x + half < 0;
   const isPastRight = ball.x - half > ARENA_WIDTH;
   if (!isPastLeft && !isPastRight) return false;
-  m.balls = m.balls.filter(other => other !== ball);
   if (ball.isFake) {
+    m.balls = m.balls.filter(other => other !== ball);
     m.fx.push(["puff", Math.round(Math.max(0, Math.min(ARENA_WIDTH, ball.x))), Math.round(ball.y)]);
     return true;
   }
   const concedingSide = isPastLeft ? 0 : 1;
+  const shielded = m.paddles.find(paddle => paddle.side === concedingSide && m.t < paddle.shieldUntil);
+  if (shielded) {
+    ball.x = isPastLeft ? half : ARENA_WIDTH - half;
+    ball.vx = -ball.vx;
+    ball.lastSide = concedingSide;
+    m.fx.push(["shield", Math.round(ball.x), Math.round(ball.y)]);
+    return false;
+  }
+  if (m.isPrediction) {
+    ball.isHeld = true;
+    return true;
+  }
+  m.balls = m.balls.filter(other => other !== ball);
+  if (m.boss) {
+    dropBallDuringBoss(m, concedingSide);
+    return true;
+  }
+  const onGoal = MODES[m.settings.mode].onGoal;
+  if (onGoal) {
+    onGoal(m, concedingSide, ball);
+    return true;
+  }
   const scoringSide = m.mods.reverseScoring ? concedingSide : 1 - concedingSide;
   awardPoint(m, scoringSide);
   return true;
@@ -677,8 +1422,9 @@ function awardPoint(m, side) {
   m.fx.push(["score", side]);
   const king = m.active.find(ev => ev.id === "king" && ev.side !== side);
   if (king) endEvent(m, king);
+  reactJohnToPoint(m, side);
   if (m.mods.suddenDeath || m.scores[side] >= m.target) {
-    finishMatch(m, side);
+    if (!MODES[m.settings.mode].onTarget?.(m, side)) finishMatch(m, side);
     return;
   }
   MODES[m.settings.mode].onPoint?.(m, side);
@@ -689,6 +1435,7 @@ function beginServe(m, towardSide) {
   m.phase = "serve";
   m.serveAt = m.t + SERVE_MS;
   m.balls = [];
+  m.relay = [null, null];
   launchBall(m, towardSide);
 }
 
@@ -705,6 +1452,7 @@ export function forfeitMatch(m, winner) {
 }
 
 function moveBall(m, ball, stepMs) {
+  if (ball.isHeld || ball.isGrabbed) return;
   const seconds = stepMs / 1000;
   const speed = Math.hypot(ball.vx, ball.vy) * m.mods.ballSpeed;
   const substeps = Math.min(10, Math.max(1, Math.ceil(speed * seconds / MAX_SUBSTEP_PX)));
@@ -717,6 +1465,8 @@ function moveBall(m, ball, stepMs) {
     if (collidePaddles(m, ball)) return;
     collideBumpers(m, ball);
     collideObstacles(m, ball);
+    collideBoss(m, ball);
+    if (m.boss && m.boss.phase !== "fight") return;
     collidePortals(m, ball);
     collideBox(m, ball);
     if (m.phase === "over" || checkGoal(m, ball)) return;
@@ -727,7 +1477,7 @@ function threatFor(m, paddle, level) {
   let threat = null;
   let soonest = Infinity;
   for (const ball of m.balls) {
-    if (ball.isFake && level.seesFakes) continue;
+    if ((ball.isFake && level.seesFakes) || ball.isHeld || ball.isGrabbed) continue;
     const isIncoming = paddle.side === 0 ? ball.vx < 0 : ball.vx > 0;
     if (!isIncoming) continue;
     const time = Math.abs(ball.x - paddle.x) / Math.max(1, Math.abs(ball.vx));
@@ -749,37 +1499,147 @@ export function predictBallY(ball, targetX, top, bottom) {
   return low + (wrapped > span ? 2 * span - wrapped : wrapped);
 }
 
+function johnSay(m, paddle, situation, chance = 1) {
+  if (m.isPrediction || !paddle.john || m.t < m.nextTauntAt || m.rng() >= chance) return;
+  m.nextTauntAt = m.t + TAUNT_COOLDOWN_MS;
+  m.fx.push(["taunt", paddle.id, situation, Math.floor(m.rng() * 997)]);
+}
+
+function setJohnMood(m, paddle, mood) {
+  paddle.john.mood = mood;
+  paddle.john.moodUntil = m.t + MOOD_MS;
+}
+
+function reactJohnToPoint(m, scoringSide) {
+  const mode = MODES[m.settings.mode];
+  for (const paddle of m.paddles) {
+    if (!paddle.john) continue;
+    if (paddle.side === scoringSide) {
+      setJohnMood(m, paddle, "cocky");
+      johnSay(m, paddle, mode.tauntOnScore ?? "scored", 0.6);
+    } else if (m.scores[scoringSide] >= m.target - 1) {
+      setJohnMood(m, paddle, "nervous");
+      johnSay(m, paddle, "nervous", 0.7);
+    } else {
+      setJohnMood(m, paddle, "angry");
+      johnSay(m, paddle, "conceded", 0.6);
+    }
+  }
+}
+
+function johnErrorScale(john) {
+  if (!john) return 1;
+  return { angry: 1.4, nervous: 1.3, cocky: 1.15 }[john.mood] ?? 1;
+}
+
+function johnSpeedScale(john) {
+  if (!john) return 1;
+  if (john.isLunging) return 1.35;
+  return { angry: 1.12, nervous: 0.95 }[john.mood] ?? 1;
+}
+
+function johnIdleTarget(m, paddle, level) {
+  const center = (m.mods.top + m.mods.bottom) / 2;
+  const mood = paddle.john?.mood;
+  if (mood === "cocky") return center + Math.sin(m.t / 110 + paddle.id) * 52;
+  if (mood === "nervous") return center + Math.sin(m.t / 45 + paddle.id) * 14;
+  if (paddle.john && level.blunderChance > 0.1) return center + Math.sin(m.t / 900 + paddle.id) * 40;
+  return center;
+}
+
+function rollJohnPlan(m, paddle, level, ball, key) {
+  const john = paddle.john;
+  const blunderChance = level.blunderChance * (MODES[m.settings.mode].blunderScale ?? 1);
+  const roll = m.rng();
+  john.planKey = key;
+  john.isLunging = false;
+  john.trickSign = m.rng() < 0.5 ? 1 : -1;
+  john.planUntil = m.t + WRONG_WAY_MS;
+  if (roll < blunderChance) {
+    john.plan = m.rng() < 0.65 ? "wrongWay" : "daydream";
+    johnSay(m, paddle, "blunder", 0.45);
+  } else if (roll < blunderChance + level.trickChance) {
+    john.plan = "trick";
+    johnSay(m, paddle, "trick", 0.15);
+  } else if (roll < blunderChance + level.trickChance + level.lateChance) {
+    john.plan = "late";
+  } else {
+    john.plan = "straight";
+  }
+}
+
+function johnShotTarget(m, paddle, level, ball, expected) {
+  const john = paddle.john;
+  if (!john) return expected;
+  const key = `${ball.id}:${ball.vx < 0 ? "l" : "r"}`;
+  if (john.planKey !== key) rollJohnPlan(m, paddle, level, ball, key);
+  switch (john.plan) {
+    case "trick":
+      return expected + john.trickSign * paddle.h * 0.36;
+    case "late": {
+      const seconds = Math.abs(ball.x - paddle.x) / Math.max(1, Math.abs(ball.vx));
+      john.isLunging = seconds <= LATE_LUNGE_S;
+      return john.isLunging ? expected : johnIdleTarget(m, paddle, level);
+    }
+    case "wrongWay":
+      return m.t < john.planUntil ? paddle.y + (paddle.y - expected) : expected;
+    case "daydream":
+      return johnIdleTarget(m, paddle, level);
+    default:
+      return expected;
+  }
+}
+
 function thinkAi(m, paddle) {
   if (m.t < paddle.aiThinkAt) return;
   const level = AI_LEVELS[paddle.ai];
   paddle.aiThinkAt = m.t + level.reactMs;
+  const john = paddle.john;
+  if (john && john.moodUntil && m.t >= john.moodUntil) {
+    john.mood = MODES[m.settings.mode].restingMood ?? "calm";
+    john.moodUntil = 0;
+  }
   if (m.t >= paddle.aiErrorAt) {
-    paddle.aiError = randomBetween(m, -level.errorPx, level.errorPx);
+    const errorRange = level.errorPx * johnErrorScale(john);
+    paddle.aiError = randomBetween(m, -errorRange, errorRange);
     paddle.aiErrorAt = m.t + 900;
   }
   const threat = threatFor(m, paddle, level);
-  if (!threat) {
-    paddle.aiTarget = (m.mods.top + m.mods.bottom) / 2;
+  if (!threat || isPaddleCooling(m, paddle)) {
+    if (john) john.isLunging = false;
+    paddle.aiTarget = johnIdleTarget(m, paddle, level);
     return;
   }
+  if (paddle.ability && m.t >= paddle.abilityReadyAt && Math.abs(threat.x - paddle.x) < 220 && m.rng() < 0.12) useAbility(m, paddle);
   const faceX = paddle.side === 0 ? paddle.x + PADDLE_WIDTH : paddle.x;
   const expected = level.predicts ? predictBallY(threat, faceX, m.mods.top, m.mods.bottom) : threat.y;
-  paddle.aiTarget = expected + paddle.aiError;
+  paddle.aiTarget = johnShotTarget(m, paddle, level, threat, expected) + paddle.aiError;
 }
 
-function updatePaddle(m, paddle, stepMs) {
-  const seconds = stepMs / 1000;
-  const desiredHeight = PADDLE_HEIGHT * paddle.scale * m.mods.paddleScale[paddle.side];
-  paddle.h += (desiredHeight - paddle.h) * Math.min(1, stepMs * 0.012);
+function liftPaddle(m, paddle, minimumPressMs) {
+  paddle.y -= SPAM_LIFT_PX;
+  paddle.fall = 0;
+  paddle.spamReadyAt = m.t + minimumPressMs;
+  m.fx.push(["lift", Math.round(paddle.x), Math.round(paddle.y)]);
+}
+
+function dropPaddle(m, paddle, seconds) {
+  if (paddle.ai) {
+    thinkAi(m, paddle);
+    if (paddle.y > paddle.aiTarget && m.t >= paddle.spamReadyAt) liftPaddle(m, paddle, AI_LEVELS[paddle.ai].spamMs);
+  }
+  paddle.fall = Math.min(SPAM_MAX_FALL, paddle.fall + SPAM_FALL_ACCEL * seconds);
+  paddle.y += paddle.fall * seconds;
+}
+
+function steerPaddle(m, paddle, seconds) {
   const isInverted = m.mods.invert[paddle.side];
   let speed = PADDLE_SPEED * m.mods.paddleSpeed[paddle.side];
   let dir = 0;
   let target = null;
-  if (m.mods.frozen[paddle.side]) {
-    speed = 0;
-  } else if (paddle.ai) {
+  if (paddle.ai) {
     thinkAi(m, paddle);
-    speed *= AI_LEVELS[paddle.ai].speed;
+    speed *= AI_LEVELS[paddle.ai].speed * johnSpeedScale(paddle.john);
     target = paddle.aiTarget;
   } else if (paddle.target !== null) {
     target = isInverted ? ARENA_HEIGHT - paddle.target : paddle.target;
@@ -792,15 +1652,42 @@ function updatePaddle(m, paddle, stepMs) {
   } else {
     paddle.y += dir * speed * seconds;
   }
+}
+
+function updatePaddle(m, paddle, stepMs) {
+  const seconds = stepMs / 1000;
+  const growth = m.t < paddle.growUntil ? 1.7 : 1;
+  const desiredHeight = PADDLE_HEIGHT * paddle.scale * m.mods.paddleScale[paddle.side] * growth;
+  paddle.h += (desiredHeight - paddle.h) * Math.min(1, stepMs * 0.012);
+  if (paddle.ai && paddle.challenge && m.t >= paddle.challenge.aiSolveAt) {
+    paddle.challenge = null;
+    johnSay(m, paddle, "twofa", 0.5);
+  }
+  const isDisabled = m.mods.frozen[paddle.side] || paddle.challenge || m.t < paddle.stunUntil;
+  if (m.mods.spam && !isDisabled) dropPaddle(m, paddle, seconds);
+  else if (!isDisabled) steerPaddle(m, paddle, seconds);
   const half = paddle.h / 2;
   paddle.y = Math.max(m.mods.top + half, Math.min(m.mods.bottom - half, paddle.y));
 }
 
+function maybeIdleTaunt(m) {
+  if (m.t < m.nextIdleTauntAt) return;
+  m.nextIdleTauntAt = m.t + randomBetween(m, IDLE_TAUNT_MS[0], IDLE_TAUNT_MS[1]);
+  const johns = m.paddles.filter(paddle => paddle.john);
+  if (johns.length) johnSay(m, johns[Math.floor(m.rng() * johns.length)], "idle");
+}
+
 export function stepMatch(m, stepMs = STEP_MS) {
   if (m.phase === "over") return;
+  m.step++;
   m.t += stepMs;
   updateEvents(m);
   for (const paddle of m.paddles) updatePaddle(m, paddle, stepMs);
+  if (m.boss) stepBoss(m, stepMs);
+  if (!m.isPrediction) {
+    MODES[m.settings.mode].step?.(m);
+    maybeIdleTaunt(m);
+  }
   if (m.phase === "serve") {
     if (m.t >= m.serveAt) m.phase = "play";
     return;
@@ -811,16 +1698,31 @@ export function stepMatch(m, stepMs = STEP_MS) {
   }
 }
 
+export function sanitizeInput(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.dir === -1 || raw.dir === 0 || raw.dir === 1) return { dir: raw.dir };
+  if (Number.isFinite(raw.target)) return { target: Math.max(0, Math.min(ARENA_HEIGHT, Math.round(raw.target))) };
+  if (raw.spam === true) return { spam: true };
+  if (raw.ability === true) return { ability: true };
+  if (typeof raw.answer === "string" && /^[0-9]{1,6}$/.test(raw.answer)) return { answer: raw.answer };
+  return null;
+}
+
 export function applyInput(m, owner, input) {
   const paddle = m.paddles.find(candidate => candidate.owner === owner);
-  if (!paddle) return;
-  if (input.dir === -1 || input.dir === 0 || input.dir === 1) {
+  if (!paddle || paddle.ai) return;
+  if (input.dir !== undefined) {
     paddle.dir = input.dir;
     paddle.target = null;
-  }
-  if (Number.isFinite(input.target)) {
-    paddle.target = Math.max(0, Math.min(ARENA_HEIGHT, input.target));
+  } else if (input.target !== undefined) {
+    paddle.target = input.target;
     paddle.dir = 0;
+  } else if (input.spam) {
+    if (m.mods.spam && m.t >= paddle.spamReadyAt) liftPaddle(m, paddle, SPAM_MIN_PRESS_MS);
+  } else if (input.ability) {
+    useAbility(m, paddle);
+  } else if (input.answer !== undefined) {
+    answerChallenge(m, paddle, input.answer);
   }
 }
 
@@ -830,11 +1732,15 @@ export function setOwnerAi(m, owner, level) {
     paddle.ai = level;
     paddle.dir = 0;
     paddle.target = null;
+    if (level && paddle.challenge) paddle.challenge = null;
   }
 }
 
 export function removeOwner(m, owner) {
   m.paddles = m.paddles.filter(paddle => paddle.owner !== owner);
+  if (!MODES[m.settings.mode].isFreeForAll) return;
+  rebalancePaddles(m);
+  settleFreeForAll(m);
 }
 
 export function sideHasHumans(m, side) {
@@ -846,20 +1752,26 @@ export function serializeMatch(m) {
   m.fx = [];
   const { bumpers, obstacles, portals, box } = m.objects;
   const hasObjects = bumpers.length || obstacles.length || portals.length || box;
-  const { ghost, flip, reverseScoring, suddenDeath, invert, frozen, paddleSpeed, top, bottom, gravityDirection } = m.mods;
+  const isTimed = ev => ev.endsAt < NEVER;
   return {
-    type: "state",
-    t: Math.round(m.t),
+    t: m.t,
+    step: m.step,
     phase: m.phase,
     scores: m.scores,
     serveIn: m.phase === "serve" ? Math.max(0, Math.round(m.serveAt - m.t)) : 0,
-    top: Math.round(top),
-    bottom: Math.round(bottom),
-    paddles: m.paddles.map(p => [p.id, p.side, Math.round(p.x), Math.round(p.y), Math.round(p.h), p.owner, p.ai ? 1 : 0, p.isBoss ? 1 : 0]),
-    balls: m.balls.map(ball => [ball.id, Math.round(ball.x), Math.round(ball.y)]),
-    active: m.active.map(ev => [ev.id, Number.isFinite(ev.endsAt) ? Math.round(ev.endsAt - m.t) : -1, Number.isFinite(ev.endsAt) ? Math.round(ev.endsAt - ev.startedAt) : -1, ev.side, Math.round(ev.seed * 1000) / 1000, Math.round(m.t - ev.startedAt)]),
+    top: m.mods.top,
+    bottom: m.mods.bottom,
+    paddles: m.paddles.map(p => [p.id, p.side, p.x, p.y, p.h, p.owner, p.ai ? 1 : 0, p.isBoss ? 1 : 0, p, isPaddleCooling(m, p)]),
+    balls: m.balls.map(ball => [ball.id, ball.x, ball.y]),
+    active: m.active.map(ev => [ev.id, isTimed(ev) ? Math.round(ev.endsAt - m.t) : -1, isTimed(ev) ? Math.round(ev.endsAt - ev.startedAt) : -1, ev.side, Math.round(ev.seed * 1000) / 1000, Math.round(m.t - ev.startedAt)]),
     objects: hasObjects ? m.objects : null,
-    mods: { ghost, flip, reverseScoring, suddenDeath, invert, frozen, paddleSpeed, gravityDirection },
+    mods: m.mods,
+    boss: m.boss,
+    hazards: m.boss?.hazards ?? [],
+    lives: m.lives,
+    rules: m.rules,
+    johnLevel: m.johnLevel,
+    slowUntil: m.slowUntil,
     fx,
   };
 }

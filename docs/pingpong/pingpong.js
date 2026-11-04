@@ -1,8 +1,9 @@
 import { PaintConnection } from "../paint/connection.js?v=2";
 import {
-  AI_LEVELS, ARENA_HEIGHT, ARENA_WIDTH, BALL_SIZE, EVENTS, EVENT_GROUPS, EVENT_IDS, FREQUENCIES, INTENSITIES, MAX_PLAYERS,
-  MODES, PADDLE_SPEED, PADDLE_WIDTH, SCORE_OPTIONS, STEP_MS, createMatch, defaultSettings, serializeMatch, stepMatch,
-} from "./sim.js?v=1";
+  AI_LEVELS, ARENA_HEIGHT, ARENA_WIDTH, BALL_SIZE, EVENTS, EVENT_GROUPS, EVENT_IDS, FREQUENCIES, INTENSITIES, JOHN_ID, MAX_PLAYERS,
+  MODES, PADDLE_WIDTH, SCORE_OPTIONS, STEP_MS, createMatch, defaultSettings, serializeMatch, stepMatch,
+} from "./sim.js?v=2";
+import { MatchPredictor } from "./predict.js?v=2";
 
 const PRODUCTION_SOCKET = "wss://edupage-proxy.loduur.workers.dev";
 const LOCAL_SOCKET = "ws://localhost:8790";
@@ -15,10 +16,16 @@ const ERROR_TEXT = {
   expired: "Istaba tika aizvērta neaktivitātes dēļ",
   replaced: "Šī istaba ir atvērta citā cilnē",
 };
-const INTERPOLATION_DELAY_MS = 60;
-const SNAPSHOT_BUFFER_SIZE = 12;
-const TARGET_SEND_INTERVAL_MS = 40;
-const TELEPORT_DISTANCE = 140;
+const TARGET_SEND_INTERVAL_MS = 33;
+const PING_FAST_MS = 150;
+const PING_SLOW_MS = 1000;
+const PING_FAST_COUNT = 4;
+const BASS_BOOST_GAIN = 10;
+const BASS_BEAT_MS = 468;
+const BUBBLE_MS = 2600;
+const JOHN_JOIN_MS = 900;
+const TYPE_MS_PER_CHAR = 26;
+const ATTACK_LINE_MS = 2400;
 const ANNOUNCEMENT_MS = 1900;
 const MAX_PARTICLES = 70;
 const EVENT_LIST_X = 150;
@@ -26,6 +33,59 @@ const SHAKE_STRENGTH = [0, 4, 7, 12];
 const IS_REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const COLOR = { white: "#f1f4ec", dim: "#626b60", faint: "#2a322a", accent: "#72ff91", ice: "#7fd6ff", danger: "#ff6a5e", black: "#000" };
 const FONT_FAMILY = '"Press Start 2P", "Courier New", monospace';
+const VGA_COLORS = ["#ffff55", "#55ffff", "#ff55ff", "#55ff55", "#ff5555", "#5555ff", "#ffffff", "#ffaa00"];
+const JOHN_LINES = {
+  join: ["Sveiki. Es esmu John Pong.", "Kas te prasīja profesionāli?", "Būšu maigs. Meloju.", "Atvainojos par kavēšanos. Tagad tu zaudē."],
+  scored: ["Tas bija viegli.", "Ieraksti to dienasgrāmatā.", "Vai tu vispār mēģini?", "Paldies par punktu!", "Klasiskais John Pong."],
+  conceded: ["Es tev ļāvu.", "Laimīga nejaušība.", "Mana rakete slīdēja!", "Saules stars acīs. Telpās.", "Tagad es esmu dusmīgs."],
+  nervous: ["Viss ir kontrolē. Viss.", "Kāpēc te tik karsti?", "Vēl nav beigas. Vai ir?"],
+  blunder: ["Ups.", "Es tevi pārbaudīju.", "Kur ir bumba?", "SMS no mammas…", "Šo neskaita."],
+  trick: ["Šis būs skaisti.", "Mērķēju stūrī.", "Skaties un mācies."],
+  idle: ["Cik ilgi vēl?", "Man šodien vēl trīs spēles.", "Tev labas kurpes. Nekas cits.", "Vai bumbai ir jābūt tik lēnai?"],
+  team: ["Labs darbs, komanda!", "Es piespēlēju!", "Tagad tava kārta.", "Mēs! Galvenokārt es."],
+  twofa: ["Mans kods vienmēr ir 1234.", "Man atnāca uz pulksteni.", "Nokārtots. Kur tu paliec?"],
+  level: ["Labi. Tagad nopietni.", "Uzvilkšu nopietnās zeķes.", "Iesildīšanās beigusies."],
+};
+const JOHN_LEVEL_NAMES = { easy: "Miegainais John", normal: "Parastais John", hard: "Nopietnais John", unfair: "Negodīgais John" };
+const ABILITY_LABELS = { smash: "Spēka sitiens", shield: "Vairogs", blink: "Lēciens", grow: "Milzu rakete", slow: "Palēnināt" };
+const RULE_LABELS = {
+  fastBall: "Ātra bumba", slowBall: "Lēna bumba", tinyPaddles: "Sīkas raketes", giantPaddles: "Milzu raketes", moonGravity: "Gravitācija",
+  curveBall: "Līkā bumba", reverseGoals: "Punkti otrādi", swiftPaddles: "Ātras raketes", heavyPaddles: "Smagas raketes", mirrored: "Vadība otrādi",
+};
+const CODE_CHIPS = ["U0", "I64", "F64", "{ }", "if", "goto", "#exe", "Ring0"];
+const WORD_CHIPS = ["PFF", "LOL", "VĀJI", "OHO", "NU", "ZZZ", "BŪ", "HA"];
+const ORACLE_WORDS = ["BUMBA", "RAKETE", "TEMPLIS", "KOMPILATORS", "SPOŽUMS", "KODS", "PIKSELIS", "TASTATŪRA", "KRONIS", "LAIKS", "TUMSA", "GAISMA", "SKOLA", "TĀFELE", "PUNKTS", "MIERS"];
+const SPRITE_COLORS = { Y: "#ffff55", R: "#ff5555", S: "#e8c39e", K: "#111111", B: "#5555ff", G: "#8d8d7a" };
+const TERRY_SPRITE = [
+  ".Y..Y..Y..Y..Y..", ".YY.YY.YY.YY.YY.", ".YYYYYYYYYYYYYY.", ".YRYYYRYYRYYYRY.", "...SSSSSSSSSS...", "...SKKSSSSKKS...", "...SKKSSSSKKS...",
+  "...SSSSSSSSSS...", "...SSSKKKKSSS...", "....SSSSSSSS....", ".....SSSSSS.....", "..BBBBBBBBBBBB..", ".BBBBBBYYBBBBBB.", "BBBBBBBYYBBBBBBB",
+  "BB.BBBBYYBBBB.BB", "BB.BBBBYYBBBB.BB", "SS.BBBBYYBBBB.SS", "...BBBBYYBBBB...", "...BBBBYYBBBB...", "...BBB....BBB...", "...KKK....KKK...",
+];
+const GOLEM_SPRITE = [
+  "....GGGGGGGGGGG....", "...GGGGGGGGGGGGG...", "...GGRRGGGGGRRGG...", "...GGRRGGGGGRRGG...", "...GGGGGGGGGGGGG...", "...GGKKKKKKKKKGG...", "....GGGGGGGGGGG....",
+  "GGGGGGGGGGGGGGGGGGG", "GGGGGGGGGGGGGGGGGGG", "GGG.GGGGGGGGGGG.GGG", "GGG.GGGKGGGKGGG.GGG", "GGG.GGGGGGGGGGG.GGG", "GGG.GGGGGGGGGGG.GGG", "GGG.GGGKGGGKGGG.GGG",
+  "GGG.GGGGGGGGGGG.GGG", "....GGGGGGGGGGG....", "....GGGG...GGGG....", "....GGGG...GGGG....", "....GGGG...GGGG....", "....GGGG...GGGG....", "...GGGGG...GGGGG...",
+  "...GGGGG...GGGGG...", "...GGGGG...GGGGG...",
+];
+const BOSS_INFO = {
+  golem: { name: "Pikseļu Golems", sprite: GOLEM_SPRITE, intro: ["* Pikseļi saliekas kopā.", "* Tas ir smags. Un ļoti dusmīgs."], defeat: "* Golems sabirst atpakaļ pikseļos." },
+  johnPrime: { name: "John Pong Prime", sprite: null, intro: ["* John Pong atgriežas ar lielāku raketi.", "* Šoreiz viņš izlasīja instrukciju."], defeat: "* John Pong Prime: \"Es tev ļāvu.\"" },
+  terry: { name: "King Terry Davis", sprite: TERRY_SPRITE, intro: ["* KING TERRY DAVIS ieņem savu troni.", "* 640×480. 16 krāsas. Vairāk nevajag."], defeat: "* Templis paliek stāvam. Karalis godam atkāpjas." },
+};
+const ATTACK_LINES = {
+  holyC: "* HolyC kompilējas tieši tev virsū!", ring0: "* Šeit viss skrien Ring 0.", temple: "* Templim vajag kolonnas.", redSea: "* RedSea šķiras. Tu paliec vidū.",
+  sixteen: "* 16 krāsas. Īsta ir tikai viena bumba.", oracle: "* Orākuls saka: ", lowres: "* 640×480 ir pilnīgi pietiekami.", rockfall: "* Griesti krīt pa vienam pikselim.",
+  pillars: "* Golems izaudzē kolonnas.", stomp: "* Golems piesit kāju!", tauntVolley: "* John Pong met vārdus.", tripleServe: "* Trīs servi vienlaikus!", mirror: "* John Pong apgriež tavu vadību.",
+};
+const TWOFA_PROMPTS = {
+  code: () => "Ievadi kodu no SMS",
+  reverse: () => "Ievadi kodu no otra gala",
+  math: () => "Pierādi, ka neesi robots",
+  pick: challenge => `Kurš ir ${challenge.shown}?`,
+};
+const TWOFA_SYMBOLS = { bumba: "●", rakete: "▮", "trijstūris": "▲" };
+const TWOFA_FOOTERS = ["Mēs nekad neprasīsim tavu paroli. Tikai šo.", "Ja tas neesi tu, vienalga ievadi.", "Kods derīgs vēl mirkli.", "Pārbaudi arī mēstuļu mapi.", "Tava rakete gaida apstiprinājumu."];
+const IS_COARSE_POINTER = matchMedia("(pointer: coarse)").matches;
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena");
@@ -36,10 +96,8 @@ const state = {
   me: null,
   code: null,
   lobby: null,
-  snapshots: [],
-  latest: null,
-  clockOffset: null,
-  localPaddleY: null,
+  predictor: null,
+  view: null,
   announcement: null,
   particles: [],
   trails: new Map(),
@@ -48,7 +106,21 @@ const state = {
   pressedKeys: new Set(),
   sentDir: 0,
   pointerTarget: null,
+  isPointerDirty: false,
   lastTargetSentAt: 0,
+  queuedActions: [],
+  nextPingAt: 0,
+  pingCount: 0,
+  nextBeatAt: 0,
+  bassPulse: 0,
+  bubble: null,
+  spamPresses: [],
+  twofaKey: "",
+  twofaEntry: "",
+  abilityText: "",
+  lastBossCue: "",
+  nextExplosionAt: 0,
+  typedChars: 0,
   attract: null,
   attractClock: 0,
   lastFrameAt: 0,
@@ -89,6 +161,30 @@ const sound = {
     }
     if (this.context?.state === "suspended") this.context.resume();
   },
+  output() {
+    if (this.master) return this.master;
+    this.master = this.context.createGain();
+    this.lowShelf = this.context.createBiquadFilter();
+    this.lowShelf.type = "lowshelf";
+    this.lowShelf.frequency.value = 120;
+    this.limiter = this.context.createDynamicsCompressor();
+    this.limiter.threshold.value = -4;
+    this.limiter.knee.value = 0;
+    this.limiter.ratio.value = 20;
+    this.limiter.attack.value = 0.002;
+    this.limiter.release.value = 0.12;
+    this.master.connect(this.lowShelf).connect(this.limiter).connect(this.context.destination);
+    return this.master;
+  },
+  isBassBoosted: false,
+  setBassBoost(isOn) {
+    if (this.isBassBoosted === isOn || !this.context) return;
+    this.isBassBoosted = isOn;
+    this.output();
+    const at = this.context.currentTime;
+    this.master.gain.setTargetAtTime(isOn ? BASS_BOOST_GAIN : 1, at, 0.05);
+    this.lowShelf.gain.setTargetAtTime(isOn ? 15 : 0, at, 0.05);
+  },
   beep(frequency, duration, { type = "square", gain = 0.045, slideTo = null, delay = 0 } = {}) {
     if (this.isMuted || !this.context || this.context.state !== "running") return;
     const start = this.context.currentTime + delay;
@@ -99,7 +195,7 @@ const sound = {
     if (slideTo) oscillator.frequency.exponentialRampToValueAtTime(slideTo, start + duration);
     volume.gain.setValueAtTime(gain, start);
     volume.gain.exponentialRampToValueAtTime(0.001, start + duration);
-    oscillator.connect(volume).connect(this.context.destination);
+    oscillator.connect(volume).connect(this.output());
     oscillator.start(start);
     oscillator.stop(start + duration);
   },
@@ -143,7 +239,9 @@ function handleMessage(message) {
     case "welcome": return handleWelcome(message);
     case "ready": $("status").textContent = ""; return;
     case "lobby": return handleLobby(message);
-    case "state": return handleState(message);
+    case "sync": return handleSync(message);
+    case "i": return state.predictor?.ingestRemoteInput(message.o, message.q, message.s, message.i);
+    case "pong": return state.predictor?.observePong(message.c, message.s, performance.now());
     case "notice":
       $("lobby-message").textContent = "Vajag vairāk spēlētāju";
       return;
@@ -153,6 +251,7 @@ function handleMessage(message) {
 
 function handleWelcome({ me, token, code }) {
   state.me = me;
+  state.predictor = null;
   state.code = code;
   state.connection.url = `${SOCKET_BASE}/pingpong/lobbies/${code}`;
   writeStorage(sessionStorage, STORAGE_KEYS.session, JSON.stringify({ code, token }));
@@ -167,8 +266,10 @@ function leaveToMenu(messageText = "") {
   state.me = null;
   state.code = null;
   state.lobby = null;
-  state.latest = null;
-  state.snapshots = [];
+  state.predictor = null;
+  state.view = null;
+  sound.setBassBoost(false);
+  syncGameControls(null);
   writeStorage(sessionStorage, STORAGE_KEYS.session, null);
   const url = new URL(location.href);
   url.searchParams.delete("join");
@@ -198,20 +299,29 @@ function handleLobby(lobby) {
 }
 
 function resetMatchView() {
-  state.snapshots = [];
-  state.latest = null;
-  state.clockOffset = null;
-  state.localPaddleY = null;
+  state.predictor = null;
+  state.view = null;
   state.announcement = null;
   state.particles = [];
   state.trails.clear();
   state.countdownShown = 0;
   state.sentDir = 0;
   state.pointerTarget = null;
-  syncKeyInput(true);
+  state.isPointerDirty = false;
+  state.queuedActions = [];
+  state.nextPingAt = 0;
+  state.pingCount = 0;
+  state.bubble = null;
+  state.spamPresses = [];
+  state.twofaKey = "";
+  state.twofaEntry = "";
+  state.lastBossCue = "";
+  sound.setBassBoost(false);
+  syncGameControls(null);
 }
 
 function playerName(id) {
+  if (id === JOHN_ID) return "John Pong";
   return state.lobby?.players.find(player => player.id === id)?.name ?? "Pametis spēli";
 }
 
@@ -219,7 +329,13 @@ function teamNames(team) {
   return team.map(playerName).join(", ");
 }
 
+function myPaddleRow(view = state.view) {
+  return view?.paddles.find(row => row[5] === state.me) ?? null;
+}
+
 function myTeam() {
+  const row = myPaddleRow();
+  if (row) return row[1];
   return state.lobby?.teams?.findIndex(team => team.includes(state.me)) ?? -1;
 }
 
@@ -333,6 +449,7 @@ function renderLobby() {
   checkRadio("intensity", settings.intensity);
   checkRadio("aiDifficulty", settings.aiDifficulty);
   $("mode-info").textContent = mode.info;
+  $("target-score-setting").hidden = mode.fixedTarget !== undefined;
   $("chaotic").checked = settings.chaotic;
   $("ai-enabled").checked = settings.aiEnabled;
   $("event-settings").hidden = !mode.usesEvents;
@@ -347,7 +464,7 @@ function renderLobby() {
     : !hasEnoughPlayers
       ? `Šim režīmam vajag vismaz ${mode.minPlayers} spēlētājus`
       : players.length === 1 && settings.mode !== "boss"
-        ? "Esi viens: pretī stāsies AI. Uzaicini klasesbiedrus ar kodu!"
+        ? "Esi viens: pretī stāsies John Pong. Uzaicini klasesbiedrus ar kodu!"
         : "";
 }
 
@@ -368,35 +485,33 @@ function renderOverlay() {
     overlay.hidden = true;
     return;
   }
-  const { winner, scores, teams, isBoss, isForfeit, champion } = lobby.result;
+  const { winner, scores, teams, isBoss, isForfeit, champion, johnLevel } = lobby.result;
+  const resultMode = lobby.settings.mode;
   const mine = teams.findIndex(team => team.includes(state.me));
   overlay.hidden = false;
   if (champion) {
-    $("overlay-kicker").textContent = "Turnīra čempions";
+    $("overlay-kicker").textContent = resultMode === "lastStanding" ? "Pēdējā rakete" : "Turnīra čempions";
     $("overlay-title").textContent = playerName(champion);
   } else if (isBoss) {
-    $("overlay-kicker").textContent = "Boss cīņa";
+    $("overlay-kicker").textContent = MODES[resultMode].label;
     $("overlay-title").textContent = winner === 0 ? "Boss uzvarēts!" : "Boss uzvarēja";
   } else {
     $("overlay-kicker").textContent = mine < 0 ? "Spēle beigusies" : mine === winner ? "Uzvara!" : "Zaudējums";
-    $("overlay-title").textContent = teamNames(teams[winner]) || "AI";
+    $("overlay-title").textContent = teamNames(teams[winner]) || "John Pong";
   }
-  $("overlay-score").textContent = `${scores[0]} : ${scores[1]}`;
-  $("overlay-detail").textContent = isForfeit ? "Pretinieks pameta spēli" : isHost() ? "" : "Gaidām vadītāja lēmumu…";
+  $("overlay-score").textContent = resultMode === "lastStanding" ? "" : resultMode === "bossRush" ? `${scores[0]} / 3 bosi` : `${scores[0]} : ${scores[1]}`;
+  const challengeDetail = resultMode === "johnChallenge" ? `Līmenis ${johnLevel + 1} no ${Object.keys(AI_LEVELS).length}. ` : "";
+  $("overlay-detail").textContent = `${challengeDetail}${isForfeit ? "Pretinieks pameta spēli" : isHost() ? "" : "Gaidām vadītāja lēmumu…"}`;
   $("overlay-actions").hidden = !isHost();
   if (!state.resultSoundPlayed) sound.sequence(mine === winner || mine < 0 ? [523, 659, 784, 1047] : [392, 330, 262, 196], 0.13);
   state.resultSoundPlayed = true;
 }
 
-function handleState(snapshot) {
+function handleSync({ acks, effects, state: matchState }) {
   state.resultSoundPlayed = false;
-  const now = performance.now();
-  const offset = snapshot.t - now;
-  state.clockOffset = state.clockOffset === null ? offset : state.clockOffset + (offset - state.clockOffset) * 0.05;
-  state.snapshots.push(snapshot);
-  if (state.snapshots.length > SNAPSHOT_BUFFER_SIZE) state.snapshots.shift();
-  state.latest = snapshot;
-  for (const effect of snapshot.fx) playEffect(effect);
+  state.predictor ??= new MatchPredictor({ me: state.me, settings: state.lobby.settings });
+  state.predictor.ingestSync(matchState, acks, performance.now());
+  for (const effect of effects) playEffect(effect);
 }
 
 function addParticles(x, y, count, color = COLOR.white) {
@@ -422,8 +537,105 @@ function describeSide(side) {
   return side === 0 ? "Kreisā puse" : "Labā puse";
 }
 
+function paddleRowById(id) {
+  return state.view?.paddles.find(row => row[0] === id) ?? null;
+}
+
+function showBubble(paddleId, situation, pick) {
+  const lines = JOHN_LINES[situation];
+  if (!lines) return;
+  state.bubble = { paddleId, text: lines[pick % lines.length], startedAt: performance.now() };
+  sound.sequence([620, 740, 560], 0.05, { gain: 0.02 });
+}
+
 function playEffect([kind, a, b, c]) {
   switch (kind) {
+    case "lift":
+      sound.beep(520, 0.04, { gain: 0.025 });
+      addParticles(a + PADDLE_WIDTH / 2, b + 30, 2, COLOR.accent);
+      return;
+    case "twofaOk":
+      sound.sequence([880, 1175], 0.06);
+      return;
+    case "twofaBad":
+      sound.beep(110, 0.25, { type: "sawtooth", gain: 0.06 });
+      $("twofa").classList.remove("is-wrong");
+      void $("twofa").offsetWidth;
+      $("twofa").classList.add("is-wrong");
+      return;
+    case "john": {
+      const row = paddleRowById(a);
+      if (row) addParticles(row[2] + PADDLE_WIDTH / 2, row[3], 16, COLOR.accent);
+      sound.sequence([196, 262, 392, 523], 0.06, { type: "triangle", gain: 0.05 });
+      return;
+    }
+    case "taunt":
+      showBubble(a, b, c);
+      return;
+    case "level":
+      announce(JOHN_LEVEL_NAMES[a], "Nākamais līmenis!", true);
+      sound.sequence([262, 330, 392, 523], 0.1, { type: "sawtooth", gain: 0.05 });
+      addShake(2);
+      return;
+    case "rules":
+      announce("Jauni noteikumi", a.map(id => RULE_LABELS[id]).join(" + "));
+      sound.sequence([440, 660, 440, 880], 0.07);
+      return;
+    case "heart":
+      sound.sequence([330, 165], 0.1);
+      addShake(1);
+      return;
+    case "out":
+      announce(`${playerName(a)} ārā!`, "", true);
+      sound.sequence([262, 196, 131, 98], 0.12, { type: "sawtooth", gain: 0.05 });
+      addShake(2);
+      return;
+    case "ability":
+      sound.sequence([523, 784], 0.05);
+      return;
+    case "smash":
+      sound.beep(150, 0.14, { slideTo: 60, type: "sawtooth", gain: 0.07 });
+      addParticles(a, b, 14, COLOR.danger);
+      addShake(2);
+      return;
+    case "shield":
+      sound.beep(880, 0.1, { slideTo: 1320 });
+      addParticles(a, b, 10, COLOR.ice);
+      return;
+    case "zap":
+      sound.beep(90, 0.18, { type: "sawtooth", gain: 0.06 });
+      addParticles(a, b, 10, COLOR.danger);
+      addShake(1);
+      return;
+    case "bossHit":
+      sound.beep(180, 0.16, { slideTo: 70, type: "square", gain: 0.07 });
+      addParticles(a, b, 16, VGA_COLORS[Math.floor(Math.random() * VGA_COLORS.length)]);
+      addShake(2);
+      state.flash = Math.max(state.flash, 0.35);
+      return;
+    case "bossIntro":
+      sound.sequence([55, 55, 82, 55, 110, 73], 0.2, { type: "sawtooth", gain: 0.06 });
+      addShake(3);
+      state.flash = 1;
+      return;
+    case "bossDown":
+      sound.sequence([523, 494, 440, 392, 330, 262, 196, 131, 98, 65], 0.16, { type: "sawtooth", gain: 0.06 });
+      addShake(3);
+      state.flash = 1;
+      return;
+    case "drop":
+      sound.sequence([220, 165], 0.1);
+      addShake(1);
+      return;
+    case "oracle":
+      sound.beep(1400, 0.28, { slideTo: 120, type: "sawtooth", gain: 0.05 });
+      addParticles(a, b, 18, COLOR.accent);
+      addShake(2);
+      return;
+    case "stomp":
+      sound.beep(70, 0.32, { type: "square", gain: 0.08 });
+      addShake(3);
+      return;
     case "paddle":
       sound.beep(440, 0.06);
       addParticles(a, b, 6);
@@ -462,6 +674,7 @@ function playEffect([kind, a, b, c]) {
       addShake(2);
       return;
     case "event": {
+      if (a === "kingTerry") return;
       const def = EVENTS[a];
       announce(def.label, describeSide(b) || def.info, a === "suddenDeath");
       sound.sequence(c >= 3 ? [110, 147, 110, 82] : [523, 784, 659, 1047], 0.07, c >= 3 ? { type: "sawtooth", gain: 0.06 } : {});
@@ -477,12 +690,55 @@ function currentKeyDir() {
   return up === down ? 0 : up ? -1 : 1;
 }
 
-function syncKeyInput(isForced = false) {
+function gatherLocalInputs() {
+  if (state.lobby?.phase !== "match" || !state.predictor?.match?.paddles.some(paddle => paddle.owner === state.me)) return [];
+  const inputs = [];
   const dir = currentKeyDir();
-  if (!isForced && dir === state.sentDir) return;
-  state.sentDir = dir;
-  state.pointerTarget = null;
-  state.connection?.send({ type: "input", dir });
+  if (dir !== state.sentDir) {
+    state.sentDir = dir;
+    state.pointerTarget = null;
+    state.isPointerDirty = false;
+    inputs.push({ dir });
+  }
+  const now = performance.now();
+  if (state.isPointerDirty && dir === 0 && now - state.lastTargetSentAt >= TARGET_SEND_INTERVAL_MS) {
+    state.lastTargetSentAt = now;
+    state.isPointerDirty = false;
+    inputs.push({ target: Math.round(state.pointerTarget) });
+  }
+  inputs.push(...state.queuedActions);
+  state.queuedActions = [];
+  return inputs;
+}
+
+function sendLocalInput({ seq, step, input }) {
+  state.connection?.send({ type: "input", q: seq, s: step, i: input });
+}
+
+function pressSpam() {
+  sound.unlock();
+  state.queuedActions.push({ spam: true });
+  const now = performance.now();
+  state.spamPresses.push(now);
+  while (state.spamPresses.length && now - state.spamPresses[0] > 1000) state.spamPresses.shift();
+}
+
+function useMyAbility() {
+  state.queuedActions.push({ ability: true });
+}
+
+function isMatchInputActive() {
+  return state.lobby?.phase === "match" && state.view !== null;
+}
+
+function enterTwofaDigit(digit) {
+  const challenge = myPaddleRow()?.[8].challenge;
+  if (!challenge) return;
+  state.twofaEntry += digit;
+  sound.beep(700, 0.03, { gain: 0.02 });
+  if (state.twofaEntry.length < challenge.answer.length) return;
+  state.queuedActions.push({ answer: state.twofaEntry });
+  state.twofaEntry = "";
 }
 
 const KEY_DIRECTIONS = { ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down" };
@@ -493,36 +749,41 @@ function isTypingTarget(target) {
 
 addEventListener("keydown", event => {
   sound.unlock();
+  if (isTypingTarget(event.target) || !isMatchInputActive()) return;
   const direction = KEY_DIRECTIONS[event.code];
-  if (!direction || isTypingTarget(event.target) || state.lobby?.phase !== "match") return;
-  event.preventDefault();
-  state.pressedKeys.add(direction);
-  syncKeyInput();
+  if (direction) {
+    event.preventDefault();
+    state.pressedKeys.add(direction);
+    return;
+  }
+  if (event.code === "Space" && state.view.mods.spam) {
+    event.preventDefault();
+    if (!event.repeat) pressSpam();
+    return;
+  }
+  if (event.code === "KeyE" && !event.repeat) return useMyAbility();
+  if (/^[0-9]$/.test(event.key) && !event.repeat) return enterTwofaDigit(event.key);
+  if (event.code === "Backspace") state.twofaEntry = state.twofaEntry.slice(0, -1);
 });
 
 addEventListener("keyup", event => {
   const direction = KEY_DIRECTIONS[event.code];
-  if (!direction) return;
-  state.pressedKeys.delete(direction);
-  if (state.lobby?.phase === "match") syncKeyInput();
+  if (direction) state.pressedKeys.delete(direction);
 });
 
-addEventListener("blur", () => {
-  state.pressedKeys.clear();
-  if (state.lobby?.phase === "match") syncKeyInput();
+addEventListener("blur", () => state.pressedKeys.clear());
+
+addEventListener("pointerdown", event => {
+  if (!isMatchInputActive() || !state.view.mods.spam || event.target instanceof HTMLButtonElement) return;
+  pressSpam();
 });
 
 function handlePointer(event) {
-  if (state.lobby?.phase !== "match") return;
+  if (!isMatchInputActive()) return;
   const bounds = canvas.getBoundingClientRect();
   const rawY = (event.clientY - bounds.top) / bounds.height * ARENA_HEIGHT;
-  const y = state.latest?.mods.flip ? ARENA_HEIGHT - rawY : rawY;
-  state.pointerTarget = y;
-  const now = performance.now();
-  if (now - state.lastTargetSentAt < TARGET_SEND_INTERVAL_MS) return;
-  state.lastTargetSentAt = now;
-  state.sentDir = 0;
-  state.connection?.send({ type: "input", target: Math.round(y) });
+  state.pointerTarget = state.view.mods.flip ? ARENA_HEIGHT - rawY : rawY;
+  state.isPointerDirty = true;
 }
 
 canvas.addEventListener("pointermove", handlePointer);
@@ -530,77 +791,6 @@ canvas.addEventListener("pointerdown", event => {
   sound.unlock();
   handlePointer(event);
 });
-
-function myPaddle(snapshot) {
-  return snapshot.paddles.find(paddle => paddle[5] === state.me) ?? null;
-}
-
-function updateLocalPaddle(deltaMs) {
-  const snapshot = state.latest;
-  const paddle = snapshot && myPaddle(snapshot);
-  if (!paddle || paddle[6]) {
-    state.localPaddleY = null;
-    return;
-  }
-  const [, side, , serverY, height] = paddle;
-  state.localPaddleY ??= serverY;
-  const { invert, frozen, paddleSpeed } = snapshot.mods;
-  const speed = PADDLE_SPEED * paddleSpeed[side];
-  const seconds = deltaMs / 1000;
-  let isMoving = false;
-  if (!frozen[side] && snapshot.phase !== "over") {
-    if (state.pointerTarget !== null) {
-      const target = invert[side] ? ARENA_HEIGHT - state.pointerTarget : state.pointerTarget;
-      const gap = target - state.localPaddleY;
-      isMoving = Math.abs(gap) > 1;
-      state.localPaddleY += Math.sign(gap) * Math.min(Math.abs(gap), speed * seconds);
-    } else {
-      const dir = currentKeyDir() * (invert[side] ? -1 : 1);
-      isMoving = dir !== 0;
-      state.localPaddleY += dir * speed * seconds;
-    }
-  }
-  const half = height / 2;
-  state.localPaddleY = Math.max(snapshot.top + half, Math.min(snapshot.bottom - half, state.localPaddleY));
-  const error = serverY - state.localPaddleY;
-  const tolerance = isMoving ? speed * 0.12 : 0;
-  if (Math.abs(error) > tolerance) state.localPaddleY += (error - Math.sign(error) * tolerance) * Math.min(1, deltaMs * 0.012);
-}
-
-function interpolateRows(fromRows, toRows, ratio, xIndex, yIndex) {
-  return toRows.map(row => {
-    const previous = fromRows.find(candidate => candidate[0] === row[0]);
-    if (!previous) return row;
-    const distance = Math.hypot(row[xIndex] - previous[xIndex], row[yIndex] - previous[yIndex]);
-    if (distance > TELEPORT_DISTANCE) return row;
-    const copy = [...row];
-    copy[xIndex] = previous[xIndex] + (row[xIndex] - previous[xIndex]) * ratio;
-    copy[yIndex] = previous[yIndex] + (row[yIndex] - previous[yIndex]) * ratio;
-    return copy;
-  });
-}
-
-function viewForNow(now) {
-  const { snapshots, latest, clockOffset } = state;
-  if (!latest) return null;
-  const renderT = now + clockOffset - INTERPOLATION_DELAY_MS;
-  let previous = null;
-  let next = null;
-  for (let index = snapshots.length - 1; index >= 0; index--) {
-    if (snapshots[index].t <= renderT) {
-      previous = snapshots[index];
-      next = snapshots[index + 1] ?? null;
-      break;
-    }
-  }
-  if (!previous || !next) return latest;
-  const ratio = Math.min(1, (renderT - previous.t) / Math.max(1, next.t - previous.t));
-  return {
-    ...next,
-    balls: interpolateRows(previous.balls, next.balls, ratio, 1, 2),
-    paddles: interpolateRows(previous.paddles, next.paddles, ratio, 2, 3),
-  };
-}
 
 function setFont(size) {
   ctx.font = `${size}px ${FONT_FAMILY}`;
@@ -623,12 +813,17 @@ function drawWalls(view) {
   ctx.fillStyle = COLOR.white;
   ctx.fillRect(0, 0, ARENA_WIDTH, 3);
   ctx.fillRect(0, ARENA_HEIGHT - 3, ARENA_WIDTH, 3);
-  if (view.top > 0) drawHatchedWall(0, view.top);
-  if (view.bottom < ARENA_HEIGHT) drawHatchedWall(view.bottom, ARENA_HEIGHT - view.bottom);
+  const wallColor = view.mods.redSea ? "#a81f1f" : COLOR.dim;
+  if (view.top > 0) drawHatchedWall(0, view.top, wallColor);
+  if (view.bottom < ARENA_HEIGHT) drawHatchedWall(view.bottom, ARENA_HEIGHT - view.bottom, wallColor);
+  if (view.mods.rightWall) {
+    ctx.fillStyle = COLOR.white;
+    ctx.fillRect(ARENA_WIDTH - 3, 0, 3, ARENA_HEIGHT);
+  }
 }
 
-function drawHatchedWall(y, height) {
-  ctx.fillStyle = COLOR.dim;
+function drawHatchedWall(y, height, color) {
+  ctx.fillStyle = color;
   ctx.fillRect(0, y, ARENA_WIDTH, height);
   ctx.fillStyle = COLOR.black;
   for (let x = 0; x < ARENA_WIDTH; x += 24) ctx.fillRect(x, y, 12, height);
@@ -674,28 +869,353 @@ function kingSide(view) {
   return view.active.find(row => row[0] === "king")?.[3] ?? null;
 }
 
-function drawPaddles(view) {
+function drawHearts(x, y, count) {
+  ctx.fillStyle = COLOR.danger;
+  for (let index = 0; index < count; index++) {
+    const heartX = x + index * 10;
+    ctx.fillRect(heartX, y, 3, 3);
+    ctx.fillRect(heartX + 4, y, 3, 3);
+    ctx.fillRect(heartX, y + 3, 7, 2);
+    ctx.fillRect(heartX + 2, y + 5, 3, 2);
+  }
+}
+
+function drawJohnLook(x, y, top, height, paddle, view, now) {
+  const john = paddle.john;
+  const centerX = x + PADDLE_WIDTH / 2;
+  const scale = Math.min(2.4, Math.max(1, PADDLE_WIDTH / 12));
+  ctx.fillStyle = COLOR.dim;
+  ctx.fillRect(centerX - 12, top - 5, 24, 3);
+  ctx.fillRect(centerX - 7, top - 13, 14, 8);
+  const nearestBall = view.balls[0];
+  const gazeY = nearestBall ? Math.max(-2, Math.min(2, (nearestBall[2] - y) / 80)) : 0;
+  const eyeY = Math.max(top + 4, y - height * 0.22);
+  if (john.mood === "cocky") {
+    ctx.fillStyle = COLOR.black;
+    ctx.fillRect(x - 3, eyeY, PADDLE_WIDTH + 6, 3);
+    ctx.fillRect(x, eyeY, 5, 5);
+    ctx.fillRect(x + 7, eyeY, 5, 5);
+  } else {
+    ctx.fillStyle = john.mood === "angry" ? COLOR.danger : COLOR.black;
+    ctx.fillRect(x + 2, eyeY + gazeY, 3 * scale, 3 * scale);
+    ctx.fillRect(x + 7, eyeY + gazeY, 3 * scale, 3 * scale);
+    if (john.mood === "angry") {
+      ctx.fillStyle = COLOR.black;
+      ctx.fillRect(x + 1, eyeY - 3, 10, 2);
+    }
+  }
+  ctx.fillStyle = COLOR.black;
+  ctx.fillRect(x + 3, eyeY + 9, john.mood === "nervous" ? 3 : 6, 2);
+  if (john.mood === "nervous") {
+    ctx.fillStyle = COLOR.ice;
+    ctx.fillRect(x - 5, top + 6 + (now / 18) % 24, 3, 5);
+  }
+}
+
+function drawPaddles(view, now) {
   const king = kingSide(view);
   for (const row of view.paddles) {
-    const [, side, x, serverY, height, owner, isAi, isBoss] = row;
+    const [, side, x, y, height, owner, isAi, isBoss, paddle, isCooling] = row;
     const isMine = owner === state.me && state.me !== null;
-    const y = isMine && state.localPaddleY !== null ? state.localPaddleY : serverY;
     const top = y - height / 2;
     const isFrozen = view.mods.frozen[side];
-    ctx.fillStyle = isFrozen ? COLOR.ice : isAi && !isBoss ? "#a9b2a5" : COLOR.white;
+    const isStunned = view.t < paddle.stunUntil;
+    const joinAge = paddle.john ? view.t - paddle.john.joinedAt : Infinity;
+    const isMaterializing = joinAge < JOHN_JOIN_MS;
+    ctx.globalAlpha = isCooling ? 0.3 : isMaterializing ? (Math.floor(now / 60) % 2 ? 0.25 : 0.9) : 1;
+    ctx.fillStyle = isStunned ? (Math.floor(now / 70) % 2 ? COLOR.danger : COLOR.white) : isFrozen || paddle.challenge ? COLOR.ice : isAi && !paddle.john ? "#a9b2a5" : COLOR.white;
     ctx.fillRect(x, top, PADDLE_WIDTH, height);
-    if (isAi && !isBoss) {
+    ctx.globalAlpha = 1;
+    if (isAi && !paddle.john) {
       ctx.fillStyle = COLOR.black;
       for (let stripe = top + 6; stripe < top + height - 4; stripe += 12) ctx.fillRect(x, stripe, PADDLE_WIDTH, 4);
     }
+    if (paddle.john && !isMaterializing) drawJohnLook(x, y, top, height, paddle, view, now);
     if (isMine) {
       ctx.fillStyle = COLOR.accent;
       ctx.fillRect(side === 0 ? x - 5 : x + PADDLE_WIDTH + 2, top + 2, 3, height - 4);
     }
-    if (isBoss) drawText("BOSS", x - 6, top - 12, 9, COLOR.danger, "right");
-    else if (isAi && !owner) drawText("AI", x + PADDLE_WIDTH / 2, top - 12, 9, COLOR.dim);
-    if (king === side) drawCrown(x + PADDLE_WIDTH / 2, top - (isAi ? 28 : 14));
+    if (view.t < paddle.shieldUntil) {
+      ctx.fillStyle = COLOR.ice;
+      ctx.fillRect(side === 0 ? 0 : ARENA_WIDTH - 6, 0, 6, ARENA_HEIGHT);
+    }
+    if (view.t < paddle.smashUntil) {
+      ctx.strokeStyle = COLOR.danger;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 3, top - 3, PADDLE_WIDTH + 6, height + 6);
+    }
+    if (paddle.lives !== null) drawHearts(x - 8, top - 24, paddle.lives);
+    if (paddle.challenge) drawText("2FA", x + PADDLE_WIDTH / 2, top - (paddle.john ? 24 : 12), 8, COLOR.ice);
+    else if (isBoss) drawText("BOSS", x - 18, top - 8, 9, COLOR.danger, "right");
+    else if (paddle.john) drawText(joinAge < 3000 ? "JOHN PONG" : "JOHN", x + PADDLE_WIDTH / 2, top - 22, 8, COLOR.dim);
+    else if (isAi) drawText("ATVIENOTS", x + PADDLE_WIDTH / 2, top - 12, 8, COLOR.dim);
+    if (king === side) drawCrown(x + PADDLE_WIDTH / 2, top - (paddle.john ? 34 : 14));
   }
+}
+
+function drawJohnBubble(view, now) {
+  const bubble = state.bubble;
+  if (!bubble) return;
+  const age = now - bubble.startedAt;
+  const row = view.paddles.find(candidate => candidate[0] === bubble.paddleId);
+  if (age > BUBBLE_MS || !row) {
+    state.bubble = null;
+    return;
+  }
+  const [, side, x, y, height] = row;
+  const size = 9;
+  setFont(size);
+  const width = Math.min(360, ctx.measureText(bubble.text).width) + 18;
+  const boxX = side === 0 ? x + 26 : x - 14 - width;
+  const rawY = view.mods.flip ? ARENA_HEIGHT - y : y;
+  const boxY = Math.max(24, Math.min(ARENA_HEIGHT - 44, rawY - height / 2 - 6));
+  const shown = bubble.text.slice(0, Math.ceil(age / TYPE_MS_PER_CHAR));
+  ctx.globalAlpha = Math.min(1, (BUBBLE_MS - age) / 250);
+  ctx.fillStyle = COLOR.black;
+  ctx.fillRect(boxX, boxY, width, 22);
+  ctx.strokeStyle = COLOR.white;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(boxX, boxY, width, 22);
+  drawText(fitText(shown, 340, size), boxX + 9, boxY + 12, size, COLOR.white, "left");
+  ctx.globalAlpha = 1;
+}
+
+function drawSprite(sprite, centerX, centerY, pixel, isFlashing, alpha) {
+  const originX = centerX - sprite[0].length * pixel / 2;
+  const originY = centerY - sprite.length * pixel / 2;
+  ctx.globalAlpha = alpha;
+  sprite.forEach((line, rowIndex) => {
+    for (let column = 0; column < line.length; column++) {
+      const key = line[column];
+      if (key === ".") continue;
+      ctx.fillStyle = isFlashing ? COLOR.white : SPRITE_COLORS[key];
+      ctx.fillRect(originX + column * pixel, originY + rowIndex * pixel, pixel, pixel);
+    }
+  });
+  ctx.globalAlpha = 1;
+}
+
+function drawJohnPrime(boss, isFlashing, alpha) {
+  const left = boss.x - boss.w / 2;
+  const top = boss.y - boss.h / 2;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = isFlashing ? COLOR.danger : COLOR.white;
+  ctx.fillRect(left, top, boss.w, boss.h);
+  ctx.fillStyle = COLOR.dim;
+  ctx.fillRect(left - 12, top - 8, boss.w + 24, 8);
+  ctx.fillRect(left + 4, top - 26, boss.w - 8, 18);
+  ctx.fillStyle = COLOR.black;
+  ctx.fillRect(left - 4, top + 26, boss.w + 8, 6);
+  ctx.fillRect(left + 3, top + 26, 15, 12);
+  ctx.fillRect(left + boss.w - 18, top + 26, 15, 12);
+  ctx.fillRect(left + 10, top + 58, boss.w - 20, 5);
+  ctx.globalAlpha = 1;
+}
+
+function drawBoss(view, now) {
+  const boss = view.boss;
+  if (!boss) return;
+  const info = BOSS_INFO[boss.id];
+  const isIntro = boss.phase === "intro";
+  const isDown = boss.phase === "defeat" || boss.phase === "leave";
+  const introGrowth = isIntro ? Math.min(1, (view.t - boss.startedAt) / 1200) : 1;
+  const downFade = isDown ? Math.max(0, (boss.phaseEndsAt - view.t) / 2400) : 1;
+  const alpha = isDown ? (Math.floor(now / 70) % 2 ? downFade : downFade * 0.4) : introGrowth < 1 && Math.floor(now / 90) % 2 ? 0.45 : 1;
+  const isFlashing = view.t < boss.invulnerableUntil && Math.floor(now / 50) % 2 === 0;
+  if (info.sprite) drawSprite(info.sprite, boss.x, boss.y, 4, isFlashing, alpha);
+  else drawJohnPrime(boss, isFlashing, alpha);
+  if (boss.id === "terry" && boss.phase === "fight") {
+    ctx.strokeStyle = VGA_COLORS[Math.floor(now / 200) % VGA_COLORS.length];
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.lineDashOffset = now / 20;
+    ctx.strokeRect(boss.x - boss.w / 2 - 8, boss.y - boss.h / 2 - 8, boss.w + 16, boss.h + 16);
+    ctx.setLineDash([]);
+  }
+  for (const hazard of view.hazards) drawHazard(hazard, now);
+}
+
+function drawHazard(hazard, now) {
+  if (hazard.kind === "code" || hazard.kind === "word") {
+    const chips = hazard.kind === "code" ? CODE_CHIPS : WORD_CHIPS;
+    drawText(chips[hazard.chip % chips.length], hazard.x, hazard.y, 11, VGA_COLORS[hazard.chip % VGA_COLORS.length]);
+    return;
+  }
+  ctx.fillStyle = hazard.kind === "rock" ? "#8d8d7a" : VGA_COLORS[(hazard.id + Math.floor(now / 120)) % VGA_COLORS.length];
+  ctx.fillRect(hazard.x - hazard.r, hazard.y - hazard.r, hazard.r * 2, hazard.r * 2);
+}
+
+function drawLowRes(view, now) {
+  if (!view.mods.lowRes) return;
+  const tile = 40;
+  const shift = Math.floor(now / 380);
+  ctx.fillStyle = COLOR.black;
+  for (let column = 0; column * tile < ARENA_WIDTH; column++) {
+    for (let line = 0; line * tile < ARENA_HEIGHT; line++) {
+      if ((column * 7 + line * 13 + shift) % 4 === 0) ctx.fillRect(column * tile, line * tile, tile, tile);
+    }
+  }
+}
+
+function currentBossLine(view) {
+  const boss = view.boss;
+  const info = BOSS_INFO[boss.id];
+  if (boss.phase === "intro") {
+    const elapsed = view.t - boss.startedAt;
+    const index = elapsed < 2100 ? 0 : 1;
+    return { text: info.intro[index], age: index === 0 ? elapsed : elapsed - 2100 };
+  }
+  if (boss.phase === "defeat") return { text: info.defeat, age: 3400 - (boss.phaseEndsAt - view.t) };
+  if (boss.phase === "leave") return { text: `* ${info.name} zaudē interesi un aiziet.`, age: 2200 - (boss.phaseEndsAt - view.t) };
+  const attack = boss.attack;
+  if (!attack || view.t - attack.startedAt > ATTACK_LINE_MS) return null;
+  const line = ATTACK_LINES[attack.id] + (attack.id === "oracle" ? ORACLE_WORDS[attack.word % ORACLE_WORDS.length] : "");
+  return { text: line, age: view.t - attack.startedAt };
+}
+
+function drawBossHud(view) {
+  const boss = view.boss;
+  const info = BOSS_INFO[boss.id];
+  const barWidth = 340;
+  const barX = ARENA_WIDTH / 2 - barWidth / 2;
+  const introFill = boss.phase === "intro" ? Math.min(1, (view.t - boss.startedAt) / 1800) : 1;
+  drawText(info.name.toLocaleUpperCase("lv"), ARENA_WIDTH / 2, 20, 12, boss.stage >= 3 ? COLOR.danger : COLOR.white);
+  ctx.fillStyle = COLOR.faint;
+  ctx.fillRect(barX, 34, barWidth, 10);
+  ctx.fillStyle = boss.stage === 1 ? COLOR.accent : boss.stage === 2 ? "#ffff55" : COLOR.danger;
+  ctx.fillRect(barX, 34, barWidth * (boss.hp / boss.maxHp) * introFill, 10);
+  ctx.strokeStyle = COLOR.white;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(barX, 34, barWidth, 10);
+  if (view.lives !== null) {
+    drawHearts(20, 22, view.lives);
+    drawText(`BOSS ${view.scores[0] + 1}/3`, ARENA_WIDTH - 20, 26, 9, COLOR.dim, "right");
+  } else {
+    drawText(`${view.boss.tally[0]}`, barX - 20, 40, 11, COLOR.dim, "right");
+    drawText(`${view.boss.tally[1]}`, barX + barWidth + 20, 40, 11, COLOR.dim, "left");
+  }
+  const line = currentBossLine(view);
+  if (!line) return;
+  const chars = Math.max(0, Math.ceil(line.age / TYPE_MS_PER_CHAR));
+  if (chars !== state.typedChars && chars < line.text.length && chars % 2 === 0) sound.beep(240, 0.025, { gain: 0.015 });
+  state.typedChars = chars;
+  const boxWidth = 620;
+  const boxX = ARENA_WIDTH / 2 - boxWidth / 2;
+  const boxY = ARENA_HEIGHT - 66;
+  ctx.fillStyle = COLOR.black;
+  ctx.fillRect(boxX, boxY, boxWidth, 46);
+  ctx.strokeStyle = COLOR.white;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(boxX, boxY, boxWidth, 46);
+  drawText(fitText(line.text.slice(0, chars), boxWidth - 28, 11), boxX + 14, boxY + 24, 11, COLOR.white, "left");
+}
+
+function syncBossCues(view, now) {
+  const boss = view.boss;
+  if (!boss) {
+    state.lastBossCue = "";
+    return;
+  }
+  if (boss.phase === "defeat" && now >= state.nextExplosionAt) {
+    state.nextExplosionAt = now + 170;
+    addParticles(boss.x + (Math.random() - 0.5) * boss.w, boss.y + (Math.random() - 0.5) * boss.h, 14, VGA_COLORS[Math.floor(Math.random() * VGA_COLORS.length)]);
+    sound.beep(70 + Math.random() * 80, 0.14, { type: "sawtooth", gain: 0.05 });
+    addShake(2);
+  }
+  const cue = `${boss.stage}:${boss.attack?.id ?? ""}:${boss.attack?.startedAt ?? ""}`;
+  if (cue === state.lastBossCue) return;
+  const wasStage = Number(state.lastBossCue.split(":")[0]);
+  state.lastBossCue = cue;
+  if (boss.attack) sound.sequence([165, 220, 330], 0.07, { type: "sawtooth", gain: 0.05 });
+  if (wasStage && wasStage !== boss.stage) {
+    announce(`${boss.stage}. fāze`, "Uzbrukumi kļūst bīstamāki!", true);
+    sound.sequence([110, 147, 196, 262], 0.1, { type: "sawtooth", gain: 0.06 });
+  }
+}
+
+function updateBassBoost(view, now, deltaMs) {
+  const isOn = Boolean(view?.mods.bassBoost) && state.lobby?.phase === "match";
+  sound.setBassBoost(isOn);
+  state.bassPulse *= Math.pow(0.992, deltaMs);
+  if (!isOn || now < state.nextBeatAt) return;
+  state.nextBeatAt = now + BASS_BEAT_MS;
+  state.bassPulse = 1;
+  sound.beep(100, 0.2, { type: "sine", gain: 0.3, slideTo: 42 });
+  addShake(1);
+}
+
+function drawBassBoostMeter(view, now) {
+  if (!view.mods.bassBoost) return;
+  const blink = Math.floor(now / 110) % 2 === 0;
+  drawText("BASS BOOST 1000%", ARENA_WIDTH / 2, 132, 16, blink ? COLOR.danger : "#ffff55");
+  const bars = 20;
+  for (let index = 0; index < bars; index++) {
+    const level = 0.4 + 0.6 * state.bassPulse * Math.abs(Math.sin(index * 1.7 + now / 90));
+    ctx.fillStyle = index > 14 ? COLOR.danger : index > 9 ? "#ffff55" : COLOR.accent;
+    ctx.fillRect(ARENA_WIDTH / 2 - 150 + index * 15, 172 - 22 * level, 11, 22 * level);
+  }
+  ctx.globalAlpha = state.bassPulse * 0.5;
+  ctx.strokeStyle = COLOR.danger;
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, ARENA_WIDTH - 10, ARENA_HEIGHT - 10);
+  ctx.globalAlpha = 1;
+}
+
+function drawSpamPrompt(view, now) {
+  if (!view.mods.spam || !myPaddleRow(view)) return;
+  const nowMs = performance.now();
+  const pressesPerSecond = state.spamPresses.filter(at => nowMs - at < 1000).length;
+  const hint = IS_COARSE_POINTER ? "SIT PA EKRĀNU!" : "ATSTARPE VAI PELE!";
+  drawText(Math.floor(now / 120) % 2 ? hint : `SPIED! ${pressesPerSecond}/s`, ARENA_WIDTH / 2, ARENA_HEIGHT - 44, 15, pressesPerSecond >= 6 ? COLOR.accent : COLOR.danger);
+}
+
+function syncTwofaPanel(view) {
+  const challenge = myPaddleRow(view)?.[8].challenge ?? null;
+  const panel = $("twofa");
+  panel.hidden = !challenge;
+  if (!challenge) {
+    state.twofaKey = "";
+    state.twofaEntry = "";
+    return;
+  }
+  const key = `${challenge.kind}:${challenge.shown}`;
+  if (key !== state.twofaKey) {
+    state.twofaKey = key;
+    state.twofaEntry = "";
+    $("twofa-prompt").textContent = TWOFA_PROMPTS[challenge.kind](challenge);
+    $("twofa-shown").textContent = challenge.kind === "pick"
+      ? challenge.options.map((word, index) => `${index + 1}${TWOFA_SYMBOLS[word]}`).join("  ")
+      : challenge.kind === "math" ? `${challenge.shown} = ?` : challenge.shown;
+    $("twofa-footer").textContent = TWOFA_FOOTERS[challenge.answer.charCodeAt(0) % TWOFA_FOOTERS.length];
+  }
+  const entered = state.twofaEntry.padEnd(challenge.answer.length, "_");
+  if ($("twofa-entry").textContent !== entered) $("twofa-entry").textContent = entered;
+  const timer = view.active.find(row => row[0] === "twofa");
+  if (timer) $("twofa-timer").style.width = `${Math.max(0, timer[1] / timer[2] * 100)}%`;
+}
+
+function syncAbilityButton(view) {
+  const paddle = myPaddleRow(view)?.[8] ?? null;
+  const button = $("ability");
+  button.hidden = !paddle?.ability;
+  if (!paddle?.ability) return;
+  const remainingMs = paddle.abilityReadyAt - view.t;
+  const text = remainingMs > 0 ? `${Math.ceil(remainingMs / 1000)} s` : `${ABILITY_LABELS[paddle.ability]} (E)`;
+  if (text === state.abilityText) return;
+  state.abilityText = text;
+  button.textContent = text;
+  button.disabled = remainingMs > 0;
+}
+
+function syncGameControls(view) {
+  if (!view) {
+    $("twofa").hidden = true;
+    $("ability").hidden = true;
+    state.abilityText = "";
+    return;
+  }
+  syncTwofaPanel(view);
+  syncAbilityButton(view);
 }
 
 function drawCrown(x, y) {
@@ -709,6 +1229,7 @@ function drawCrown(x, y) {
 function drawBalls(view, now) {
   const half = BALL_SIZE / 2;
   const alpha = view.mods.ghost ? 0.1 + 0.1 * Math.abs(Math.sin(now / 220)) : 1;
+  const ballColor = view.mods.palette ? VGA_COLORS[Math.floor(now / 140) % VGA_COLORS.length] : COLOR.white;
   const seen = new Set();
   for (const [id, x, y] of view.balls) {
     seen.add(id);
@@ -721,7 +1242,7 @@ function drawBalls(view, now) {
       });
     }
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = COLOR.white;
+    ctx.fillStyle = ballColor;
     ctx.fillRect(x - half, y - half, BALL_SIZE, BALL_SIZE);
     ctx.globalAlpha = 1;
     trail.push({ x, y });
@@ -773,12 +1294,14 @@ function drawGravityHint(view, now) {
 }
 
 function drawScores(view) {
+  if (view.boss) return;
   const lobbyTeams = state.lobby?.teams;
+  if (view.paddles.some(row => row[8].lives !== null)) return;
   drawText(String(view.scores[0]), ARENA_WIDTH / 2 - 90, 58, 44, COLOR.white);
   drawText(String(view.scores[1]), ARENA_WIDTH / 2 + 90, 58, 44, COLOR.white);
   if (!lobbyTeams) return;
-  const leftName = teamNames(lobbyTeams[0]) || "AI";
-  const rightName = state.lobby.settings.mode === "boss" ? "BOSS" : teamNames(lobbyTeams[1]) || "AI";
+  const leftName = teamNames(lobbyTeams[0]) || "John Pong";
+  const rightName = state.lobby.settings.mode === "boss" ? "JOHN PONG (BOSS)" : teamNames(lobbyTeams[1]) || "John Pong";
   drawText(fitText(leftName, 300, 9), ARENA_WIDTH / 2 - 40, 96, 9, COLOR.dim, "right");
   drawText(fitText(rightName, 300, 9), ARENA_WIDTH / 2 + 40, 96, 9, COLOR.dim, "left");
 }
@@ -815,6 +1338,9 @@ function drawStatusLines(view) {
   if (side >= 0 && view.mods.invert[side]) lines.push(["VADĪBA APGRIEZTA", COLOR.accent]);
   if (side >= 0 && view.mods.frozen[side]) lines.push(["TU ESI SASALIS", COLOR.ice]);
   if (view.mods.suddenDeath) lines.push(["NĀKAMAIS PUNKTS UZVAR", COLOR.danger]);
+  if (view.rules.length) lines.push([view.rules.map(id => RULE_LABELS[id]).join(" + ").toLocaleUpperCase("lv"), COLOR.dim]);
+  if (state.lobby?.settings.mode === "johnChallenge") lines.push([`${view.johnLevel + 1}. LĪMENIS: ${JOHN_LEVEL_NAMES[Object.keys(JOHN_LEVEL_NAMES)[view.johnLevel]].toLocaleUpperCase("lv")}`, COLOR.dim]);
+  if (view.t < view.slowUntil) lines.push(["BUMBA PALĒNINĀTA", COLOR.ice]);
   lines.forEach(([text, color], index) => drawText(text, ARENA_WIDTH / 2, 118 + index * 16, 9, color));
 }
 
@@ -891,6 +1417,12 @@ function drawFrame(view, now, deltaMs, { hasHud }) {
   ctx.setTransform(state.renderScale, 0, 0, state.renderScale, 0, 0);
   ctx.fillStyle = COLOR.black;
   ctx.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+  if (view.mods.bassBoost && !IS_REDUCED_MOTION) {
+    const zoom = 1 + state.bassPulse * 0.025;
+    ctx.translate(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-ARENA_WIDTH / 2, -ARENA_HEIGHT / 2);
+  }
   if (state.shake > 0.2) {
     ctx.translate((Math.random() - 0.5) * state.shake * 2, (Math.random() - 0.5) * state.shake * 2);
     state.shake *= Math.pow(0.992, deltaMs);
@@ -914,13 +1446,19 @@ function drawFrame(view, now, deltaMs, { hasHud }) {
     ctx.scale(1, -1);
   }
   drawObjects(view.objects, now);
-  drawPaddles(view);
+  drawBoss(view, now);
+  drawPaddles(view, now);
   drawBalls(view, now);
   updateAndDrawParticles(deltaMs);
   drawBlackout(view);
+  drawLowRes(view, now);
   ctx.restore();
   drawSuddenDeathFrame(view, now);
   if (hasHud) {
+    if (view.boss) drawBossHud(view);
+    drawJohnBubble(view, now);
+    drawBassBoostMeter(view, now);
+    drawSpamPrompt(view, now);
     drawActiveEvents(view);
     drawStatusLines(view);
     drawServeCountdown(view);
@@ -950,6 +1488,14 @@ function stepAttract(deltaMs) {
   return view;
 }
 
+function sendPingWhenDue(now) {
+  if (now < state.nextPingAt) return;
+  state.pingCount++;
+  state.nextPingAt = now + (state.pingCount <= PING_FAST_COUNT ? PING_FAST_MS : PING_SLOW_MS);
+  state.connection?.send({ type: "ping", c: now });
+  if (state.predictor?.samples.length && state.code) $("bar-code").textContent = `Kods: ${state.code} · ${Math.round(state.predictor.rtt)} ms`;
+}
+
 function frame(now) {
   requestAnimationFrame(frame);
   const deltaMs = Math.min(100, now - state.lastFrameAt);
@@ -957,15 +1503,26 @@ function frame(now) {
   const screen = document.body.dataset.screen;
   if (screen === "lobby") return;
   if (screen === "menu") {
+    sound.setBassBoost(false);
     if (!IS_REDUCED_MOTION || !state.attract) drawFrame(stepAttract(deltaMs), now, deltaMs, { hasHud: false });
     return;
   }
-  const view = viewForNow(now);
+  if (!state.predictor) {
+    drawWaitingScreen();
+    return;
+  }
+  sendPingWhenDue(now);
+  const effects = state.predictor.advance(now, gatherLocalInputs, sendLocalInput);
+  for (const effect of effects) playEffect(effect);
+  const view = state.predictor.view();
   if (!view) {
     drawWaitingScreen();
     return;
   }
-  updateLocalPaddle(deltaMs);
+  state.view = view;
+  syncGameControls(view);
+  syncBossCues(view, now);
+  updateBassBoost(view, now, deltaMs);
   drawFrame(view, now, deltaMs, { hasHud: true });
 }
 
@@ -1046,7 +1603,26 @@ function buildSettingsForm() {
   $("ai-enabled").addEventListener("change", event => sendSettings({ aiEnabled: event.target.checked }));
 }
 
+function buildTwofaKeypad() {
+  for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0"]) {
+    const key = document.createElement("button");
+    key.type = "button";
+    key.textContent = digit;
+    key.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      if (digit === "⌫") state.twofaEntry = state.twofaEntry.slice(0, -1);
+      else enterTwofaDigit(digit);
+    });
+    $("twofa-keys").append(key);
+  }
+}
+
 function wireControls() {
+  buildTwofaKeypad();
+  $("ability").addEventListener("pointerdown", event => {
+    event.preventDefault();
+    useMyAbility();
+  });
   $("exit").addEventListener("click", exitGame);
   $("create").addEventListener("click", () => {
     if (rememberName()) connectTo("/pingpong/create");
