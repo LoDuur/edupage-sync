@@ -1,5 +1,42 @@
 [
  {
+  "time": "2026-11-05T19:35:46+02:00",
+  "versions": [
+   "519",
+   "521",
+   "522"
+  ],
+  "added": [
+   "Pr 09.11 1.–2. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 09.11 3.–4. Dabaszinības (212.)",
+   "Pr 09.11 5. Matemātikas speciālās nodaļas (223.)",
+   "Pr 09.11 6. Pusdienas",
+   "Pr 09.11 7.–8. Sociālās zin. un vēsture (355.)",
+   "Pr 09.11 9. Sociālās zin. un vēsture (355.)",
+   "Ot 10.11 2.–3. Sociālās zin. un vēsture (355.)",
+   "Ot 10.11 4. Matemātikas speciālās nodaļas (223.)",
+   "Ot 10.11 5. Latviešu val. I (354.)",
+   "Ot 10.11 6. Pusdienas",
+   "Ot 10.11 7.–8. Svešval. I (B2) - angļu val. (213.)",
+   "Ot 10.11 9.–10. Matemātika I (356.)",
+   "Tr 11.11 2.–3. Datu bāzu tehnoloģijas (206.)",
+   "Tr 11.11 4. Pusdienas",
+   "Tr 11.11 5.–6. Svešval. I (B2) - angļu val. (213.)",
+   "Tr 11.11 7. Svešval. I (B2) - angļu val. (213.)",
+   "Tr 11.11 8.–9. Dabaszinības (221.)",
+   "Tr 11.11 10. Grupas stunda (104.)",
+   "Ce 12.11 2.–3. Fizika I (355.)",
+   "Ce 12.11 4. Pusdienas",
+   "Ce 12.11 5. Dabaszinības (221.)",
+   "Ce 12.11 6.–7. Svešval.(B1)- krievu val. (310.)",
+   "Ce 12.11 8.–9. Dabaszinības (212.)",
+   "Pk 13.11 1.–8. Valsts aizsardzības mācība (1.grupa) (119.)",
+   "Pk 13.11 1.–8. Valsts aizsardzības mācība (2.grupa) (118.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-10-30T15:09:39+02:00",
   "versions": [
    "518",
