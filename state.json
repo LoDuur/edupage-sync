@@ -1,44 +1,5 @@
 {
  "events": {
-  "2026-09-11|3|*115": {
-   "date": "2026-09-11",
-   "description": "Skolotājs: L.Māziņa\nStundas: 3.–4.\nStundu saraksts v505",
-   "end": "2026-09-11T11:10:00+03:00",
-   "gcal_id": "klocbuh5au847ok4u4p98n9ne8",
-   "hash": "3851a34a32f6f51da72853e463e01dbfc1b6d3c0",
-   "location": "303.",
-   "periods": "3.–4.",
-   "start": "2026-09-11T09:45:00+03:00",
-   "summary": "Sports"
-  },
-  "2026-09-11|5|*10": {
-   "date": "2026-09-11",
-   "description": "Stundas: 5.\nStundu saraksts v505",
-   "end": "2026-09-11T11:55:00+03:00",
-   "gcal_id": "plhujqri9bm1cdbbf7fepdv4bg",
-   "hash": "9c0bbdf504078484d44e188d185d92946ad88883",
-   "location": "",
-   "periods": "5.",
-   "start": "2026-09-11T11:15:00+03:00",
-   "summary": "Pusdienas"
-  },
-  "2026-09-11|6|*811": {
-   "date": "2026-09-11",
-   "dayType": "friday",
-   "description": "Skolotājs: S.Upīte\nStundas: 6.–7.\nStundu saraksts v505",
-   "end": "2026-09-11T13:25:00+03:00",
-   "gcal_id": "gep0ffq41nu8hei2ltlph3dtc8",
-   "groups": [],
-   "hash": "76b77a938aba4aeedb64234b20072788e2fd491f",
-   "location": "202.",
-   "periods": "6.–7.",
-   "start": "2026-09-11T12:00:00+03:00",
-   "summary": "Programmas koda rakstīšana (Kodēšana)",
-   "teachers": [
-    "S.Upīte"
-   ],
-   "version": "505"
-  },
   "2026-09-14|1|*113": {
    "date": "2026-09-14",
    "description": "Skolotājs: S.Krastiņa\nStundas: 1.–2.\nStundu saraksts v507",
