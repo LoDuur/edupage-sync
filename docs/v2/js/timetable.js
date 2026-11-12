@@ -1,7 +1,7 @@
 import { esc, subjectHue, addDays, weekStartOf, todayIso, shortDate, hhmm, weekRange, stateHtml, DAY_SHORT, DAY_MIN, savePref, getPrefs, parseIso } from "./store.js";
 
 const MIN_PERIODS = 10;
-const GAP_MINUTES = 15;
+const FREE_WINDOW_MINUTES = 45;
 const mobile = matchMedia("(max-width: 767px)");
 
 const periodRange = periods => {
@@ -11,6 +11,19 @@ const periodRange = periods => {
 const subPeriods = sub => (String(sub.period).match(/\d+/g) || []).map(Number);
 const isBreak = event => /^pusdienas/i.test(event.summary);
 const minutesOf = iso => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+const clockOf = minutes => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+function splitByPeriod(event) {
+  const [first] = periodRange(event.periods);
+  if (!Array.isArray(event.slots) || event.slots.length < 2) return [event];
+  const offset = event.start.slice(19);
+  return event.slots.map(([start, end], i) => ({
+    ...event,
+    periods: `${first + i}.`,
+    start: `${event.date}T${clockOf(start)}:00${offset}`,
+    end: `${event.date}T${clockOf(end)}:00${offset}`,
+  }));
+}
 
 function lessonHtml(event, subs, now, extraStyle = "") {
   const [first, last] = periodRange(event.periods);
@@ -28,6 +41,20 @@ function lessonHtml(event, subs, now, extraStyle = "") {
   </div>`;
 }
 
+function dayLessonHtml(event, subs, now) {
+  const [first, last] = periodRange(event.periods);
+  const touched = subs.some(sub => subPeriods(sub).some(p => p >= first && p <= last));
+  const start = Date.parse(event.start);
+  const end = Date.parse(event.end);
+  const classes = ["day-lesson", isBreak(event) && "is-break", now >= start && now < end && "is-now", now >= end && "is-past"].filter(Boolean).join(" ");
+  const meta = [event.location, event.teachers?.join(", "), event.groups?.join(", ")].filter(Boolean).map(esc).join(" · ");
+  return `<div class="${classes}" style="--hue:${subjectHue(event.summary)}">
+    <div class="dl-top"><span class="dl-time"><b>${hhmm(event.start)}</b> — ${hhmm(event.end)}</span><span class="dl-period">${touched ? '<span class="flag">izmaiņa</span> ' : ""}${esc(event.periods)}</span></div>
+    <div class="dl-title"><i aria-hidden="true"></i>${esc(event.summary)}</div>
+    ${meta ? `<div class="dl-meta">${meta}</div>` : ""}
+  </div>`;
+}
+
 export function createTimetable(elements, { onWeekChange } = {}) {
   const prefs = getPrefs().v2;
   let index = null;
@@ -37,7 +64,8 @@ export function createTimetable(elements, { onWeekChange } = {}) {
   let layout = prefs.layout === "day" ? "day" : "week";
 
   const weeks = () => (classData?.weeks || []).map(w => w.weekStart).sort();
-  const eventsOn = iso => (classData?.events || []).filter(e => e.date === iso).sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+  const lessons = () => (classData?.events || []).flatMap(splitByPeriod);
+  const eventsOn = iso => lessons().filter(e => e.date === iso).sort((a, b) => periodRange(a.periods)[0] - periodRange(b.periods)[0] || a.start.localeCompare(b.start));
   const subsOn = iso => (classData?.substitutions || []).filter(s => s.date === iso);
 
   function defaultWeek() {
@@ -96,15 +124,15 @@ export function createTimetable(elements, { onWeekChange } = {}) {
     const items = events.map(event => {
       const gap = previousEnd === null ? 0 : minutesOf(event.start) - previousEnd;
       previousEnd = Math.max(previousEnd ?? 0, minutesOf(event.end));
-      const gapRow = gap >= GAP_MINUTES ? `<div class="day-gap">brīvs ${gap} min</div>` : "";
-      return `${gapRow}<div class="day-item"><time>${hhmm(event.start)}<small>${hhmm(event.end)}</small></time>${lessonHtml(event, subs, now)}</div>`;
+      const gapRow = gap > 0 ? `<div class="day-break${gap >= FREE_WINDOW_MINUTES ? " is-free" : ""}"><span>${gap >= FREE_WINDOW_MINUTES ? "Brīvs logs" : "Starpbrīdis"} · ${gap} min</span></div>` : "";
+      return gapRow + dayLessonHtml(event, subs, now);
     }).join("");
     return `<div class="day-strip" role="group" aria-label="Diena">${strip}</div>${subsBox}${items ? `<div class="day-list">${items}</div>` : stateHtml("Nav stundu", "Šajā dienā stundu saraksts ir tukšs.")}`;
   }
 
   function renderNow(now) {
     const today = todayIso();
-    const upcoming = (classData?.events || []).filter(e => Date.parse(e.end) > now && !isBreak(e)).sort((a, b) => a.start.localeCompare(b.start));
+    const upcoming = lessons().filter(e => Date.parse(e.end) > now && !isBreak(e)).sort((a, b) => a.start.localeCompare(b.start));
     const current = upcoming.find(e => Date.parse(e.start) <= now);
     const next = upcoming.find(e => Date.parse(e.start) > now);
     const parts = [];

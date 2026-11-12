@@ -13,9 +13,9 @@ SCHEDULES = {
 WEEKDAY_TYPE = {0: "monday", 1: "midweek", 2: "midweek", 3: "midweek", 4: "friday"}
 
 # Subjects that keep their own bell times instead of the school-wide table.
-# Times are per lesson inside the block: 1st lesson, 2nd lesson, ...
+# Times are keyed by period number; other periods use the school-wide table.
 SUBJECT_SCHEDULES = {
-    "fizika": ["9:00-9:40", "9:50-10:30"],
+    "fizika": {2: "9:00-9:40", 3: "9:50-10:30"},
 }
 
 
@@ -90,23 +90,21 @@ def day_type(d, overrides=None):
 
 
 def subject_slots(subject):
-    """Custom (start, end) minute pairs for a subject, or None."""
+    """Custom {period: (start, end)} minute pairs for a subject, or None."""
     name = (subject or "").strip().lower()
-    for key, slots in SUBJECT_SCHEDULES.items():
+    for key, periods in SUBJECT_SCHEDULES.items():
         if name.startswith(key):
-            return [tuple(_minutes(t) for t in slot.split("-")) for slot in slots]
+            return {period: tuple(_minutes(t) for t in slot.split("-")) for period, slot in periods.items()}
     return None
 
 
 def slots(d, first_period, last_period, subject=None, overrides=None):
     """(start, end) minute pairs for each lesson of a block, subject rules first."""
-    custom = subject_slots(subject)
-    count = last_period - first_period + 1
-    if custom and count <= len(custom):
-        return custom[:count]
+    custom = subject_slots(subject) or {}
     table = TABLES[day_type(d, overrides)]
-    if all(p in table for p in range(first_period, last_period + 1)):
-        return [table[p] for p in range(first_period, last_period + 1)]
+    periods = range(first_period, last_period + 1)
+    if all(p in custom or p in table for p in periods):
+        return [custom.get(p) or table[p] for p in periods]
     return None
 
 
