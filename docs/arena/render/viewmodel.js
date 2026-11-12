@@ -3,9 +3,11 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { WEAPONS } from "../sim/weapons.js";
 import { canvasTexture } from "./textures.js";
+import { mergeObjectIntoGeometry } from "./bake.js";
 
-const MODEL_URLS = Object.fromEntries(["pistol", "smg", "ar", "aa12", "sniper", "rocket"].map(id => [id, `assets/weapons/${id}.glb?v=4`]));
+const MODEL_URLS = Object.fromEntries(["pistol", "smg", "ar", "aa12", "sniper", "rocket"].map(id => [id, `assets/weapons/${id}.glb?v=6`]));
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const tmpAnchor = V(0, 0, 0), tmpOther = V(0, 0, 0), MAG_HAND_OFFSET = V(-0.03, -0.02, 0), BOLT_HAND_OFFSET = V(-0.03, 0.02, 0);
 const CONFIG = {
   pistol: { moving: "Slide", mag: "Mag", magDir: [0, -1, 0.15], hold: V(0.15, -0.15, -0.36), kickBack: 0.035, kickPitch: 0.2, kickYaw: 0.015, boltTravel: 0.03, flashScale: 0.22, light: 1.4, sideFlash: false, shell: { r: 0.0048, len: 0.019, brass: true }, reload: { tilt: -0.35, drop: 0.3, empty: "slide" }, handL: [-0.25, -0.2] },
   smg: { moving: "Bolt", mag: "Mag", magDir: [0, -1, 0.05], hold: V(0.15, -0.19, -0.4), kickBack: 0.02, kickPitch: 0.1, kickYaw: 0.03, boltTravel: 0.035, flashScale: 0.2, light: 1.2, sideFlash: false, shell: { r: 0.0048, len: 0.019, brass: true }, reload: { tilt: -0.3, drop: 0.28, empty: "bolt" }, handL: [0.15, 1.2] },
@@ -167,6 +169,7 @@ export function createViewmodel({ onCue } = {}) {
       root.add(model);
       root.visible = false;
       sway.add(root);
+      const worldGeometry = mergeObjectIntoGeometry(model);
       const part = name => (name ? model.getObjectByName(name) : null);
       const moving = part(CONFIG[id].moving), mag = part(CONFIG[id].mag);
       const muzzle = part("Muzzle") || new THREE.Object3D();
@@ -184,7 +187,7 @@ export function createViewmodel({ onCue } = {}) {
       sideFlash.visible = false;
       muzzle.add(sideFlash);
       rigs[id] = {
-        id, root, model, moving, mag, muzzle, eject, handR, handL, handLAnchor, flash, sideFlash,
+        id, root, model, worldGeometry, moving, mag, muzzle, eject, handR, handL, handLAnchor, flash, sideFlash,
         movingBase: moving?.position.clone(), magBase: mag?.position.clone(), trigger: part("Trigger"), hammer: part("Hammer"),
         shellPool: CONFIG[id].shell ? Array.from({ length: 10 }, () => makeShell(id)) : [], shellIndex: 0,
       };
@@ -302,23 +305,23 @@ export function createViewmodel({ onCue } = {}) {
     if (rig.trigger) rig.trigger.rotation.x = (motion.isFiring ? 0.25 : 0);
     if (rig.hammer) rig.hammer.rotation.x = boltT < 1 ? 0.6 * (1 - boltT) : 0;
 
-    const anchor = new THREE.Vector3();
+    const anchor = tmpAnchor;
     rig.handLAnchor.updateWorldMatrix(true, false);
     anchor.setFromMatrixPosition(rig.handLAnchor.matrixWorld);
     rig.root.worldToLocal(anchor);
     if (pose.handToMag > 0 && rig.mag) {
-      const magPos = new THREE.Vector3();
+      const magPos = tmpOther;
       rig.mag.updateWorldMatrix(true, false);
       magPos.setFromMatrixPosition(rig.mag.matrixWorld);
       rig.root.worldToLocal(magPos);
-      anchor.lerp(magPos.add(new THREE.Vector3(-0.03, -0.02, 0)), pose.handToMag);
+      anchor.lerp(magPos.add(MAG_HAND_OFFSET), pose.handToMag);
     }
     if (pose.handToBolt > 0 && rig.moving) {
-      const boltPos = new THREE.Vector3();
+      const boltPos = tmpOther;
       rig.moving.updateWorldMatrix(true, false);
       boltPos.setFromMatrixPosition(rig.moving.matrixWorld);
       rig.root.worldToLocal(boltPos);
-      anchor.lerp(boltPos.add(new THREE.Vector3(-0.03, 0.02, 0)), pose.handToBolt);
+      anchor.lerp(boltPos.add(BOLT_HAND_OFFSET), pose.handToBolt);
     }
     rig.handL.position.copy(anchor);
     rig.handL.rotation.set(cfg.handL[0], 0, cfg.handL[1]);
@@ -361,12 +364,12 @@ export function createViewmodel({ onCue } = {}) {
     return out.applyMatrix4(mainCamera.matrixWorld);
   }
 
+  const worldWeaponMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.55, envMapIntensity: 0.5 });
+
   function weaponFactory(id) {
     const rig = rigs[id];
     if (!rig) return null;
-    const clone = rig.model.clone(true);
-    clone.traverse(o => { o.castShadow = true; });
-    return clone;
+    return new THREE.Mesh(rig.worldGeometry, worldWeaponMaterial);
   }
 
   return {

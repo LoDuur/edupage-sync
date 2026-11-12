@@ -105,6 +105,8 @@ The weapon models (`docs/arena/assets/weapons/*.glb`) are built from code. Run `
 "/path/to/Blender" --background --factory-startup --python tools/arena/build_weapons.py
 ```
 
+Performance: bot bodies, held weapons, pickups and static decor are merged into a few meshes (`render/bake.js`), which cut draw calls per frame from about 460 to about 110 with 7 bots. Settings has "Rādīt FPS" (fps, frame time, draw calls) and automatic resolution scaling for slow GPUs. Fullscreen: the menu and pause buttons or the F key (the iframe launchers set `allowFullscreen`, and `webkit` prefixed calls cover Safari).
+
 Tests: `node --test proxy/arena.test.js`. After changing any file in `docs/arena/`, run `python3 tools/arena/stamp_version.py <n>` with a higher number. It rewrites the import map so every module and model URL carries `?v=<n>`, because GitHub Pages caches files for 10 minutes. Locally, `python3 tools/arena/devserver.py 8124 docs` serves without caching.
 
 ## Collaborative drawing

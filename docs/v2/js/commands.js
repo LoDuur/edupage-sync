@@ -22,6 +22,7 @@ export function openOverlayGame({ id, title, src, allow, exitMessage, onClose })
   frame.id = id;
   frame.title = title;
   frame.allow = allow;
+  frame.allowFullscreen = true;
   frame.src = src;
   frame.className = "overlay-frame";
   const previousOverflow = document.body.style.overflow;

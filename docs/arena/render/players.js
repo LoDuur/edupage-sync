@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { WEAPON_ORDER } from "../sim/weapons.js";
+import { createPartBuilder } from "./bake.js";
 
 const TEAM_COLORS = [0x3fae7a, 0xe08a3a];
 const FFA_HUES = [0.42, 0.08, 0.58, 0.95, 0.15, 0.72, 0.5, 0.0, 0.33, 0.85, 0.25, 0.65];
@@ -47,125 +48,106 @@ function colorFor(player, index) {
   return new THREE.Color().setHSL(FFA_HUES[index % FFA_HUES.length], 0.62, 0.52);
 }
 
-function makeMesh(geometry, material, parent, position = [0, 0, 0]) {
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(...position);
-  mesh.castShadow = true;
+const SUIT = 0x2b2f35, GLOVE = 0x15171a, BOOT = 0x1b1d20;
+
+function bakeMesh(builder, material, parent, shadow) {
+  const mesh = new THREE.Mesh(builder.build(), material);
+  mesh.castShadow = shadow;
   parent.add(mesh);
   return mesh;
 }
 
-function limb(parent, geo, mats, side) {
-  const shoulder = new THREE.Group();
-  shoulder.position.set(0.24 * side, 0.44, 0);
-  parent.add(shoulder);
-  makeMesh(geo.shoulder, mats.armor, shoulder);
-  makeMesh(geo.upperArm, mats.suit, shoulder);
-  const elbow = new THREE.Group();
-  elbow.position.y = -0.28;
-  shoulder.add(elbow);
-  makeMesh(geo.foreArm, mats.suit, elbow);
-  const wrist = new THREE.Group();
-  wrist.position.y = -0.26;
-  elbow.add(wrist);
-  makeMesh(geo.hand, mats.glove, wrist);
-  return { shoulder, elbow, wrist };
-}
-
-function leg(parent, geo, mats, side) {
-  const hip = new THREE.Group();
-  hip.position.set(0.1 * side, -0.04, 0);
-  parent.add(hip);
-  makeMesh(geo.thigh, mats.suit, hip);
-  const knee = new THREE.Group();
-  knee.position.y = -0.39;
-  hip.add(knee);
-  makeMesh(geo.knee, mats.armor, knee);
-  makeMesh(geo.shin, mats.suit, knee);
-  const ankle = new THREE.Group();
-  ankle.position.y = -0.42;
-  knee.add(ankle);
-  makeMesh(geo.boot, mats.boot, ankle);
-  return { hip, knee, ankle };
-}
-
-function buildRig(color, weaponFactory) {
+function buildRig(color, weaponFactory, castShadow) {
   const geo = sharedGeometry();
-  const mats = {
-    suit: new THREE.MeshStandardMaterial({ color: 0x2b2f35, roughness: 0.7, metalness: 0.2 }),
-    armor: new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.45 }),
-    glove: new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.8 }),
-    boot: new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.6, metalness: 0.3 }),
-    visor: new THREE.MeshStandardMaterial({ color: 0x0a0c0f, emissive: color, emissiveIntensity: 1.6, roughness: 0.1, metalness: 0.9 }),
-    bag: new THREE.MeshStandardMaterial({ color: color.clone().multiplyScalar(0.55), roughness: 0.85 }),
-  };
+  const armor = color.getHex(), bag = color.clone().multiplyScalar(0.55).getHex();
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.3, emissive: 0x000000 });
+  const visorMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0c0f, emissive: color, emissiveIntensity: 1.6, roughness: 0.1, metalness: 0.9 });
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
   const hips = new THREE.Group();
   hips.position.y = 0.95;
   body.add(hips);
-  makeMesh(geo.pelvis, mats.suit, hips);
+  bakeMesh(createPartBuilder().add(geo.pelvis, { color: SUIT }), material, hips, castShadow);
+
   const spine = new THREE.Group();
   spine.position.y = 0.08;
   hips.add(spine);
-  makeMesh(geo.torso, mats.suit, spine);
-  const plate = makeMesh(geo.chestPlate, mats.armor, spine, [0, 0.3, 0]);
-  plate.rotation.y = Math.PI;
-  plate.scale.set(1.05, 1, 0.9);
-  const bag = makeMesh(geo.backpack, mats.bag, spine, [0, 0.3, 0.2]);
-  const flap = makeMesh(geo.backpackFlap, mats.bag, bag, [0, 0.2, 0]);
-  flap.rotation.z = Math.PI / 2;
-  flap.rotation.y = Math.PI / 2;
-  for (const side of [-1, 1]) {
-    const strap = makeMesh(geo.strap, mats.glove, spine, [0.11 * side, 0.36, 0.02]);
-    strap.rotation.y = Math.PI / 2;
-  }
-  const neck = new THREE.Group();
-  neck.position.y = 0.55;
-  spine.add(neck);
-  makeMesh(geo.neck, mats.suit, neck, [0, 0.04, 0]);
+  const torso = createPartBuilder()
+    .add(geo.torso, { color: SUIT })
+    .add(geo.chestPlate, { pos: [0, 0.3, 0], rot: [0, Math.PI, 0], scale: [1.05, 1, 0.9], color: armor })
+    .add(geo.backpack, { pos: [0, 0.3, 0.2], color: bag })
+    .add(geo.backpackFlap, { pos: [0, 0.5, 0.2], rot: [0, Math.PI / 2, Math.PI / 2], color: bag })
+    .add(geo.neck, { pos: [0, 0.59, 0], color: SUIT });
+  for (const side of [-1, 1]) torso.add(geo.strap, { pos: [0.11 * side, 0.36, 0.02], rot: [0, Math.PI / 2, 0], color: GLOVE });
+  bakeMesh(torso, material, spine, castShadow);
+
   const head = new THREE.Group();
-  head.position.y = 0.16;
-  neck.add(head);
-  makeMesh(geo.helmet, mats.armor, head);
-  const visor = makeMesh(geo.visor, mats.visor, head);
+  head.position.y = 0.71;
+  spine.add(head);
+  bakeMesh(createPartBuilder().add(geo.helmet, { color: armor }).add(geo.antenna, { pos: [0.1, 0.16, 0.04], color: GLOVE }), material, head, castShadow);
+  const visor = new THREE.Mesh(geo.visor, visorMaterial);
   visor.rotation.y = Math.PI;
-  makeMesh(geo.antenna, mats.glove, head, [0.1, 0.16, 0.04]);
-  const armL = limb(spine, geo, mats, -1), armR = limb(spine, geo, mats, 1);
-  const legL = leg(hips, geo, mats, -1), legR = leg(hips, geo, mats, 1);
+  head.add(visor);
+
+  const arms = [-1, 1].map(side => {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(0.24 * side, 0.44, 0);
+    spine.add(shoulder);
+    bakeMesh(createPartBuilder().add(geo.shoulder, { color: armor }).add(geo.upperArm, { color: SUIT }), material, shoulder, castShadow);
+    const elbow = new THREE.Group();
+    elbow.position.y = -0.28;
+    shoulder.add(elbow);
+    bakeMesh(createPartBuilder().add(geo.foreArm, { color: SUIT }).add(geo.hand, { pos: [0, -0.26, 0], color: GLOVE }), material, elbow, false);
+    return { shoulder, elbow };
+  });
+  const legs = [-1, 1].map(side => {
+    const hip = new THREE.Group();
+    hip.position.set(0.1 * side, -0.04, 0);
+    hips.add(hip);
+    bakeMesh(createPartBuilder().add(geo.thigh, { color: SUIT }), material, hip, castShadow);
+    const knee = new THREE.Group();
+    knee.position.y = -0.39;
+    hip.add(knee);
+    bakeMesh(createPartBuilder().add(geo.knee, { color: armor }).add(geo.shin, { color: SUIT }).add(geo.boot, { pos: [0, -0.42, 0], color: BOOT }), material, knee, false);
+    return { hip, knee };
+  });
+  const [armL, armR] = arms, [legL, legR] = legs;
   const gunMount = new THREE.Group();
-  gunMount.position.set(0, -0.08, -0.02);
-  armR.wrist.add(gunMount);
+  gunMount.position.set(0, -0.34, -0.02);
+  armR.elbow.add(gunMount);
   const weapons = {};
-  if (weaponFactory) {
-    for (const id of WEAPON_ORDER) {
-      const model = weaponFactory(id);
-      if (!model) continue;
-      model.rotation.x = -Math.PI / 2;
-      model.visible = false;
-      gunMount.add(model);
-      weapons[id] = model;
-    }
+  const weaponList = [];
+  for (const id of WEAPON_ORDER) {
+    const model = weaponFactory?.(id);
+    if (!model) continue;
+    model.rotation.x = -Math.PI / 2;
+    model.visible = false;
+    model.castShadow = false;
+    gunMount.add(model);
+    weapons[id] = model;
+    weaponList.push([id, model]);
   }
-  return { root, body, hips, spine, neck, head, armL, armR, legL, legR, mats, weapons, visor };
+  return { root, body, hips, spine, head, armL, armR, legL, legR, mats: { body: material, visor: visorMaterial }, weapons, weaponList, visor };
 }
 
-export function createPlayerModels(scene, weaponFactory) {
+export function createPlayerModels(scene, weaponFactory, castShadow = false) {
   const models = new Map();
 
   function ensure(player, index) {
     let m = models.get(player.id);
     if (m) return m;
-    const rig = buildRig(colorFor(player, index), weaponFactory);
+    const rig = buildRig(colorFor(player, index), weaponFactory, castShadow);
     rig.state = { phase: 0, deathT: 0, wasAlive: true, kick: 0, lean: 0, crouch: 0, slide: 0, air: 0, prevPos: null, renderPos: new THREE.Vector3(), yaw: 0 };
     scene.add(rig.root);
     models.set(player.id, rig);
     return rig;
   }
 
+  const alive = new Set();
+
   function sync(game, localId, alpha, dt, prevPositions) {
-    const alive = new Set();
+    alive.clear();
     game.players.forEach((p, index) => {
       alive.add(p.id);
       const rig = ensure(p, index);
@@ -180,7 +162,7 @@ export function createPlayerModels(scene, weaponFactory) {
       if (p.isAlive && !s.wasAlive) s.deathT = 0;
       s.wasAlive = p.isAlive;
       animate(rig, p, dt);
-      for (const [id, model] of Object.entries(rig.weapons)) model.visible = p.isAlive && p.arsenal.current === id;
+      for (const entry of rig.weaponList) entry[1].visible = p.isAlive && p.arsenal.current === entry[0];
     });
     for (const [id, rig] of models) {
       if (alive.has(id)) continue;
@@ -197,8 +179,8 @@ export function createPlayerModels(scene, weaponFactory) {
   function hitFlash(id) {
     const rig = models.get(id);
     if (!rig) return;
-    rig.mats.armor.emissive.setRGB(1, 1, 1);
-    rig.mats.armor.emissiveIntensity = 1.2;
+    rig.mats.body.emissive.setRGB(0.55, 0.55, 0.55);
+    rig.mats.body.emissiveIntensity = 1;
   }
 
   return { sync, notifyShot, hitFlash, models };
@@ -211,7 +193,7 @@ function animate(rig, p, dt) {
   const speed = Math.hypot(m.vel.x, m.vel.z);
   s.yaw = m.yaw;
   rig.root.rotation.y = m.yaw;
-  if (rig.mats.armor.emissiveIntensity > 0) rig.mats.armor.emissiveIntensity = Math.max(0, rig.mats.armor.emissiveIntensity - dt * 6);
+  if (rig.mats.body.emissiveIntensity > 0) rig.mats.body.emissiveIntensity = Math.max(0, rig.mats.body.emissiveIntensity - dt * 6);
   if (!p.isAlive) {
     s.deathT += dt;
     const t = Math.min(1, s.deathT / 0.55);
@@ -263,7 +245,6 @@ function animate(rig, p, dt) {
     else { thigh -= s.slide * 0.3; knee += s.slide * 1.6; }
     legRig.hip.rotation.x = thigh;
     legRig.knee.rotation.x = knee;
-    legRig.ankle.rotation.x = -knee * 0.3 + Math.max(0, thigh) * 0.2;
     legRig.hip.rotation.z = Math.max(-0.4, Math.min(0.4, localSide * 0.02)) * runAmount;
   };
   legSwing(-1, 0);

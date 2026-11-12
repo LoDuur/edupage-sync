@@ -1,4 +1,4 @@
-const VERSION = "v2-5";
+const VERSION = "v2-6";
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = "data-v1";
 const FONT_CACHE = "fonts-v1";

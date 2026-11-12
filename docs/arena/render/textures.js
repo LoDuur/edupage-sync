@@ -173,8 +173,11 @@ const RECIPES = {
   } },
 };
 
+const materialCache = new Map();
+
 export function createSurfaceMaterials(renderer, quality) {
-  const anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), quality === "low" ? 2 : 8);
+  if (materialCache.has(quality)) return materialCache.get(quality);
+  const anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), quality === "low" ? 2 : quality === "medium" ? 4 : 8);
   const size = quality === "low" ? 256 : SIZE;
   const materials = {};
   for (const [name, recipe] of Object.entries(RECIPES)) {
@@ -186,7 +189,9 @@ export function createSurfaceMaterials(renderer, quality) {
       normalScale: new THREE.Vector2(1, 1), envMapIntensity: 0.35, color: new THREE.Color().setScalar(recipe.tint ?? 1),
     });
     materials[name].userData.texScale = recipe.scale;
+    materials[name].userData.shared = true;
   }
+  materialCache.set(quality, materials);
   return materials;
 }
 

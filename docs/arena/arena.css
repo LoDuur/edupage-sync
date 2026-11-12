@@ -106,6 +106,7 @@ tr.bot td:nth-child(2)::after { content: " ·bots"; color: var(--dim); font-size
 .killfeed .head { color: var(--accent-2); }
 .center-message { position: absolute; left: 50%; top: 34%; transform: translateX(-50%); font-size: 20px; font-weight: 800; text-align: center; white-space: pre-line; }
 .center-message small { display: block; font-size: 13px; color: var(--dim); font-weight: 500; }
+.perf { position: absolute; left: 12px; top: 46px; font-size: 11px; color: #b9f3d6; background: rgba(0, 0, 0, 0.45); padding: 3px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; white-space: pre; }
 .speed { position: absolute; left: 50%; top: calc(50% + 46px); transform: translateX(-50%); font-weight: 700; font-variant-numeric: tabular-nums; opacity: 0.85; }
 .speed b { font-size: 16px; }
 .speed span { color: var(--dim); font-size: 11px; margin-left: 4px; }

@@ -10,36 +10,37 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap&subset=latin-ext">
-<link rel="stylesheet" href="arena.css?v=4">
+<link rel="stylesheet" href="arena.css?v=6">
 <script type="importmap">
 {
  "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-  "./audio/sound.js": "./audio/sound.js?v=4",
-  "./hud.js": "./hud.js?v=4",
-  "./input.js": "./input.js?v=4",
-  "./render/fx.js": "./render/fx.js?v=4",
-  "./render/players.js": "./render/players.js?v=4",
-  "./render/textures.js": "./render/textures.js?v=4",
-  "./render/viewmodel.js": "./render/viewmodel.js?v=4",
-  "./render/world.js": "./render/world.js?v=4",
-  "./settings.js": "./settings.js?v=4",
-  "./sim/bots.js": "./sim/bots.js?v=4",
-  "./sim/collision.js": "./sim/collision.js?v=4",
-  "./sim/constants.js": "./sim/constants.js?v=4",
-  "./sim/entity.js": "./sim/entity.js?v=4",
-  "./sim/game.js": "./sim/game.js?v=4",
-  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=4",
-  "./sim/maps/index.js": "./sim/maps/index.js?v=4",
-  "./sim/movement.js": "./sim/movement.js?v=4",
-  "./sim/nav.js": "./sim/nav.js?v=4",
-  "./sim/random.js": "./sim/random.js?v=4",
-  "./sim/weapons.js": "./sim/weapons.js?v=4"
+  "./audio/sound.js": "./audio/sound.js?v=6",
+  "./hud.js": "./hud.js?v=6",
+  "./input.js": "./input.js?v=6",
+  "./render/bake.js": "./render/bake.js?v=6",
+  "./render/fx.js": "./render/fx.js?v=6",
+  "./render/players.js": "./render/players.js?v=6",
+  "./render/textures.js": "./render/textures.js?v=6",
+  "./render/viewmodel.js": "./render/viewmodel.js?v=6",
+  "./render/world.js": "./render/world.js?v=6",
+  "./settings.js": "./settings.js?v=6",
+  "./sim/bots.js": "./sim/bots.js?v=6",
+  "./sim/collision.js": "./sim/collision.js?v=6",
+  "./sim/constants.js": "./sim/constants.js?v=6",
+  "./sim/entity.js": "./sim/entity.js?v=6",
+  "./sim/game.js": "./sim/game.js?v=6",
+  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=6",
+  "./sim/maps/index.js": "./sim/maps/index.js?v=6",
+  "./sim/movement.js": "./sim/movement.js?v=6",
+  "./sim/nav.js": "./sim/nav.js?v=6",
+  "./sim/random.js": "./sim/random.js?v=6",
+  "./sim/weapons.js": "./sim/weapons.js?v=6"
  }
 }
 </script>
-<script type="module" src="main.js?v=4"></script>
+<script type="module" src="main.js?v=6"></script>
 </head>
 <body data-screen="loading">
 
@@ -58,6 +59,7 @@
   </div>
   <ol class="killfeed" id="killfeed"></ol>
   <div class="center-message" id="center-message"></div>
+  <div class="perf" id="perf" hidden></div>
   <div class="speed" id="speed"><b id="speed-value">0</b><span>km/h</span></div>
   <div class="hud-vitals">
     <div class="vital"><span class="vital-label">Veselība</span><b id="hud-health">100</b><div class="bar"><i id="hud-health-bar"></i></div></div>
@@ -100,6 +102,7 @@
       <button class="button" type="button" disabled title="Tiešsaistes spēle tiek būvēta">Tiešsaistē <small>drīzumā</small></button>
       <button class="button" type="button" data-screen-target="settings">Iestatījumi</button>
       <button class="button" type="button" data-screen-target="controls">Vadība</button>
+      <button class="button" type="button" data-action="fullscreen" data-fullscreen-label>Pilnekrāns</button>
       <button class="button ghost" type="button" data-action="exit">◄ Atpakaļ uz sarakstu</button>
     </nav>
     <p class="error" id="asset-error" hidden></p>
@@ -134,6 +137,8 @@
       <label>Skaļums <output id="set-volume-out"></output><input type="range" id="set-volume" min="0" max="1" step="0.05"></label>
       <label class="check"><input type="checkbox" id="set-invert"> Apgriezt Y asi</label>
       <label class="check"><input type="checkbox" id="set-speed"> Rādīt ātrumu</label>
+      <label class="check"><input type="checkbox" id="set-fps"> Rādīt FPS un kadru laiku</label>
+      <label class="check"><input type="checkbox" id="set-adaptive"> Automātiski pielāgot izšķirtspēju (mazāk lēkāšanas)</label>
     </div>
     <h3>Taustiņi</h3>
     <div class="binds" id="binds"></div>
@@ -155,6 +160,7 @@
       <dt>Sienu lēciens</dt><dd>Gaisā pie sienas nospied lēcienu – līdz 2 reizēm pirms piezemēšanās.</dd>
       <dt>Rāviens</dt><dd>Shift – straujš grūdiens kustības virzienā, saglabā ātrumu. Atjaunojas uz zemes.</dd>
       <dt>Rampas lēciens</dt><dd>Lec, skrienot augšup pa rampu – iegūsi papildu augstumu.</dd>
+      <dt>Pilnekrāns</dt><dd>F spēles laikā vai poga izvēlnē. Esc iziet no pilnekrāna un liek spēli uz pauzi.</dd>
       <dt>Ieroči</dt><dd>1–6, Q vai ritenītis – maiņa. R – pārlādēt. Tab – rezultāti. Esc – pauze.</dd>
       <dt>Tēmēklis</dt><dd>Snaiperšautenei turi labo peli – tuvinājums ×4 un precīzs šāviens. Bez tēmēkļa šāviens neprecīzs.</dd>
       <dt>Raķešu lēciens</dt><dd>Raķešu palaidējs: šauj sev pie kājām un lec – sprādziens tevi paceļ augstu un tālu. Sāp, bet daudz mazāk nekā pretiniekam.</dd>
@@ -168,6 +174,7 @@
     <h2>Pauze</h2>
     <nav class="menu-list">
       <button class="button primary" type="button" data-action="resume">Turpināt</button>
+      <button class="button" type="button" data-action="fullscreen" data-fullscreen-label>Pilnekrāns</button>
       <button class="button" type="button" data-screen-target="settings">Iestatījumi</button>
       <button class="button ghost" type="button" data-action="quit-match">Pamest maču</button>
     </nav>

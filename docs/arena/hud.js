@@ -23,7 +23,7 @@ export function createHud() {
     dash: $("hud-dash"), slots: $("weapon-slots"), mag: $("hud-mag"), reserve: $("hud-reserve"), weaponName: $("hud-weapon-name"),
     scoreboard: $("scoreboard"), scoreRows: $("scoreboard-rows"), scope: $("scope"),
   };
-  let hitTimer = 0, centerUntil = 0, lastSlotsKey = "", lastBoardAt = 0;
+  let hitTimer = 0, centerUntil = 0, lastBoardAt = 0;
   const cache = new Map();
   const set = (node, key, value) => {
     if (cache.get(key) === value) return;
@@ -45,6 +45,7 @@ export function createHud() {
   }
 
   function message(html, seconds, now) {
+    cache.set("center", html);
     el.center.innerHTML = html;
     centerUntil = now + seconds * 1000;
   }
@@ -65,22 +66,43 @@ export function createHud() {
     tbody.innerHTML = scoreboard(game).map((row, i) => `<tr class="${row.id === localId ? "me" : ""} ${row.isBot ? "bot" : ""}"><td>${i + 1}</td><td>${escapeHtml(row.name)}</td><td>${row.kills}</td><td>${row.deaths}</td></tr>`).join("");
   }
 
+  const styleCache = new Map();
+  const setStyle = (node, key, property, value) => {
+    if (styleCache.get(key) === value) return;
+    styleCache.set(key, value);
+    node.style.setProperty(property, value);
+  };
+  const setClass = (node, key, value) => {
+    if (cache.get(key) === value) return;
+    cache.set(key, value);
+    node.className = value;
+  };
+  const setHtml = (node, key, value) => {
+    if (cache.get(key) === value) return;
+    cache.set(key, value);
+    node.innerHTML = value;
+  };
+  let lastRankAt = -1e9, lastSlotsKey = -1;
+
   function update(game, local, { showScoreboard, showSpeed, now }) {
     if (!local) return;
     set(el.timer, "timer", formatTime(game.timeLimit - game.time));
-    const board = scoreboard(game);
-    const leader = board[0];
-    const myRank = board.findIndex(r => r.id === local.id) + 1;
-    el.score.innerHTML = `<b>${local.kills}</b> / ${game.fragLimit} · ${myRank}. vieta`;
-    set(el.leader, "leader", leader && leader.id !== local.id ? `Līderis: ${leader.name} ${leader.kills}` : "Tu esi līderis");
+    if (now - lastRankAt > 250) {
+      lastRankAt = now;
+      const board = scoreboard(game);
+      const leader = board[0];
+      const myRank = board.findIndex(r => r.id === local.id) + 1;
+      setHtml(el.score, "score", `<b>${local.kills}</b> / ${game.fragLimit} · ${myRank}. vieta`);
+      set(el.leader, "leader", leader && leader.id !== local.id ? `Līderis: ${leader.name} ${leader.kills}` : "Tu esi līderis");
+    }
 
     const health = Math.max(0, local.health);
     set(el.health, "health", String(health));
-    el.healthBar.style.width = `${Math.min(100, (health / MAX_HEALTH) * 100)}%`;
+    setStyle(el.healthBar, "healthBar", "width", `${Math.min(100, (health / MAX_HEALTH) * 100).toFixed(0)}%`);
     el.health.parentElement.classList.toggle("low", health <= 30);
     set(el.armor, "armor", String(local.armor));
-    el.armorBar.style.width = `${(local.armor / MAX_ARMOR) * 100}%`;
-    el.vignette.style.opacity = local.isAlive ? String(Math.max(0, (40 - health) / 40) * 0.9) : "0.6";
+    setStyle(el.armorBar, "armorBar", "width", `${((local.armor / MAX_ARMOR) * 100).toFixed(0)}%`);
+    setStyle(el.vignette, "vignette", "opacity", local.isAlive ? (Math.max(0, (40 - health) / 40) * 0.9).toFixed(2) : "0.6");
     el.dash.classList.toggle("empty", !(local.move.dashCharge > 0 && local.move.time >= local.move.dashReadyAt));
 
     const ars = local.arsenal;
@@ -90,25 +112,29 @@ export function createHud() {
     set(el.reserve, "reserve", `/ ${ammo.reserve === Infinity ? "∞" : ammo.reserve}`);
     el.mag.parentElement.classList.toggle("low", ammo.mag <= Math.ceil(w.magazine * 0.25));
     set(el.weaponName, "weapon", w.name);
-    const slotsKey = WEAPON_ORDER.map(id => `${id}:${!!ars.owned[id]}:${ars.current === id}`).join();
+    let slotsKey = WEAPON_ORDER.indexOf(ars.current);
+    for (let i = 0; i < WEAPON_ORDER.length; i++) if (ars.owned[WEAPON_ORDER[i]]) slotsKey += 8 << i;
     if (slotsKey !== lastSlotsKey) {
       lastSlotsKey = slotsKey;
       el.slots.innerHTML = WEAPON_ORDER.filter(id => ars.owned[id]).map(id => `<li class="${ars.current === id ? "active" : ""}">${WEAPONS[id].slot} ${escapeHtml(SHORT_NAMES[id])}</li>`).join("");
     }
     const gap = 5 + Math.min(26, (w.spread + ars.bloom) * 260);
-    el.crosshair.style.setProperty("--gap", `${gap.toFixed(1)}px`);
+    setStyle(el.crosshair, "gap", "--gap", `${Math.round(gap)}px`);
 
     const kmh = Math.round(Math.hypot(local.move.vel.x, local.move.vel.z) * 3.6);
     el.speed.hidden = !showSpeed;
     set(el.speedValue, "speed", String(kmh));
-    el.speed.className = `speed${kmh > 65 ? " insane" : kmh > 36 ? " fast" : ""}`;
+    setClass(el.speed, "speedClass", `speed${kmh > 65 ? " insane" : kmh > 36 ? " fast" : ""}`);
 
     if (!local.isAlive) {
-      el.center.innerHTML = `Tevi izsita<small>Atdzimsi pēc ${Math.max(0, local.respawnAt - game.time).toFixed(1)} s</small>`;
+      setHtml(el.center, "center", `Tevi izsita<small>Atdzimsi pēc ${Math.max(0, local.respawnAt - game.time).toFixed(1)} s</small>`);
       centerUntil = now + 100;
-    } else if (now > centerUntil) el.center.textContent = "";
+    } else if (now > centerUntil && cache.get("center") !== "") {
+      cache.set("center", "");
+      el.center.textContent = "";
+    }
 
-    el.scoreboard.hidden = !showScoreboard;
+    if (el.scoreboard.hidden === showScoreboard) el.scoreboard.hidden = !showScoreboard;
     if (showScoreboard && now - lastBoardAt > 250) {
       lastBoardAt = now;
       renderBoard(game, local.id, el.scoreRows);
@@ -125,7 +151,9 @@ export function createHud() {
     el.center.textContent = "";
     el.damageRing.textContent = "";
     cache.clear();
-    lastSlotsKey = "";
+    styleCache.clear();
+    lastSlotsKey = -1;
+    lastRankAt = -1e9;
   }
 
   return { update, setScoped, hit, damageFrom, message, killfeed, renderBoard, reset };

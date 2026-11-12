@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { canvasTexture, createSurfaceMaterials } from "./textures.js";
+import { mergeStaticMeshes } from "./bake.js";
 
 const DAYS = ["Pirmdiena", "Otrdiena", "Trešdiena", "Ceturtdiena", "Piektdiena"];
 const SUBJECTS = [["Matemātika", "#3fae7a"], ["Fizika", "#4f8fd8"], ["Latviešu val.", "#e0a43a"], ["Angļu val.", "#c95a8a"], ["Informātika", "#6b6be0"], ["Ķīmija", "#d8624f"], ["Sports", "#47b5b0"], ["Vēsture", "#a27b4f"], ["Programmēšana", "#58c06a"]];
@@ -176,12 +177,20 @@ function clockTexture() {
   });
 }
 
+const panelMaterials = new Map();
+const panelFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.5, metalness: 0.6 });
+const curtainMaterial = new THREE.MeshStandardMaterial({ color: 0x6d1420, roughness: 0.92 });
+
 function addPanel(group, decor, texture, emissiveIntensity) {
-  const material = new THREE.MeshStandardMaterial({ map: texture, emissive: 0xffffff, emissiveMap: texture, emissiveIntensity, roughness: 0.8 });
+  let material = panelMaterials.get(texture.uuid);
+  if (!material) {
+    material = new THREE.MeshStandardMaterial({ map: texture, emissive: 0xffffff, emissiveMap: texture, emissiveIntensity, roughness: 0.8 });
+    panelMaterials.set(texture.uuid, material);
+  }
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(decor.w, decor.h), material);
   mesh.position.set(decor.pos.x, decor.pos.y, decor.pos.z);
   mesh.rotation.y = decor.rotY;
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(decor.w + 0.3, decor.h + 0.3, 0.08), new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.5, metalness: 0.6 }));
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(decor.w + 0.3, decor.h + 0.3, 0.08), panelFrameMaterial);
   frame.position.copy(mesh.position);
   frame.rotation.y = decor.rotY;
   frame.translateZ(-0.05);
@@ -210,19 +219,19 @@ function buildDecor(map, group, materials) {
   const cable = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
   const skyMaterial = new THREE.MeshStandardMaterial({ color: 0x9fb8d8, emissive: 0x8fb0e0, emissiveIntensity: 0.75, roughness: 0.2 });
   const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x24272b, metalness: 0.8, roughness: 0.35 });
-  const lamps = [];
+  const windowMaterial = new THREE.MeshStandardMaterial({ map: win, emissive: 0xffffff, emissiveMap: win, emissiveIntensity: 0.55, roughness: 0.1, metalness: 0.3 });
   const clockHands = [];
   for (const d of map.decor) {
     if (d.kind === "timetable") addPanel(group, d, timetable, 0.75);
     else if (d.kind === "chalkboard") addPanel(group, d, chalk, 0.35);
     else if (d.kind === "window") {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h), new THREE.MeshStandardMaterial({ map: win, emissive: 0xffffff, emissiveMap: win, emissiveIntensity: 0.55, roughness: 0.1, metalness: 0.3 }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h), windowMaterial);
       m.position.set(d.pos.x, d.pos.y, d.pos.z);
       m.rotation.y = d.rotY;
       m.translateZ(0.01);
       group.add(m);
     } else if (d.kind === "curtain") {
-      const m = new THREE.Mesh(curtainGeometry(d.w, d.h), new THREE.MeshStandardMaterial({ color: 0x6d1420, roughness: 0.92 }));
+      const m = new THREE.Mesh(curtainGeometry(d.w, d.h), curtainMaterial);
       m.position.set(d.pos.x, d.pos.y, d.pos.z);
       m.rotation.y = d.rotY;
       m.translateZ(0.15);
@@ -239,6 +248,7 @@ function buildDecor(map, group, materials) {
       group.add(face, rim);
       for (const [len, width, kind] of [[d.r * 0.55, 0.06, "h"], [d.r * 0.8, 0.04, "m"], [d.r * 0.85, 0.015, "s"]]) {
         const pivot = new THREE.Group();
+        pivot.userData.keep = true;
         pivot.position.copy(face.position);
         pivot.rotation.y = d.rotY;
         pivot.translateZ(0.02 + clockHands.length * 0.01);
@@ -261,7 +271,6 @@ function buildDecor(map, group, materials) {
       lamp.add(c, shade, b);
       lamp.position.set(d.pos.x, d.pos.y, d.pos.z);
       group.add(lamp);
-      lamps.push(lamp);
     } else if (d.kind === "skylight") {
       const panel = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.d), skyMaterial);
       panel.rotation.x = Math.PI / 2;
@@ -286,7 +295,7 @@ function buildDecor(map, group, materials) {
       group.add(strip);
     }
   }
-  return { clockHands, lamps };
+  return { clockHands };
 }
 
 function buildPads(map, group) {
@@ -324,7 +333,10 @@ export function buildWorld(scene, renderer, map, brushes, quality) {
     mesh.updateMatrix();
     group.add(mesh);
   }
-  const decor = buildDecor(map, group, materials);
+  const decorGroup = new THREE.Group();
+  group.add(decorGroup);
+  const decor = buildDecor(map, decorGroup, materials);
+  mergeStaticMeshes(decorGroup);
   const pads = buildPads(map, group);
 
   scene.add(new THREE.HemisphereLight(0xbfd3ea, 0x3a2e24, 0.2));
@@ -341,7 +353,7 @@ export function buildWorld(scene, renderer, map, brushes, quality) {
     sun.shadow.normalBias = 0.03;
   }
   scene.add(sun, sun.target);
-  const maxPoint = quality === "low" ? 3 : quality === "medium" ? 5 : map.lights.length;
+  const maxPoint = quality === "low" ? 2 : quality === "medium" ? 3 : 5;
   for (const light of map.lights.slice(0, maxPoint)) {
     const p = new THREE.PointLight(light.color, light.intensity, light.distance, 2);
     p.position.set(light.pos.x, light.pos.y, light.pos.z);
@@ -363,7 +375,6 @@ export function buildWorld(scene, renderer, map, brushes, quality) {
         ring.material.opacity = (1 - phase) * 0.8;
       });
     }
-    decor.lamps.forEach((lamp, i) => { lamp.rotation.z = Math.sin(time * 0.6 + i) * 0.01; });
   };
   return { group, update, materials };
 }

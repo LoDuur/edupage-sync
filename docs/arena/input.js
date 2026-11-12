@@ -8,6 +8,7 @@ export function createInput(canvas, getSettings) {
   let yaw = 0, pitch = 0, lookDX = 0, lookDY = 0, wheel = 0, isLocked = false;
   let pendingSlot = 0, lastSlot = 1, currentSlot = 1, sensitivityScale = 1;
   const listeners = new Set();
+  let fullscreenHandler = null;
 
   const actionDown = action => down.has(getSettings().binds[action]);
 
@@ -18,6 +19,7 @@ export function createInput(canvas, getSettings) {
     if (e.repeat) return;
     down.add(e.code);
     const binds = getSettings().binds;
+    if (e.code === binds.fullscreen) fullscreenHandler?.();
     for (let slot = 1; slot <= 6; slot++) if (e.code === binds[`slot${slot}`]) pendingSlot = slot;
     if (e.code === binds.lastWeapon) pendingSlot = lastSlot;
   };
@@ -125,6 +127,7 @@ export function createInput(canvas, getSettings) {
     lock, sample, syncSlot, consumeLook, setView, dispose,
     isHeld: action => actionDown(action),
     setSensitivityScale(value) { sensitivityScale = value; },
+    setFullscreenHandler(fn) { fullscreenHandler = fn; },
     onLockChange: fn => listeners.add(fn),
     get isLocked() { return isLocked; },
     get yaw() { return yaw; },

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { canvasTexture } from "./textures.js";
+import { createPartBuilder } from "./bake.js";
 
 const MAX_SPARKS = 600;
 const MAX_DECALS = 220;
@@ -39,19 +40,6 @@ function softTexture() {
     g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, w);
-  });
-}
-
-function crossTexture(color) {
-  return canvasTexture(256, 256, (ctx, w) => {
-    ctx.fillStyle = "#f2f1ec";
-    ctx.fillRect(0, 0, w, w);
-    ctx.fillStyle = color;
-    ctx.fillRect(w * 0.38, w * 0.16, w * 0.24, w * 0.68);
-    ctx.fillRect(w * 0.16, w * 0.38, w * 0.68, w * 0.24);
-    ctx.strokeStyle = "#c9c6bd";
-    ctx.lineWidth = 10;
-    ctx.strokeRect(5, 5, w - 10, w - 10);
   });
 }
 
@@ -98,8 +86,6 @@ export function createEffects(scene) {
   const flashLight = new THREE.PointLight(0xffb070, 0, 9, 2);
   scene.add(flashLight);
   let flashLife = 0, flashDuration = 0.05, flashPeak = 0;
-  const rocketLight = new THREE.PointLight(0xff8a3a, 0, 7, 2);
-  scene.add(rocketLight);
   const bursts = Array.from({ length: 14 }, () => {
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
     sprite.visible = false;
@@ -139,7 +125,6 @@ export function createEffects(scene) {
 
   function updateRockets(game, alpha, dt, time) {
     const seen = new Set();
-    let lit = null;
     for (const r of game.projectiles) {
       seen.add(r.id);
       let v = rocketMeshes.get(r.id);
@@ -147,7 +132,6 @@ export function createEffects(scene) {
       const x = r.prev.x + (r.pos.x - r.prev.x) * alpha, y = r.prev.y + (r.pos.y - r.prev.y) * alpha, z = r.prev.z + (r.pos.z - r.prev.z) * alpha;
       v.holder.position.set(x, y, z);
       v.holder.lookAt(x + r.vel.x, y + r.vel.y, z + r.vel.z);
-      lit = v.holder.position;
       if (time >= v.smokeAt) {
         v.smokeAt = time + 0.025;
         addPuff({ x: x - r.vel.x * 0.012, y: y - r.vel.y * 0.012, z: z - r.vel.z * 0.012 }, null, 0xd4cfc6, 0.28);
@@ -159,10 +143,6 @@ export function createEffects(scene) {
       scene.remove(v.holder);
       rocketMeshes.delete(id);
     }
-    if (lit) {
-      rocketLight.position.copy(lit);
-      rocketLight.intensity = 4 + Math.sin(time * 60) * 0.8;
-    } else rocketLight.intensity = 0;
     void dt;
   }
 
@@ -336,80 +316,95 @@ function frameModel(model, length) {
   return outer;
 }
 
+const BODY = 0xf2f1ec, GREEN = 0x2f9e64, DARK = 0x24272b;
+
+function buildKit(isMega) {
+  const size = isMega ? 0.5 : 0.36;
+  const part = createPartBuilder()
+    .add(new RoundedBoxGeometry(size, size * 0.7, size * 0.55, 3, 0.04), { color: BODY })
+    .add(new THREE.TorusGeometry(size * 0.18, 0.018, 6, 16, Math.PI), { pos: [0, size * 0.35, 0], color: DARK });
+  for (const z of [-1, 1]) {
+    part.add(new THREE.BoxGeometry(size * 0.18, size * 0.5, 0.012), { pos: [0, 0, z * size * 0.28], color: isMega ? 0x3fae7a : GREEN });
+    part.add(new THREE.BoxGeometry(size * 0.5, size * 0.18, 0.012), { pos: [0, 0, z * size * 0.28], color: isMega ? 0x3fae7a : GREEN });
+  }
+  return part.build();
+}
+
+function buildVest(isHeavy) {
+  const plate = isHeavy ? 0x3f6fb8 : 0x4f8fd8;
+  const part = createPartBuilder().add(new RoundedBoxGeometry(0.46, 0.5, 0.17, 4, 0.05), { color: plate });
+  for (const x of [-0.19, 0.19]) part.add(new RoundedBoxGeometry(0.1, 0.18, 0.2, 3, 0.02), { pos: [x, 0.2, 0], color: DARK });
+  part.add(new RoundedBoxGeometry(0.26, 0.24, 0.05, 3, 0.02), { pos: [0, 0.02, 0.1], color: 0xe9eef2 });
+  part.add(new RoundedBoxGeometry(0.26, 0.24, 0.05, 3, 0.02), { pos: [0, 0.02, -0.1], color: 0xc9d4de });
+  return part.build();
+}
+
+function buildAmmoCrate() {
+  const part = createPartBuilder()
+    .add(new RoundedBoxGeometry(0.46, 0.26, 0.3, 3, 0.03), { color: 0x4d5a3a })
+    .add(new THREE.BoxGeometry(0.47, 0.04, 0.31), { pos: [0, 0.02, 0], color: 0x3fae7a });
+  for (let k = 0; k < 5; k++) {
+    part.add(new THREE.CylinderGeometry(0.025, 0.025, 0.11, 10), { pos: [-0.16 + k * 0.08, 0.17, 0], color: 0xc9a14a });
+    part.add(new THREE.ConeGeometry(0.025, 0.05, 10), { pos: [-0.16 + k * 0.08, 0.255, 0], color: 0x6d4b2a });
+  }
+  return part.build();
+}
+
 export function createPickupVisuals(scene, pickups, weaponFactory) {
-  const healthTex = crossTexture("#2f9e64"), megaTex = crossTexture("#3fae7a");
-  const ringMaterial = new THREE.MeshStandardMaterial({ color: 0x3fae7a, emissive: 0x3fae7a, emissiveIntensity: 1.8, transparent: true, opacity: 0.85 });
+  const kitMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.25 });
+  const megaMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.25, emissive: 0x3fae7a, emissiveIntensity: 0.3 });
+  const glowGeometry = new THREE.SphereGeometry(0.55, 20, 12);
+  const glowMaterial = new THREE.MeshBasicMaterial({ color: 0x3fae7a, transparent: true, opacity: 0.12, depthWrite: false });
   const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x24272b, metalness: 0.8, roughness: 0.35 });
-  const items = pickups.map(item => {
-    const group = new THREE.Group();
-    group.position.set(item.pos.x, item.pos.y, item.pos.z);
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 0.06, 32), baseMaterial);
-    base.position.y = 0.03;
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.018, 8, 40), ringMaterial.clone());
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.07;
-    group.add(base, ring);
+  const baseInstances = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.48, 0.06, 32), baseMaterial, pickups.length);
+  const ringInstances = new THREE.InstancedMesh(new THREE.TorusGeometry(0.4, 0.018, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), pickups.length);
+  const matrix = new THREE.Matrix4(), tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2), unit = new THREE.Vector3(1, 1, 1);
+  const lit = new THREE.Color(0x3fae7a), dim = new THREE.Color(0x14301f);
+  const geometries = { kit: buildKit(false), mega: buildKit(true), armor: buildVest(false), heavy: buildVest(true), ammo: buildAmmoCrate() };
+  const items = pickups.map((item, i) => {
+    matrix.compose(new THREE.Vector3(item.pos.x, item.pos.y + 0.03, item.pos.z), new THREE.Quaternion(), unit);
+    baseInstances.setMatrixAt(i, matrix);
+    matrix.compose(new THREE.Vector3(item.pos.x, item.pos.y + 0.07, item.pos.z), tilt, unit);
+    ringInstances.setMatrixAt(i, matrix);
+    ringInstances.setColorAt(i, lit);
     const spinner = new THREE.Group();
-    spinner.position.y = 0.75;
-    group.add(spinner);
+    spinner.position.set(item.pos.x, item.pos.y + 0.75, item.pos.z);
     if (item.kind === "weapon") {
       const model = weaponFactory?.(item.weapon);
       if (model) spinner.add(frameModel(model, 1.25));
-    } else if (item.kind === "armor") {
-      const isHeavy = item.amount >= 100;
-      const plateMaterial = new THREE.MeshStandardMaterial({ color: isHeavy ? 0x3f6fb8 : 0x4f8fd8, roughness: 0.35, metalness: 0.6, emissive: 0x1d3f7a, emissiveIntensity: 0.35 });
-      const vest = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.5, 0.17, 4, 0.05), plateMaterial);
-      const strap = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.18, 0.2, 3, 0.02), baseMaterial);
-      strap.position.set(-0.19, 0.2, 0);
-      const strap2 = strap.clone();
-      strap2.position.x = 0.19;
-      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.26, 0.24, 0.05, 3, 0.02), new THREE.MeshStandardMaterial({ color: 0xe9eef2, roughness: 0.3, metalness: 0.4 }));
-      plate.position.set(0, 0.02, 0.1);
-      vest.castShadow = true;
-      spinner.add(vest, strap, strap2, plate);
-      if (isHeavy) spinner.scale.setScalar(1.25);
-    } else if (item.kind === "ammo") {
-      const crate = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.26, 0.3, 3, 0.03), new THREE.MeshStandardMaterial({ color: 0x4d5a3a, roughness: 0.6, metalness: 0.3 }));
-      crate.castShadow = true;
-      spinner.add(crate);
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.04, 0.31), ringMaterial.clone());
-      stripe.position.y = 0.02;
-      spinner.add(stripe);
-      const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.9, roughness: 0.3 });
-      for (let k = 0; k < 5; k++) {
-        const bullet = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.11, 10), bulletMaterial);
-        bullet.position.set(-0.16 + k * 0.08, 0.17, 0);
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.05, 10), new THREE.MeshStandardMaterial({ color: 0x6d4b2a, roughness: 0.4, metalness: 0.6 }));
-        tip.position.y = 0.08;
-        bullet.add(tip);
-        spinner.add(bullet);
-      }
     } else {
-      const isMega = item.kind === "mega";
-      const size = isMega ? 0.5 : 0.36;
-      const kit = new THREE.Mesh(new RoundedBoxGeometry(size, size * 0.7, size * 0.55, 3, 0.04), new THREE.MeshStandardMaterial({ map: isMega ? megaTex : healthTex, roughness: 0.4, emissive: isMega ? 0x3fae7a : 0x000000, emissiveIntensity: isMega ? 0.35 : 0 }));
-      kit.castShadow = true;
-      spinner.add(kit);
-      const handle = new THREE.Mesh(new THREE.TorusGeometry(size * 0.18, 0.018, 6, 16, Math.PI), baseMaterial);
-      handle.position.y = size * 0.35;
-      spinner.add(handle);
-      if (isMega) {
-        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 16), new THREE.MeshBasicMaterial({ color: 0x3fae7a, transparent: true, opacity: 0.12, depthWrite: false }));
-        spinner.add(glow);
-      }
+      const key = item.kind === "health" ? "kit" : item.kind === "mega" ? "mega" : item.kind === "armor" ? (item.amount >= 100 ? "heavy" : "armor") : "ammo";
+      const mesh = new THREE.Mesh(geometries[key], key === "mega" ? megaMaterial : kitMaterial);
+      mesh.castShadow = false;
+      spinner.add(mesh);
+      if (key === "mega") spinner.add(new THREE.Mesh(glowGeometry, glowMaterial));
+      if (key === "heavy") spinner.scale.setScalar(1.25);
     }
-    scene.add(group);
-    return { item, group, spinner, ring };
+    scene.add(spinner);
+    return { item, spinner, baseY: item.pos.y + 0.75, isAvailable: true };
   });
+  baseInstances.instanceMatrix.needsUpdate = true;
+  baseInstances.computeBoundingSphere();
+  ringInstances.instanceMatrix.needsUpdate = true;
+  ringInstances.computeBoundingSphere();
+  baseInstances.receiveShadow = true;
+  scene.add(baseInstances, ringInstances);
 
   function update(game, time) {
-    for (const v of items) {
+    let isRingDirty = false;
+    items.forEach((v, i) => {
       const isAvailable = game.time >= game.pickups[v.item.index].availableAt;
+      if (isAvailable !== v.isAvailable) {
+        v.isAvailable = isAvailable;
+        ringInstances.setColorAt(i, isAvailable ? lit : dim);
+        isRingDirty = true;
+      }
       v.spinner.visible = isAvailable;
+      if (!isAvailable) return;
       v.spinner.rotation.y = time * 1.6;
-      v.spinner.position.y = 0.75 + Math.sin(time * 2.2 + v.item.index) * 0.06;
-      v.ring.material.emissiveIntensity = isAvailable ? 1.8 : 0.3;
-    }
+      v.spinner.position.y = v.baseY + Math.sin(time * 2.2 + v.item.index) * 0.06;
+    });
+    if (isRingDirty) ringInstances.instanceColor.needsUpdate = true;
   }
 
   return { update };

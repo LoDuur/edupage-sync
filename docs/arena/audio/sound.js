@@ -1,4 +1,9 @@
-const MAX_VOICES = 48;
+const MAX_VOICES = 32;
+const MAX_HRTF = 5;
+const HRTF_RANGE = 28;
+const HEARING_RANGE = 75;
+const REVERB_RANGE = 30;
+const curveCache = new Map();
 const MAG_PITCH = { pistol: 2400, smg: 2200, ar: 1800, aa12: 1400, sniper: 1600, rocket: 800 };
 
 function noiseBuffer(ctx, seconds, color = "white") {
@@ -31,16 +36,20 @@ function impulseResponse(ctx, seconds, decay) {
 }
 
 function distortionCurve(amount) {
-  const n = 1024, curve = new Float32Array(n);
+  const cached = curveCache.get(amount);
+  if (cached) return cached;
+  const n = 512, curve = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;
     curve[i] = ((3 + amount) * x * 20 * (Math.PI / 180)) / (Math.PI + amount * Math.abs(x));
   }
+  curveCache.set(amount, curve);
   return curve;
 }
 
 export function createAudio() {
-  let ctx = null, master = null, reverb = null, reverbSend = null, voices = 0, buffers = null, slideVoice = null, volume = 0.8;
+  let ctx = null, master = null, reverb = null, reverbSend = null, voices = 0, hrtfVoices = 0, buffers = null, slideVoice = null, volume = 0.8;
+  const listener = { x: 0, y: 0, z: 0 };
 
   function ensure() {
     if (ctx) {
@@ -59,23 +68,26 @@ export function createAudio() {
     comp.release.value = 0.15;
     master.connect(comp).connect(ctx.destination);
     reverb = ctx.createConvolver();
-    reverb.buffer = impulseResponse(ctx, 1.8, 3.2);
+    reverb.buffer = impulseResponse(ctx, 1.1, 3.2);
     reverbSend = ctx.createGain();
-    reverbSend.gain.value = 0.32;
+    reverbSend.gain.value = 0.26;
     reverbSend.connect(reverb).connect(master);
     buffers = { white: noiseBuffer(ctx, 1.5), brown: noiseBuffer(ctx, 2, "brown") };
     return true;
   }
 
-  function output(pos, isLocal) {
+  function output(pos, isLocal, seconds) {
     const gain = ctx.createGain();
     if (isLocal || !pos) {
       gain.connect(master);
       gain.connect(reverbSend);
       return gain;
     }
+    const distance = Math.hypot(pos.x - listener.x, pos.y - listener.y, pos.z - listener.z);
+    if (distance > HEARING_RANGE) return null;
+    const isHrtf = distance < HRTF_RANGE && hrtfVoices < MAX_HRTF;
     const panner = ctx.createPanner();
-    panner.panningModel = "HRTF";
+    panner.panningModel = isHrtf ? "HRTF" : "equalpower";
     panner.distanceModel = "inverse";
     panner.refDistance = 2.5;
     panner.maxDistance = 120;
@@ -83,10 +95,16 @@ export function createAudio() {
     if (panner.positionX) {
       panner.positionX.value = pos.x; panner.positionY.value = pos.y; panner.positionZ.value = pos.z;
     } else panner.setPosition(pos.x, pos.y, pos.z);
+    if (isHrtf) {
+      hrtfVoices++;
+      setTimeout(() => { hrtfVoices--; }, seconds * 1000 + 50);
+    }
     gain.connect(panner).connect(master);
-    const wet = ctx.createGain();
-    wet.gain.value = 0.6;
-    gain.connect(wet).connect(reverbSend);
+    if (distance < REVERB_RANGE) {
+      const wet = ctx.createGain();
+      wet.gain.value = 0.6;
+      gain.connect(wet).connect(reverbSend);
+    }
     return gain;
   }
 
@@ -268,8 +286,10 @@ export function createAudio() {
   };
 
   function play(name, { pos = null, isLocal = false, weapon = null, intensity = 1, volume: v = 1 } = {}) {
-    if (!ctx || ctx.state !== "running" || !recipes[name] || !claimVoice(0.8)) return;
-    const out = output(pos, isLocal);
+    if (!ctx || ctx.state !== "running" || !recipes[name] || voices >= MAX_VOICES) return;
+    const out = output(pos, isLocal, 0.8);
+    if (!out) return;
+    claimVoice(0.8);
     out.gain.value = v;
     recipes[name](out, ctx.currentTime + 0.002, isLocal, weapon, intensity);
   }
@@ -302,6 +322,7 @@ export function createAudio() {
     if (!ctx) return;
     const l = ctx.listener;
     const p = camera.position;
+    listener.x = p.x; listener.y = p.y; listener.z = p.z;
     const f = { x: -Math.sin(camera.rotation.y) * Math.cos(camera.rotation.x), y: Math.sin(camera.rotation.x), z: -Math.cos(camera.rotation.y) * Math.cos(camera.rotation.x) };
     if (l.positionX) {
       const t = ctx.currentTime;

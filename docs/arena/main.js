@@ -7,7 +7,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { TICK_DT } from "./sim/constants.js";
 import { addPlayer, createGame, fillWithBots, loadMap, stepGame } from "./sim/game.js";
 import { eyeHeight } from "./sim/movement.js";
-import { WEAPONS } from "./sim/weapons.js";
+import { WEAPONS, WEAPON_ORDER } from "./sim/weapons.js";
 import { BIND_LABELS, DEFAULT_SETTINGS, DEFAULT_BINDS, keyLabel, loadSettings, saveSettings } from "./settings.js";
 import { createInput } from "./input.js";
 import { createHud } from "./hud.js";
@@ -36,6 +36,27 @@ function showScreen(name) {
   body.dataset.screen = name;
   if (name === "settings") renderSettings();
   if (name === "setup") renderSetup();
+}
+
+const fullscreenRoot = document.documentElement;
+const isFullscreenSupported = !!(fullscreenRoot.requestFullscreen || fullscreenRoot.webkitRequestFullscreen);
+const getFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+
+async function toggleFullscreen() {
+  if (!isFullscreenSupported) return;
+  try {
+    if (getFullscreenElement()) await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen());
+    else await (fullscreenRoot.requestFullscreen ? fullscreenRoot.requestFullscreen({ navigationUI: "hide" }) : fullscreenRoot.webkitRequestFullscreen());
+  } catch (error) {
+    console.warn("fullscreen", error);
+  }
+}
+
+function onFullscreenChange() {
+  const isFullscreen = !!getFullscreenElement();
+  for (const button of document.querySelectorAll("[data-fullscreen-label]")) button.textContent = isFullscreen ? "Iziet no pilnekrāna" : "Pilnekrāns";
+  resize();
+  if (isFullscreen && match && !match.game.isOver && body.dataset.screen === "pause") requestLock();
 }
 
 function exitToLessonList() {
@@ -73,10 +94,16 @@ function horizontalToVertical(hfov, aspect) {
   return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / aspect));
 }
 
+let resolutionScale = 1;
+
+function pixelRatio() {
+  const quality = match?.quality || settings.quality;
+  return Math.min(devicePixelRatio, PIXEL_RATIO[quality]) * resolutionScale;
+}
+
 function resize() {
   const w = innerWidth, h = innerHeight;
-  const quality = match?.quality || settings.quality;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, PIXEL_RATIO[quality]));
+  renderer.setPixelRatio(pixelRatio());
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -90,6 +117,7 @@ function disposeScene(scene) {
     o.geometry?.dispose();
     const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
     for (const m of mats) {
+      if (m.userData.shared) continue;
       for (const key of ["map", "normalMap", "emissiveMap"]) m[key]?.dispose();
       m.dispose();
     }
@@ -124,10 +152,12 @@ function buildMatch(quality) {
   const scene = new THREE.Scene();
   scene.environment = environment;
   renderer.shadowMap.enabled = quality !== "low";
+  renderer.shadowMap.type = quality === "high" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  renderer.shadowMap.autoUpdate = false;
   const world = buildWorld(scene, renderer, game.map, brushes, quality);
   const fx = createEffects(scene);
   const pickups = createPickupVisuals(scene, game.pickups, viewmodel.weaponFactory);
-  const players = createPlayerModels(scene, viewmodel.weaponFactory);
+  const players = createPlayerModels(scene, viewmodel.weaponFactory, quality === "high");
   let composer = null;
   if (quality === "high") {
     composer = new EffectComposer(renderer);
@@ -137,7 +167,7 @@ function buildMatch(quality) {
   }
   match = {
     game, local, scene, world, fx, pickups, players, composer, quality,
-    accumulator: 0, prevPositions: new Map(), stepDistances: new Map(), isPaused: false,
+    accumulator: 0, prevPositions: new Map(), stepDistances: new Map(), isPaused: false, shadowTick: 0, ownedSlots: [], inputs: new Map([[LOCAL_ID, null]]),
     view: { landKick: 0, landVel: 0, eyeOffset: 0, roll: 0, trauma: 0, fovKick: 0, punch: 0, punchVel: 0 },
   };
   input.setView(local.move.yaw, 0);
@@ -300,10 +330,16 @@ function stepMatch(dt) {
   match.accumulator = Math.min(match.accumulator + dt, TICK_DT * MAX_STEPS_PER_FRAME);
   while (match.accumulator >= TICK_DT) {
     match.accumulator -= TICK_DT;
-    for (const p of game.players) match.prevPositions.set(p.id, { ...p.move.pos });
-    const ownedSlots = Object.keys(local.arsenal.owned).map(id => WEAPONS[id].slot).sort();
-    const sample = input.sample(ownedSlots);
-    const events = stepGame(game, new Map([[LOCAL_ID, sample]]));
+    for (const p of game.players) {
+      let prev = match.prevPositions.get(p.id);
+      if (!prev) match.prevPositions.set(p.id, prev = { x: 0, y: 0, z: 0 });
+      prev.x = p.move.pos.x; prev.y = p.move.pos.y; prev.z = p.move.pos.z;
+    }
+    const ownedSlots = match.ownedSlots;
+    ownedSlots.length = 0;
+    for (const id of WEAPON_ORDER) if (local.arsenal.owned[id]) ownedSlots.push(WEAPONS[id].slot);
+    match.inputs.set(LOCAL_ID, input.sample(ownedSlots));
+    const events = stepGame(game, match.inputs);
     input.syncSlot(WEAPONS[local.arsenal.current].slot);
     handleEvents(events);
     if (!match || game.isOver) return;
@@ -365,11 +401,44 @@ function updateCamera(dt, look) {
 }
 
 let lastFrame = performance.now();
+const perf = { element: $("perf"), averageFrame: 16.7, cpu: 0, shownAt: 0, slowFor: 0, fastFor: 0, scaleChangedAt: 0 };
+
+function adaptResolution(rawDt, now) {
+  if (!settings.adaptive || match?.isPaused || rawDt > 0.25) return;
+  if (perf.averageFrame > 21) { perf.slowFor += rawDt; perf.fastFor = 0; }
+  else if (perf.averageFrame < 14.5) { perf.fastFor += rawDt; perf.slowFor = 0; }
+  else perf.slowFor = perf.fastFor = 0;
+  if (now - perf.scaleChangedAt < 2500) return;
+  let next = resolutionScale;
+  if (perf.slowFor > 1.2 && resolutionScale > 0.55) next = Math.max(0.55, resolutionScale * 0.85);
+  else if (perf.fastFor > 5 && resolutionScale < 1) next = Math.min(1, resolutionScale * 1.12);
+  if (next === resolutionScale) return;
+  resolutionScale = next;
+  perf.scaleChangedAt = now;
+  perf.slowFor = perf.fastFor = 0;
+  resize();
+}
+
+function showPerf(now) {
+  perf.element.hidden = !settings.showFps;
+  if (!settings.showFps || now - perf.shownAt < 500) return;
+  perf.shownAt = now;
+  const info = renderer.info.render;
+  perf.element.textContent = `${Math.round(1000 / perf.averageFrame)} fps · ${perf.averageFrame.toFixed(1)} ms · JS ${perf.cpu.toFixed(1)} ms\n${info.calls} zīmēšanas izsaukumi · ${(info.triangles / 1000).toFixed(0)}k trijst. · izšķirtspēja ×${resolutionScale.toFixed(2)}`;
+}
+
+renderer.info.autoReset = false;
+
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.1, (now - lastFrame) / 1000);
+  const rawDt = (now - lastFrame) / 1000;
+  const dt = Math.min(0.1, rawDt);
   lastFrame = now;
   if (!match) return;
+  const cpuStart = performance.now();
+  renderer.info.reset();
+  if (rawDt < 0.25) perf.averageFrame += (rawDt * 1000 - perf.averageFrame) * 0.05;
+  adaptResolution(rawDt, now);
   const isRunning = !match.isPaused && body.dataset.screen === "game" && !match.game.isOver;
   if (isRunning) stepMatch(dt);
   if (!match) return;
@@ -384,11 +453,14 @@ function frame(now) {
   hud.setScoped(motion.isScoped);
   viewmodel.update(isRunning ? dt : 0, match.game.time, match.local, motion);
   hud.update(match.game, match.local, { showScoreboard: input.isHeld("scoreboard") || body.dataset.screen === "pause", showSpeed: settings.showSpeed, now });
+  if (match.quality !== "low" && (match.quality === "high" || ++match.shadowTick % 2 === 0 || match.shadowTick < 3)) renderer.shadowMap.needsUpdate = true;
   renderer.clear();
   if (match.composer) match.composer.render();
   else renderer.render(match.scene, camera);
   renderer.clearDepth();
   renderer.render(viewmodel.scene, viewmodel.camera);
+  perf.cpu += (performance.now() - cpuStart - perf.cpu) * 0.1;
+  showPerf(now);
 }
 
 function renderSetup() {
@@ -422,6 +494,8 @@ function renderSettings() {
   $("set-volume-out").textContent = `${Math.round(settings.volume * 100)}%`;
   $("set-invert").checked = settings.invertY;
   $("set-speed").checked = settings.showSpeed;
+  $("set-fps").checked = settings.showFps;
+  $("set-adaptive").checked = settings.adaptive;
   $("binds").innerHTML = Object.keys(DEFAULT_BINDS).map(action => `<button type="button" class="bind${listeningBind === action ? " listening" : ""}" data-bind="${action}"><span>${BIND_LABELS[action]}</span><kbd>${listeningBind === action ? "…" : keyLabel(settings.binds[action])}</kbd></button>`).join("");
 }
 
@@ -460,6 +534,7 @@ document.addEventListener("click", e => {
   if (target.dataset.screenTarget) return showScreen(target.dataset.screenTarget);
   switch (target.dataset.action) {
     case "exit": return exitToLessonList();
+    case "fullscreen": return toggleFullscreen();
     case "resume": return requestLock();
     case "quit-match": endMatch(); return showScreen("menu");
     case "rematch": return startMatch();
@@ -487,12 +562,23 @@ for (const [id, apply] of Object.entries(settingInputs)) {
 }
 $("set-invert").addEventListener("change", e => { settings.invertY = e.target.checked; saveSettings(settings); });
 $("set-speed").addEventListener("change", e => { settings.showSpeed = e.target.checked; saveSettings(settings); });
+$("set-fps").addEventListener("change", e => { settings.showFps = e.target.checked; saveSettings(settings); });
+$("set-adaptive").addEventListener("change", e => {
+  settings.adaptive = e.target.checked;
+  saveSettings(settings);
+  if (!settings.adaptive && resolutionScale !== 1) { resolutionScale = 1; resize(); }
+});
 
 addEventListener("keydown", e => {
   if (e.code !== "Escape" || input.isLocked || listeningBind) return;
   if (body.dataset.screen === "pause") requestLock();
   else if (["setup", "settings", "controls"].includes(body.dataset.screen)) showScreen(match && previousScreen === "pause" ? "pause" : "menu");
 });
+
+document.addEventListener("fullscreenchange", onFullscreenChange);
+document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+input.setFullscreenHandler(toggleFullscreen);
+for (const button of document.querySelectorAll("[data-action=fullscreen]")) button.hidden = !isFullscreenSupported;
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) audio.suspend();
