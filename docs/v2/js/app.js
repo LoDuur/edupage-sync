@@ -5,6 +5,7 @@ import { createConsult } from "./consult.js";
 import { createBus } from "./bus.js";
 import { createIntercity } from "./intercity.js";
 import { createTerminal } from "./terminal.js";
+import { openArena } from "./commands.js";
 import { setupPwa } from "./pwa.js";
 
 const POLL_MS = 2 * 60 * 1000;
@@ -197,6 +198,7 @@ createTerminal(
   { panel: $("terminal"), output: $("terminal-out"), form: $("terminal-form"), input: $("terminal-input"), prompt: $("terminal-prompt"), hint: $("terminal-hint"), openers: [$("open-terminal"), $("open-terminal-side")] },
   { tabs: TABS, classes: () => state.index?.classes || [], selectClass, openTab, timetable, refresh: reloadData, classData: () => state.classData, entries: () => state.entries, index: () => state.index },
 );
+$("open-arena").addEventListener("click", () => openArena(() => $("open-arena").focus()));
 setupPwa({ installButton: $("install"), iosSheet: $("ios-sheet"), updateBar: $("update-bar"), updateButton: $("update-apply") });
 
 applyTheme();

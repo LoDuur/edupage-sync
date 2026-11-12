@@ -1,0 +1,507 @@
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { TICK_DT } from "./sim/constants.js";
+import { addPlayer, createGame, fillWithBots, loadMap, stepGame } from "./sim/game.js";
+import { eyeHeight } from "./sim/movement.js";
+import { WEAPONS } from "./sim/weapons.js";
+import { BIND_LABELS, DEFAULT_SETTINGS, DEFAULT_BINDS, keyLabel, loadSettings, saveSettings } from "./settings.js";
+import { createInput } from "./input.js";
+import { createHud } from "./hud.js";
+import { createAudio } from "./audio/sound.js";
+import { buildWorld } from "./render/world.js";
+import { createPlayerModels } from "./render/players.js";
+import { createEffects, createPickupVisuals } from "./render/fx.js";
+import { createViewmodel } from "./render/viewmodel.js";
+
+const LOCAL_ID = "local";
+const MAX_STEPS_PER_FRAME = 6;
+const STEP_DISTANCE = 2.3;
+const PIXEL_RATIO = { low: 0.75, medium: 1.25, high: 2 };
+const TRACERS_PER_SHOT = { aa12: 3, pistol: 1 };
+
+const $ = id => document.getElementById(id);
+const body = document.body;
+let settings = loadSettings();
+let previousScreen = "menu";
+
+function showScreen(name) {
+  if (body.dataset.screen !== "settings") previousScreen = body.dataset.screen;
+  body.dataset.screen = name;
+  if (name === "settings") renderSettings();
+  if (name === "setup") renderSetup();
+}
+
+function exitToLessonList() {
+  if (document.pointerLockElement) document.exitPointerLock();
+  if (window.parent !== window) window.parent.postMessage("arena:exit", location.origin);
+  else location.href = "../v2/";
+}
+
+function isTouchOnly() {
+  return !matchMedia("(any-pointer: fine)").matches && (navigator.maxTouchPoints > 0 || "ontouchstart" in window);
+}
+
+const canvas = $("view");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.autoClear = false;
+const pmrem = new THREE.PMREMGenerator(renderer);
+const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(75, 1, 0.05, 220);
+camera.rotation.order = "YXZ";
+const audio = createAudio();
+audio.setVolume(settings.volume);
+const hud = createHud();
+const input = createInput(canvas, () => settings);
+const viewmodel = createViewmodel({ onCue: (cue, weapon) => audio.play(cue, { isLocal: true, weapon }) });
+viewmodel.scene.environment = environment;
+
+let match = null;
+
+function horizontalToVertical(hfov, aspect) {
+  return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(hfov) / 2) / aspect));
+}
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  const quality = match?.quality || settings.quality;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, PIXEL_RATIO[quality]));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  viewmodel.resize(w / h);
+  match?.composer?.setSize(w, h);
+}
+addEventListener("resize", resize);
+
+function disposeScene(scene) {
+  scene.traverse(o => {
+    o.geometry?.dispose();
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const m of mats) {
+      for (const key of ["map", "normalMap", "emissiveMap"]) m[key]?.dispose();
+      m.dispose();
+    }
+  });
+}
+
+function startMatch() {
+  const quality = settings.quality;
+  $("loading-text").textContent = "Būvē arēnu…";
+  showScreen("loading");
+  requestAnimationFrame(() => setTimeout(() => {
+    try {
+      buildMatch(quality);
+    } catch (error) {
+      console.error(error);
+      $("asset-error").hidden = false;
+      $("asset-error").textContent = `Neizdevās sākt maču: ${error.message}`;
+      showScreen("menu");
+      return;
+    }
+    showScreen("game");
+    requestLock();
+  }, 30));
+}
+
+function buildMatch(quality) {
+  endMatch();
+  const { brushes } = loadMap(settings.map);
+  const game = createGame({ mapId: settings.map, mode: "ffa", seed: (Math.random() * 1e9) | 0, fragLimit: settings.fragLimit, timeLimit: settings.timeLimit });
+  const local = addPlayer(game, { id: LOCAL_ID, name: "Tu" });
+  fillWithBots(game, settings.bots, settings.difficulty);
+  const scene = new THREE.Scene();
+  scene.environment = environment;
+  renderer.shadowMap.enabled = quality !== "low";
+  const world = buildWorld(scene, renderer, game.map, brushes, quality);
+  const fx = createEffects(scene);
+  const pickups = createPickupVisuals(scene, game.pickups, viewmodel.weaponFactory);
+  const players = createPlayerModels(scene, viewmodel.weaponFactory);
+  let composer = null;
+  if (quality === "high") {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.45, 0.6, 0.85));
+    composer.addPass(new OutputPass());
+  }
+  match = {
+    game, local, scene, world, fx, pickups, players, composer, quality,
+    accumulator: 0, prevPositions: new Map(), stepDistances: new Map(), isPaused: false,
+    view: { landKick: 0, landVel: 0, eyeOffset: 0, roll: 0, trauma: 0, fovKick: 0, punch: 0, punchVel: 0 },
+  };
+  input.setView(local.move.yaw, 0);
+  input.syncSlot(1);
+  hud.reset();
+  resize();
+  hud.message(`Mačs sākas!<small>${game.fragLimit} fragi · ${Math.round(game.timeLimit / 60)} min · ${settings.bots} boti</small>`, 3, performance.now());
+}
+
+function endMatch() {
+  if (!match) return;
+  audio.setSliding(false);
+  disposeScene(match.scene);
+  match.composer?.dispose();
+  match = null;
+}
+
+function requestLock() {
+  audio.ensure();
+  input.lock().then(ok => { $("click-to-play").hidden = ok; });
+}
+
+input.onLockChange(isLocked => {
+  if (!match) return;
+  $("click-to-play").hidden = true;
+  if (!isLocked && body.dataset.screen === "game" && !match.game.isOver) {
+    match.isPaused = true;
+    audio.setSliding(false);
+    showScreen("pause");
+  }
+  if (isLocked) {
+    match.isPaused = false;
+    if (body.dataset.screen !== "game") showScreen("game");
+  }
+});
+
+canvas.addEventListener("click", () => {
+  if (match && body.dataset.screen === "game" && !input.isLocked) requestLock();
+});
+
+function nameOf(game, id) {
+  return game.players.find(p => p.id === id)?.name ?? "?";
+}
+
+function playerById(game, id) {
+  return game.players.find(p => p.id === id);
+}
+
+function handleEvents(events) {
+  const { game, local, fx, players, view } = match;
+  const now = performance.now();
+  for (const e of events) {
+    const isLocal = e.id === LOCAL_ID;
+    const actor = e.id ? playerById(game, e.id) : null;
+    const pos = actor?.move.pos;
+    switch (e.type) {
+      case "shot": {
+        const w = WEAPONS[e.weapon];
+        audio.play(e.weapon, { isLocal, pos: e.origin });
+        let from;
+        if (isLocal) {
+          from = viewmodel.muzzleWorldPosition(camera, new THREE.Vector3());
+          fx.muzzleLight(from, e.weapon === "aa12" ? 6 : 3);
+          view.trauma = Math.min(1, view.trauma + (e.weapon === "aa12" ? 0.3 : 0.12));
+          input.addPitch(w.recoilPitch * (0.55 + Math.random() * 0.25));
+          input.addYaw((Math.random() - 0.5) * w.recoilYaw);
+          view.punchVel += w.recoilPitch * 9;
+        } else {
+          players.notifyShot(e.id);
+          const yaw = actor?.move.yaw ?? 0;
+          from = new THREE.Vector3(e.origin.x + Math.cos(yaw) * 0.25, e.origin.y - 0.25, e.origin.z - Math.sin(yaw) * 0.25);
+          fx.muzzleLight(from, e.weapon === "aa12" ? 4 : 2);
+        }
+        e.traces.forEach((t, i) => {
+          if (i < TRACERS_PER_SHOT[e.weapon]) fx.tracer(from, new THREE.Vector3(t.point.x, t.point.y, t.point.z));
+          fx.impact(t);
+          if (i === 0 && !t.victim) audio.play("impact", { pos: t.point });
+        });
+        break;
+      }
+      case "damage": {
+        players.hitFlash(e.victim);
+        if (e.attacker === LOCAL_ID && e.victim !== LOCAL_ID) {
+          hud.hit(e.isHeadshot ? "head" : "");
+          audio.play("hit", { isLocal: true, intensity: e.isHeadshot ? 2 : 1 });
+        }
+        if (e.victim === LOCAL_ID) {
+          audio.play("hurt", { isLocal: true });
+          view.trauma = Math.min(1, view.trauma + Math.min(0.5, e.amount / 80));
+          if (e.origin) {
+            const toward = Math.atan2(-(e.origin.x - local.move.pos.x), -(e.origin.z - local.move.pos.z));
+            hud.damageFrom(-(toward - input.yaw));
+          }
+        }
+        break;
+      }
+      case "kill": {
+        hud.killfeed(game, e, LOCAL_ID);
+        const victim = playerById(game, e.victim);
+        fx.deathBurst(e.pos, victim?.id === LOCAL_ID ? 0xe0564f : 0x7ff0ff);
+        audio.play("death", { pos: e.pos, isLocal: e.victim === LOCAL_ID });
+        if (e.killer === LOCAL_ID && e.victim !== LOCAL_ID) {
+          hud.hit("kill");
+          audio.play("kill", { isLocal: true });
+          const streak = e.streak >= 5 ? "\nNeapturams!" : e.streak >= 3 ? `\n${e.streak} pēc kārtas` : "";
+          hud.message(`${e.isHeadshot ? "◎ " : ""}Izsitu: ${nameOf(game, e.victim)}${streak}`, 1.6, now);
+        }
+        if (e.victim === LOCAL_ID && e.killer && e.killer !== LOCAL_ID) hud.message(`Tevi izsita ${nameOf(game, e.killer)}`, 2.4, now);
+        break;
+      }
+      case "jump": case "slidejump": case "walljump": case "dash": case "pad":
+        audio.play(e.type === "slidejump" ? "jump" : e.type, { isLocal, pos });
+        if (isLocal && e.type === "dash") view.fovKick = 8;
+        if (isLocal && e.type === "walljump") view.trauma = Math.min(1, view.trauma + 0.08);
+        break;
+      case "land":
+        if (e.speed > 3) audio.play("land", { isLocal, pos, intensity: e.speed / 12 });
+        if (isLocal) view.landVel -= Math.min(0.5, e.speed * 0.025);
+        break;
+      case "pickup":
+        audio.play("pickup", { isLocal, pos, weapon: e.kind === "weapon" });
+        if (isLocal) hud.message(e.kind === "weapon" ? `+ ${WEAPONS[e.weapon].name}` : e.kind === "mega" ? "+ Mega veselība" : "+ Veselība", 1.2, now);
+        break;
+      case "spawn":
+        if (isLocal) {
+          input.setView(e.yaw, 0);
+          input.syncSlot(1);
+          audio.play("spawn", { isLocal: true });
+        }
+        break;
+      case "dry":
+        if (isLocal) audio.play("dry", { isLocal: true });
+        break;
+      case "matchEnd":
+        finishMatch();
+        break;
+    }
+  }
+}
+
+function finishMatch() {
+  const { game } = match;
+  const winner = game.winner?.id ? nameOf(game, game.winner.id) : null;
+  $("results-title").textContent = game.winner?.id === LOCAL_ID ? "Tu uzvarēji!" : winner ? `Uzvarēja ${winner}` : "Mačs beidzies";
+  hud.renderBoard(game, LOCAL_ID, $("results-rows"));
+  audio.setSliding(false);
+  if (document.pointerLockElement) document.exitPointerLock();
+  showScreen("results");
+}
+
+function stepMatch(dt) {
+  const { game, local } = match;
+  match.accumulator = Math.min(match.accumulator + dt, TICK_DT * MAX_STEPS_PER_FRAME);
+  while (match.accumulator >= TICK_DT) {
+    match.accumulator -= TICK_DT;
+    for (const p of game.players) match.prevPositions.set(p.id, { ...p.move.pos });
+    const ownedSlots = Object.keys(local.arsenal.owned).map(id => WEAPONS[id].slot).sort();
+    const sample = input.sample(ownedSlots);
+    const events = stepGame(game, new Map([[LOCAL_ID, sample]]));
+    input.syncSlot(WEAPONS[local.arsenal.current].slot);
+    handleEvents(events);
+    if (!match || game.isOver) return;
+    footsteps();
+  }
+}
+
+function footsteps() {
+  const { game, stepDistances } = match;
+  for (const p of game.players) {
+    if (!p.isAlive || !p.move.isOnGround || p.move.isSliding) continue;
+    const speed = Math.hypot(p.move.vel.x, p.move.vel.z);
+    if (speed < 3) continue;
+    const travelled = (stepDistances.get(p.id) || 0) + speed * TICK_DT;
+    stepDistances.set(p.id, travelled >= STEP_DISTANCE ? 0 : travelled);
+    if (travelled < STEP_DISTANCE) continue;
+    if (p.id === LOCAL_ID) audio.play("step", { isLocal: true, volume: 0.7 });
+    else if (Math.hypot(p.move.pos.x - camera.position.x, p.move.pos.z - camera.position.z) < 22) audio.play("step", { pos: p.move.pos, volume: 1.4 });
+  }
+}
+
+function updateCamera(dt, look) {
+  const { local, view } = match;
+  const m = local.move;
+  const alpha = match.accumulator / TICK_DT;
+  const prev = match.prevPositions.get(LOCAL_ID) || m.pos;
+  const targetEye = eyeHeight(m);
+  view.eyeOffset += (targetEye - view.eyeOffset) * Math.min(1, dt * 18);
+  view.landVel += -view.landKick * 160 * dt - view.landVel * 16 * dt;
+  view.landKick += view.landVel * dt * 10;
+  view.punchVel += -view.punch * 220 * dt - view.punchVel * 22 * dt;
+  view.punch += view.punchVel * dt;
+  const sin = Math.sin(m.yaw), cos = Math.cos(m.yaw);
+  const sideVel = cos * m.vel.x - sin * m.vel.z;
+  const targetRoll = Math.max(-0.035, Math.min(0.035, sideVel * 0.0028)) + (m.isSliding ? 0.05 : 0);
+  view.roll += (targetRoll - view.roll) * Math.min(1, dt * 8);
+  view.trauma = Math.max(0, view.trauma - dt * 2.2);
+  const shake = view.trauma * view.trauma;
+  const t = performance.now() / 1000;
+  const sx = (Math.sin(t * 61.3) + Math.sin(t * 37.1)) * 0.5 * shake * 0.035;
+  const sy = (Math.sin(t * 53.7) + Math.sin(t * 29.3)) * 0.5 * shake * 0.035;
+  camera.position.set(prev.x + (m.pos.x - prev.x) * alpha, prev.y + (m.pos.y - prev.y) * alpha + view.eyeOffset + view.landKick * 0.6, prev.z + (m.pos.z - prev.z) * alpha);
+  camera.rotation.set(input.pitch + view.punch + sy, input.yaw + sx, -view.roll);
+  const speed = Math.hypot(m.vel.x, m.vel.z);
+  view.fovKick = Math.max(0, view.fovKick - dt * 30);
+  const fov = settings.fov + Math.min(12, Math.max(0, speed - 9) * 0.7) + view.fovKick;
+  const vfov = horizontalToVertical(fov, camera.aspect);
+  if (Math.abs(camera.fov - vfov) > 0.01) {
+    camera.fov += (vfov - camera.fov) * Math.min(1, dt * 10);
+    camera.updateProjectionMatrix();
+  }
+  audio.updateListener(camera);
+  audio.setSliding(local.isAlive && m.isSliding && m.isOnGround);
+  return { speed, onGround: m.isOnGround, sliding: m.isSliding, slide: m.isSliding ? 1 : 0, roll: view.roll, landKick: view.landKick, lookDX: look.dx, lookDY: look.dy, isFiring: input.isLocked && (local.lastInput.buttons & 8) !== 0 };
+}
+
+let lastFrame = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - lastFrame) / 1000);
+  lastFrame = now;
+  if (!match) return;
+  const isRunning = !match.isPaused && body.dataset.screen === "game" && !match.game.isOver;
+  if (isRunning) stepMatch(dt);
+  if (!match) return;
+  const look = input.consumeLook();
+  const motion = updateCamera(dt, look);
+  const alpha = match.accumulator / TICK_DT;
+  match.players.sync(match.game, LOCAL_ID, alpha, isRunning ? dt : 0, match.prevPositions);
+  match.pickups.update(match.game, now / 1000);
+  match.world.update(now / 1000, Date.now());
+  match.fx.update(isRunning ? dt : 0);
+  viewmodel.update(isRunning ? dt : 0, match.game.time, match.local, motion);
+  hud.update(match.game, match.local, { showScoreboard: input.isHeld("scoreboard") || body.dataset.screen === "pause", showSpeed: settings.showSpeed, now });
+  renderer.clear();
+  if (match.composer) match.composer.render();
+  else renderer.render(match.scene, camera);
+  renderer.clearDepth();
+  renderer.render(viewmodel.scene, viewmodel.camera);
+}
+
+function renderSetup() {
+  const bots = $("setup-bots"), frags = $("setup-frags");
+  bots.value = settings.bots;
+  frags.value = settings.fragLimit;
+  $("setup-bots-out").textContent = settings.bots;
+  $("setup-frags-out").textContent = settings.fragLimit;
+  $("setup-difficulty").value = settings.difficulty;
+  $("setup-time").value = String(settings.timeLimit);
+  $("setup-map").value = settings.map;
+}
+
+function readSetup() {
+  settings.bots = Number($("setup-bots").value) | 0;
+  settings.fragLimit = Number($("setup-frags").value) | 0;
+  settings.difficulty = $("setup-difficulty").value;
+  settings.timeLimit = Number($("setup-time").value) | 0;
+  settings.map = $("setup-map").value;
+  saveSettings(settings);
+}
+
+let listeningBind = null;
+function renderSettings() {
+  $("set-sens").value = settings.sensitivity;
+  $("set-sens-out").textContent = settings.sensitivity.toFixed(1);
+  $("set-fov").value = settings.fov;
+  $("set-fov-out").textContent = `${settings.fov}°`;
+  $("set-quality").value = settings.quality;
+  $("set-volume").value = settings.volume;
+  $("set-volume-out").textContent = `${Math.round(settings.volume * 100)}%`;
+  $("set-invert").checked = settings.invertY;
+  $("set-speed").checked = settings.showSpeed;
+  $("binds").innerHTML = Object.keys(DEFAULT_BINDS).map(action => `<button type="button" class="bind${listeningBind === action ? " listening" : ""}" data-bind="${action}"><span>${BIND_LABELS[action]}</span><kbd>${listeningBind === action ? "…" : keyLabel(settings.binds[action])}</kbd></button>`).join("");
+}
+
+function applyBind(code) {
+  if (!listeningBind) return;
+  if (code !== "Escape") {
+    for (const [action, bound] of Object.entries(settings.binds)) if (bound === code && action !== listeningBind) settings.binds[action] = settings.binds[listeningBind];
+    settings.binds[listeningBind] = code;
+    saveSettings(settings);
+  }
+  listeningBind = null;
+  renderSettings();
+}
+
+addEventListener("keydown", e => {
+  if (!listeningBind) return;
+  e.preventDefault();
+  e.stopPropagation();
+  applyBind(e.code);
+}, true);
+addEventListener("mousedown", e => {
+  if (!listeningBind || e.target.closest?.("[data-bind]")) return;
+  e.preventDefault();
+  applyBind(`Mouse${e.button}`);
+}, true);
+
+document.addEventListener("click", e => {
+  const target = e.target.closest("[data-screen-target], [data-action], [data-bind]");
+  if (!target) return;
+  audio.ensure();
+  if (target.dataset.bind) {
+    listeningBind = target.dataset.bind;
+    renderSettings();
+    return;
+  }
+  if (target.dataset.screenTarget) return showScreen(target.dataset.screenTarget);
+  switch (target.dataset.action) {
+    case "exit": return exitToLessonList();
+    case "resume": return requestLock();
+    case "quit-match": endMatch(); return showScreen("menu");
+    case "rematch": return startMatch();
+    case "settings-back":
+      audio.setVolume(settings.volume);
+      return showScreen(match && previousScreen === "pause" ? "pause" : "menu");
+    case "settings-reset":
+      settings = { ...DEFAULT_SETTINGS, binds: { ...DEFAULT_BINDS }, bots: settings.bots, difficulty: settings.difficulty, fragLimit: settings.fragLimit, timeLimit: settings.timeLimit, map: settings.map };
+      saveSettings(settings);
+      return renderSettings();
+  }
+});
+
+$("start-match").addEventListener("click", () => { readSetup(); startMatch(); });
+$("setup-bots").addEventListener("input", e => { $("setup-bots-out").textContent = e.target.value; });
+$("setup-frags").addEventListener("input", e => { $("setup-frags-out").textContent = e.target.value; });
+const settingInputs = {
+  "set-sens": v => { settings.sensitivity = Number(v); },
+  "set-fov": v => { settings.fov = Number(v); },
+  "set-quality": v => { settings.quality = v; },
+  "set-volume": v => { settings.volume = Number(v); audio.setVolume(settings.volume); },
+};
+for (const [id, apply] of Object.entries(settingInputs)) {
+  $(id).addEventListener("input", e => { apply(e.target.value); saveSettings(settings); renderSettings(); });
+}
+$("set-invert").addEventListener("change", e => { settings.invertY = e.target.checked; saveSettings(settings); });
+$("set-speed").addEventListener("change", e => { settings.showSpeed = e.target.checked; saveSettings(settings); });
+
+addEventListener("keydown", e => {
+  if (e.code !== "Escape" || input.isLocked || listeningBind) return;
+  if (body.dataset.screen === "pause") requestLock();
+  else if (["setup", "settings", "controls"].includes(body.dataset.screen)) showScreen(match && previousScreen === "pause" ? "pause" : "menu");
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) audio.suspend();
+});
+
+async function boot() {
+  if (isTouchOnly()) return showScreen("gate");
+  resize();
+  requestAnimationFrame(frame);
+  $("loading-bar").style.width = "30%";
+  $("loading-text").textContent = "Ielādē ieročus…";
+  const { error } = await viewmodel.load();
+  $("loading-bar").style.width = "70%";
+  $("loading-text").textContent = "Gatavo karti…";
+  await new Promise(r => setTimeout(r, 0));
+  loadMap(settings.map);
+  $("loading-bar").style.width = "100%";
+  if (error) {
+    $("asset-error").hidden = false;
+    $("asset-error").textContent = `Ieroču modeļi neielādējās (${error}).`;
+  }
+  showScreen("menu");
+}
+
+boot().catch(error => {
+  console.error(error);
+  $("loading-text").textContent = `Neizdevās ielādēt: ${error.message}`;
+});

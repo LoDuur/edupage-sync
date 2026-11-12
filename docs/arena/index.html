@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<title>Starpbrīdis</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23101418'/><path d='M50 18v22M50 60v22M18 50h22M60 50h22' stroke='%233fae7a' stroke-width='9' stroke-linecap='round'/><circle cx='50' cy='50' r='6' fill='%233fae7a'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap&subset=latin-ext">
+<link rel="stylesheet" href="arena.css?v=2">
+<script type="importmap">
+{
+ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "./audio/sound.js": "./audio/sound.js?v=2",
+  "./hud.js": "./hud.js?v=2",
+  "./input.js": "./input.js?v=2",
+  "./render/fx.js": "./render/fx.js?v=2",
+  "./render/players.js": "./render/players.js?v=2",
+  "./render/textures.js": "./render/textures.js?v=2",
+  "./render/viewmodel.js": "./render/viewmodel.js?v=2",
+  "./render/world.js": "./render/world.js?v=2",
+  "./settings.js": "./settings.js?v=2",
+  "./sim/bots.js": "./sim/bots.js?v=2",
+  "./sim/collision.js": "./sim/collision.js?v=2",
+  "./sim/constants.js": "./sim/constants.js?v=2",
+  "./sim/entity.js": "./sim/entity.js?v=2",
+  "./sim/game.js": "./sim/game.js?v=2",
+  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=2",
+  "./sim/maps/index.js": "./sim/maps/index.js?v=2",
+  "./sim/movement.js": "./sim/movement.js?v=2",
+  "./sim/nav.js": "./sim/nav.js?v=2",
+  "./sim/random.js": "./sim/random.js?v=2",
+  "./sim/weapons.js": "./sim/weapons.js?v=2"
+ }
+}
+</script>
+<script type="module" src="main.js?v=2"></script>
+</head>
+<body data-screen="loading">
+
+<canvas id="view" tabindex="-1"></canvas>
+
+<div id="hud" aria-hidden="true">
+  <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+  <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div class="damage-ring" id="damage-ring"></div>
+  <div class="vignette" id="vignette"></div>
+  <div class="hud-top">
+    <span class="hud-score" id="hud-score"></span>
+    <span class="hud-timer" id="hud-timer">10:00</span>
+    <span class="hud-leader" id="hud-leader"></span>
+  </div>
+  <ol class="killfeed" id="killfeed"></ol>
+  <div class="center-message" id="center-message"></div>
+  <div class="speed" id="speed"><b id="speed-value">0</b><span>km/h</span></div>
+  <div class="hud-vitals">
+    <div class="vital"><span class="vital-label">Veselība</span><b id="hud-health">100</b><div class="bar"><i id="hud-health-bar"></i></div></div>
+    <div class="vital armor"><span class="vital-label">Bruņas</span><b id="hud-armor">0</b><div class="bar"><i id="hud-armor-bar"></i></div></div>
+    <div class="dash-pips"><span class="vital-label">Rāviens</span><i id="hud-dash"></i></div>
+  </div>
+  <div class="hud-weapon">
+    <ul class="weapon-slots" id="weapon-slots"></ul>
+    <div class="ammo"><b id="hud-mag">12</b><span id="hud-reserve">/ ∞</span></div>
+    <span class="weapon-name" id="hud-weapon-name">Pistole</span>
+  </div>
+  <div class="scoreboard" id="scoreboard" hidden>
+    <h2 id="scoreboard-title">Rezultāti</h2>
+    <table><thead><tr><th>#</th><th>Spēlētājs</th><th>Fragi</th><th>Nāves</th></tr></thead><tbody id="scoreboard-rows"></tbody></table>
+  </div>
+</div>
+
+<main class="screen" id="screen-loading">
+  <div class="panel narrow">
+    <h1 class="logo">Starp<span>brīdis</span></h1>
+    <p class="loading-text" id="loading-text">Ielādē arēnu…</p>
+    <div class="progress"><i id="loading-bar"></i></div>
+  </div>
+</main>
+
+<main class="screen" id="screen-gate">
+  <div class="panel narrow">
+    <h1 class="logo">Starp<span>brīdis</span></h1>
+    <p>Šai spēlei vajag tastatūru un peli. Atver Stundu sarakstu datorā, lai spēlētu.</p>
+    <button class="button primary" type="button" data-action="exit">◄ Atpakaļ uz sarakstu</button>
+  </div>
+</main>
+
+<main class="screen" id="screen-menu">
+  <div class="panel">
+    <h1 class="logo">Starp<span>brīdis</span></h1>
+    <p class="tagline">Arēnas šāvējs pēc pēdējās stundas. Bhop, slīde, sienu lēcieni.</p>
+    <nav class="menu-list">
+      <button class="button primary" type="button" data-screen-target="setup">Spēlēt pret botiem</button>
+      <button class="button" type="button" disabled title="Tiešsaistes spēle tiek būvēta">Tiešsaistē <small>drīzumā</small></button>
+      <button class="button" type="button" data-screen-target="settings">Iestatījumi</button>
+      <button class="button" type="button" data-screen-target="controls">Vadība</button>
+      <button class="button ghost" type="button" data-action="exit">◄ Atpakaļ uz sarakstu</button>
+    </nav>
+    <p class="error" id="asset-error" hidden></p>
+  </div>
+</main>
+
+<main class="screen" id="screen-setup">
+  <div class="panel">
+    <h2>Mačs pret botiem</h2>
+    <div class="form-grid">
+      <label>Karte<select id="setup-map"><option value="aktuzale">Aktu zāle</option></select></label>
+      <label>Režīms<select id="setup-mode"><option value="ffa">Visi pret visiem</option></select></label>
+      <label>Botu skaits <output id="setup-bots-out">5</output><input type="range" id="setup-bots" min="1" max="11" step="1"></label>
+      <label>Grūtība<select id="setup-difficulty"><option value="easy">Viegli</option><option value="normal">Normāli</option><option value="hard">Grūti</option><option value="nightmare">Murgs</option></select></label>
+      <label>Fragu limits <output id="setup-frags-out">20</output><input type="range" id="setup-frags" min="5" max="50" step="5"></label>
+      <label>Laika limits<select id="setup-time"><option value="300">5 min</option><option value="600">10 min</option><option value="900">15 min</option></select></label>
+    </div>
+    <div class="row">
+      <button class="button ghost" type="button" data-screen-target="menu">◄ Atpakaļ</button>
+      <button class="button primary" type="button" id="start-match">Sākt</button>
+    </div>
+  </div>
+</main>
+
+<main class="screen" id="screen-settings">
+  <div class="panel">
+    <h2>Iestatījumi</h2>
+    <div class="form-grid">
+      <label>Peles jutība <output id="set-sens-out"></output><input type="range" id="set-sens" min="0.2" max="10" step="0.1"></label>
+      <label>Redzes lauks (FOV) <output id="set-fov-out"></output><input type="range" id="set-fov" min="80" max="130" step="1"></label>
+      <label>Kvalitāte<select id="set-quality"><option value="low">Zema (vājiem datoriem)</option><option value="medium">Vidēja</option><option value="high">Augsta</option></select></label>
+      <label>Skaļums <output id="set-volume-out"></output><input type="range" id="set-volume" min="0" max="1" step="0.05"></label>
+      <label class="check"><input type="checkbox" id="set-invert"> Apgriezt Y asi</label>
+      <label class="check"><input type="checkbox" id="set-speed"> Rādīt ātrumu</label>
+    </div>
+    <h3>Taustiņi</h3>
+    <div class="binds" id="binds"></div>
+    <p class="hint">Kvalitātes maiņa stāsies spēkā nākamajā mačā.</p>
+    <div class="row">
+      <button class="button ghost" type="button" data-action="settings-reset">Atjaunot noklusējumu</button>
+      <button class="button primary" type="button" data-action="settings-back">Gatavs</button>
+    </div>
+  </div>
+</main>
+
+<main class="screen" id="screen-controls">
+  <div class="panel">
+    <h2>Vadība un kustības</h2>
+    <dl class="controls">
+      <dt>Bhop</dt><dd>Turi lēcienu, kad piezemējies – berze neiedarbojas un ātrums saglabājas.</dd>
+      <dt>Gaisa strāfs</dt><dd>Gaisā spied tikai A vai D un vienmērīgi griez peli uz to pašu pusi – ātrums aug.</dd>
+      <dt>Slīde</dt><dd>Pietupies skrienot ātrāk par skriešanas ātrumu. No rampas lejup slīde paātrinās.</dd>
+      <dt>Sienu lēciens</dt><dd>Gaisā pie sienas nospied lēcienu – līdz 2 reizēm pirms piezemēšanās.</dd>
+      <dt>Rāviens</dt><dd>Shift – straujš grūdiens kustības virzienā, saglabā ātrumu. Atjaunojas uz zemes.</dd>
+      <dt>Rampas lēciens</dt><dd>Lec, skrienot augšup pa rampu – iegūsi papildu augstumu.</dd>
+      <dt>Ieroči</dt><dd>1/2, Q vai ritenītis – maiņa. R – pārlādēt. Tab – rezultāti. Esc – pauze.</dd>
+    </dl>
+    <div class="row"><button class="button primary" type="button" data-screen-target="menu">◄ Atpakaļ</button></div>
+  </div>
+</main>
+
+<main class="screen" id="screen-pause">
+  <div class="panel narrow">
+    <h2>Pauze</h2>
+    <nav class="menu-list">
+      <button class="button primary" type="button" data-action="resume">Turpināt</button>
+      <button class="button" type="button" data-screen-target="settings">Iestatījumi</button>
+      <button class="button ghost" type="button" data-action="quit-match">Pamest maču</button>
+    </nav>
+  </div>
+</main>
+
+<main class="screen" id="screen-results">
+  <div class="panel">
+    <h2 id="results-title">Mačs beidzies</h2>
+    <table class="results"><thead><tr><th>#</th><th>Spēlētājs</th><th>Fragi</th><th>Nāves</th></tr></thead><tbody id="results-rows"></tbody></table>
+    <div class="row">
+      <button class="button ghost" type="button" data-action="quit-match">Uz izvēlni</button>
+      <button class="button primary" type="button" data-action="rematch">Vēlreiz</button>
+    </div>
+  </div>
+</main>
+
+<div class="click-to-play" id="click-to-play" hidden>Noklikšķini, lai spēlētu</div>
+</body>
+</html>

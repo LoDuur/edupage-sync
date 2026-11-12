@@ -2,7 +2,7 @@ import { API, esc, fold, getPrefs, saveRootPref, setVersion, THEMES, themeList, 
 import { minutesOf, isBreak } from "./timetable.js";
 
 const NAMED_COLORS={sarkans:"#ff3b30",red:"#ff3b30",oranžs:"#ff9500",orange:"#ff9500",dzeltens:"#ffcc00",yellow:"#ffcc00",zaļš:"#34c759",green:"#34c759",piparmētra:"#00c7be",mint:"#00c7be",tirkīzs:"#30b0c7",teal:"#30b0c7",ciāns:"#32ade6",cyan:"#32ade6",zils:"#007aff",blue:"#007aff",indigo:"#5856d6",violets:"#af52de",purple:"#af52de",rozā:"#ff2d55",pink:"#ff2d55",brūns:"#a2845e",brown:"#a2845e",pelēks:"#8e8e93",gray:"#8e8e93",grey:"#8e8e93",melns:"#1c1c1e",black:"#1c1c1e",balts:"#f2f2f7",white:"#f2f2f7",lime:"#a5d63f",olive:"#808000",navy:"#1d3f8f",maroon:"#800000",coral:"#ff7f50",salmon:"#fa8072",gold:"#ffd700",khaki:"#c3b091",lavender:"#b57edc",magenta:"#ff00ff",crimson:"#dc143c",turquoise:"#40e0d0",tomato:"#ff6347",orchid:"#da70d6",skyblue:"#87ceeb",steelblue:"#4682b4",seagreen:"#2e8b57"};
-const ALIASES={java:"compiler java",javac:"compiler java",pil:"compiler pil",play:"games",h:"help",c:"clear",q:"exit",n:"next",t:"cat today",tm:"cat tomorrow",w:"cat week",s:"stats",g:"grep",m:"man",cls:"clear",l:"ls",ll:"ls -l",dir:"ls",pacman:"juarchupdate",draw:"paint",PingPong:"pingpong",pong:"pingpong"};
+const ALIASES={java:"compiler java",javac:"compiler java",pil:"compiler pil",play:"games",h:"help",c:"clear",q:"exit",n:"next",t:"cat today",tm:"cat tomorrow",w:"cat week",s:"stats",g:"grep",m:"man",cls:"clear",l:"ls",ll:"ls -l",dir:"ls",pacman:"juarchupdate",draw:"paint",PingPong:"pingpong",pong:"pingpong",fps:"arena",shooter:"arena",starpbridis:"arena"};
 const FORTUNES=["Brīvstunda ir tikai starpbrīdis ar ambīcijām.","Mājasdarbs, kas nav uzdots, nav jāizdara.","Piektdien 5 minūšu starpbrīži – jo ātrāk mājās.","Skolotājs kavē 15 minūtes = brīvstunda. Teorētiski.","Kafija pirms 1. stundas ir cilvēktiesības.","Pusdienas – vienīgā stunda, kurā visi ir laikā.","Vislabākā stunda ir tā, kura tiek atcelta.","Ja nezini atbildi – atbildi ar jautājumu.","Kodēšana: 10 % rakstīšana, 90 % domāšana, kāpēc nestrādā.","Matemātika ir viegla, ja tu esi kalkulators.","Pirmssvētku dienā pat 30 minūtes šķiet garas.","Stundu saraksts mainās biežāk nekā laikapstākļi Valmierā.","Neaizmirsti: 213. kabinets ir 2. stāvā, ne 21. stāvā.","Sports 3.–4. stundā – dušas nav, dezodorants ir.","Aizvietošana = pārsteiguma stunda.","Rīts sākas nevis 8:10, bet tad, kad atrodi kabinetu."];
 const TRAIN=["      ====        ________                ___________ ","  _D _|  |_______/        \\__I_I_____===__|_________| ","   |(_)---  |   H\\________/ |   |        =|___ ___|   ","   /     |  |   H  |  |     |   |         ||_| |_||   ","  |      |  |   H  |__--------------------| [___] |   ","  | ________|___H__/__|_____/[][]~\\_______|       |   ","  |/ |   |-----------I_____I [][] []  D   |=======|__ ","__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ "," |/-=|___|=    ||    ||    ||    |_____/~\\___/        ","  \\_/      \\O=====O=====O=====O_/      \\_/            "];
 const JUARCH_LOGO=["      ▟█▙      ","     ▟███▙     ","    ▟██▀██▙    ","   ▟██▘ ▝██▙   ","  ▟██▘   ▝██▙  "," ▟█▀       ▀█▙ "];
@@ -14,6 +14,33 @@ const WD = ["Pirmdiena", "Otrdiena", "Trešdiena", "Ceturtdiena", "Piektdiena", 
 const WD2 = ["Pr", "Ot", "Tr", "Ce", "Pk", "Se", "Sv"];
 const DESIGNS = { default: "klasiskais EduPage režģis", remastered: "jaunais dizains ar laika asi", claude: "silts, redakcionāls dizains ar dienu kartītēm" };
 const GAMES = { doom: { title: "DOOM (1993)", note: "shareware · id Software", url: "../games/doom.jsdos" } };
+const OVERLAY_GAMES = { arena: { title: "Starpbrīdis", note: "arēnas šāvējs · bhop, slīde, AA-12" }, pingpong: { title: "Ping Pong", note: "istabas ar klasi" } };
+
+export function openOverlayGame({ id, title, src, allow, exitMessage, onClose }) {
+  if (document.getElementById(id)) return;
+  const frame = document.createElement("iframe");
+  frame.id = id;
+  frame.title = title;
+  frame.allow = allow;
+  frame.src = src;
+  frame.className = "overlay-frame";
+  const previousOverflow = document.body.style.overflow;
+  const closeOnExit = event => {
+    if (event.source !== frame.contentWindow || event.origin !== location.origin || event.data !== exitMessage) return;
+    removeEventListener("message", closeOnExit);
+    frame.remove();
+    document.body.style.overflow = previousOverflow;
+    onClose?.();
+  };
+  document.body.style.overflow = "hidden";
+  addEventListener("message", closeOnExit);
+  document.body.append(frame);
+  frame.focus();
+}
+
+export function openArena(onClose) {
+  openOverlayGame({ id: "arena-frame", title: "Starpbrīdis", allow: "autoplay; fullscreen; pointer-lock; gamepad", src: "../arena/", exitMessage: "arena:exit", onClose });
+}
 const LANGS = ["python", "java", "c", "cpp", "csharp", "lua", "pil", "js", "bash"];
 const SESSION_STORE = "schedule-session";
 const FREE_WINDOW_MINUTES = 45;
@@ -207,25 +234,7 @@ export function buildCommands(io, ctx) {
   }
 
   function openPingPong(code) {
-    if (document.getElementById("pingpong-frame")) return;
-    const frame = document.createElement("iframe");
-    frame.id = "pingpong-frame";
-    frame.title = "Ping Pong";
-    frame.allow = "clipboard-write; autoplay";
-    frame.src = `../pingpong/${code ? `?join=${encodeURIComponent(code)}` : ""}`;
-    frame.className = "overlay-frame";
-    const previousOverflow = document.body.style.overflow;
-    const closeOnExit = event => {
-      if (event.source !== frame.contentWindow || event.origin !== location.origin || event.data !== "pingpong:exit") return;
-      removeEventListener("message", closeOnExit);
-      frame.remove();
-      document.body.style.overflow = previousOverflow;
-      io.focus();
-    };
-    document.body.style.overflow = "hidden";
-    addEventListener("message", closeOnExit);
-    document.body.append(frame);
-    frame.focus();
+    openOverlayGame({ id: "pingpong-frame", title: "Ping Pong", allow: "clipboard-write; autoplay", src: `../pingpong/${code ? `?join=${encodeURIComponent(code)}` : ""}`, exitMessage: "pingpong:exit", onClose: () => io.focus() });
   }
 
   function launchGame(key) {
@@ -489,8 +498,13 @@ export function buildCommands(io, ctx) {
       print(code ? `atver Ping Pong · istaba ${esc(code)}` : "atver Ping Pong", "ok");
       openPingPong(code);
     } },
+    arena: { g: "Jautri", d: "Starpbrīdis – ātrs arēnas šāvējs ar botiem", m: "arena – atver Starpbrīdi (arī fps, shooter). Bhop, slīde, sienu lēcieni un AA-12. Vajag tastatūru un peli. Esc – pauze, izvēlnē var atgriezties sarakstā.", f(a) {
+      if (a.length) return print("lietojums: arena", "err");
+      print("atver Starpbrīdi", "ok");
+      openArena(() => io.focus());
+    } },
     doom: { g: "Jautri", u: "", d: "palaiž DOOM (1993, shareware) tieši pārlūkā", m: "doom – DOS emulators (js-dos) ar DOOM shareware epizodi tieši konsolē. Vadība: bultiņas, Ctrl šauj, atstarpe atver durvis, Esc – izvēlne. Aizvērt: Ctrl+Q, poga vai clear. Pirmajā reizē lejupielādē ~2 MB.", f() { launchGame("doom"); } },
-    games: { g: "Jautri", d: "spēļu saraksts", f() { print(Object.entries(GAMES).map(([k, g]) => `<span class="ok">${k.padEnd(8)}</span> ${g.title} <span class="dim">· ${g.note}</span>`).join("\n")); } },
+    games: { g: "Jautri", d: "spēļu saraksts", f() { print([...Object.entries(GAMES), ...Object.entries(OVERLAY_GAMES)].map(([k, g]) => `<span class="ok">${k.padEnd(8)}</span> ${g.title} <span class="dim">· ${g.note}</span>`).join("\n")); } },
     neofetch: { g: "Jautri", d: "sistēmas info", f() {
       const events = weekEvents();
       const logo = juarch() ? JUARCH_LOGO : LOGO;

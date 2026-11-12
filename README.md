@@ -82,6 +82,29 @@ Lobbies live only in memory and use no hibernation, so an open lobby keeps its D
 
 Tests: `node --test proxy/pingpong.test.js`, including a simulated laggy network. When changing files in `docs/pingpong/`, bump the `?v=` numbers in `index.html` and the imports at the top of `pingpong.js` and `predict.js`. Client and Worker share a wire protocol, so deploy the Worker before pushing the page (`cd proxy && npx wrangler deploy --config wrangler.toml`).
 
+## Starpbrīdis (arena FPS)
+
+The console command `arena` (also `fps`, `shooter`) and the "starpbrīdis" button in the v2 sidebar open `docs/arena/` in a full-screen iframe, like Ping Pong; leaving it posts `arena:exit` and restores the page. It is a Quake-inspired arena shooter on Three.js 0.170 (import map, no build step) with bots. Touch-only devices get a "needs keyboard and mouse" screen.
+
+`docs/arena/sim/` holds the rules and has no DOM or Three.js, so the planned multiplayer Worker can run the same code:
+- `movement.js`: a fixed 60 Hz player move with Quake-style air acceleration (strafe-jumping), bhop, slide, wall jump and dash.
+- `collision.js`: swept box traces against convex brushes.
+- `nav.js`: generates each map's bot waypoint graph at load.
+- `bots.js`: the bot AI, which steers by sending the same inputs a player does.
+- `game.js`: match rules.
+- `weapons.js`: weapon stats and the fire/reload state machine.
+- `maps/`: brush data.
+
+All tuning values live in `sim/constants.js` and the `WEAPONS` table.
+
+The weapon models (`docs/arena/assets/weapons/*.glb`) are built from code. Run `tools/arena/build_weapons.py` with headless Blender, and `tools/arena/render_previews.py` to render check images. Each model has named parts (`Body`, `Bolt`/`Slide`, `Drum`/`Mag`, `Trigger`, `Muzzle`, `Eject`, `HandL`) that `render/viewmodel.js` animates.
+
+```
+"/path/to/Blender" --background --factory-startup --python tools/arena/build_weapons.py
+```
+
+Tests: `node --test proxy/arena.test.js`. After changing any file in `docs/arena/`, run `python3 tools/arena/stamp_version.py <n>` with a higher number. It rewrites the import map so every module and model URL carries `?v=<n>`, because GitHub Pages caches files for 10 minutes. Locally, `python3 tools/arena/devserver.py 8124 docs` serves without caching.
+
 ## Collaborative drawing
 
 The console command `paint [room]` (alias `draw`) opens `docs/paint/`, a shared canvas the whole class draws on in real time. Rooms are separate canvases (`paint fizika`); the default room is `klase`. Joining asks once for a name; there is no access code, only the Worker's origin check.
