@@ -3,13 +3,13 @@ const STORE_KEY = "arena-settings-v1";
 export const DEFAULT_BINDS = Object.freeze({
   forward: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD",
   jump: "Space", crouch: "KeyC", dash: "ShiftLeft", reload: "KeyR",
-  lastWeapon: "KeyQ", scoreboard: "Tab", slot1: "Digit1", slot2: "Digit2",
+  lastWeapon: "KeyQ", scoreboard: "Tab", slot1: "Digit1", slot2: "Digit2", slot3: "Digit3", slot4: "Digit4", slot5: "Digit5", slot6: "Digit6",
 });
 
 export const BIND_LABELS = Object.freeze({
   forward: "Uz priekšu", back: "Atpakaļ", left: "Pa kreisi", right: "Pa labi",
   jump: "Lēciens", crouch: "Pietupiens / slīde", dash: "Rāviens", reload: "Pārlādēt",
-  lastWeapon: "Iepriekšējais ierocis", scoreboard: "Rezultāti", slot1: "Pistole", slot2: "AA-12",
+  lastWeapon: "Iepriekšējais ierocis", scoreboard: "Rezultāti", slot1: "Pistole", slot2: "SMG", slot3: "Triecienšautene", slot4: "AA-12", slot5: "Snaiperšautene", slot6: "Raķešu palaidējs",
 });
 
 export const DEFAULT_SETTINGS = Object.freeze({

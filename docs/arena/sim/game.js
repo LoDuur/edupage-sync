@@ -1,14 +1,14 @@
 import * as C from "./constants.js";
-import { createWorld, rayBox, traceRay } from "./collision.js";
-import { createMoveState, stepMovement } from "./movement.js";
+import { createWorld, rayBox, traceBox, traceRay } from "./collision.js";
+import { createMoveState, playerHeight, stepMovement } from "./movement.js";
 import { buildNav } from "./nav.js";
 import { createRng } from "./random.js";
-import { WEAPONS, createArsenal, giveWeapon, updateArsenal } from "./weapons.js";
+import { WEAPONS, createArsenal, giveAmmo, giveWeapon, updateArsenal } from "./weapons.js";
 import { eyePosition, hitboxes, viewDirection } from "./entity.js";
 import { createBrain, thinkBot } from "./bots.js";
 import { MAPS } from "./maps/index.js";
 
-const PICKUP_RESPAWN = { health: 20, mega: 35, weapon: 15 };
+const PICKUP_RESPAWN = { health: 20, mega: 35, weapon: 10, armor: 25, ammo: 15 };
 const IDLE_INPUT = Object.freeze({ fwd: 0, side: 0, yaw: 0, pitch: 0, buttons: 0, weapon: 0 });
 const BOT_NAMES = ["Fizmats", "Ķīmiķe", "Dežurants", "Direktore", "Bibliotekārs", "Sportists", "Matemātiķis", "Laborante", "Ģeogrāfs", "Mūziķe", "Informātiķis", "Vēsturnieks"];
 const mapCache = new Map();
@@ -36,6 +36,7 @@ export function createGame({ mapId = "aktuzale", mode = "ffa", seed = 1, fragLim
     time: 0, tick: 0, rng: createRng(seed),
     players: [], teamScores: [0, 0],
     pickups: map.pickups.map((p, index) => ({ ...p, index, availableAt: 0 })),
+    projectiles: [], nextProjectileId: 1,
     events: [], isOver: false, winner: null,
   };
 }
@@ -201,6 +202,87 @@ export function fireHitscan(game, shooter, weaponId, spread, view, positionsAt =
   for (const [victim, { amount, isHead }] of damageBy) applyDamage(game, victim, shooter, Math.round(amount), weaponId, isHead, origin);
 }
 
+function closestPointOnBox(p, min, max) {
+  return { x: Math.min(max.x, Math.max(min.x, p.x)), y: Math.min(max.y, Math.max(min.y, p.y)), z: Math.min(max.z, Math.max(min.z, p.z)) };
+}
+
+function explode(game, rocket, point, normal) {
+  const cfg = WEAPONS[rocket.weapon].projectile;
+  const owner = game.players.find(p => p.id === rocket.owner) || null;
+  game.events.push({ type: "explosion", pos: { ...point }, normal: normal ? { ...normal } : null, owner: rocket.owner, radius: cfg.splashRadius });
+  for (const target of game.players) {
+    if (!target.isAlive) continue;
+    const m = target.move;
+    const r = C.PLAYER_RADIUS, h = playerHeight(m);
+    const near = closestPointOnBox(point, { x: m.pos.x - r, y: m.pos.y, z: m.pos.z - r }, { x: m.pos.x + r, y: m.pos.y + h, z: m.pos.z + r });
+    const distance = Math.hypot(near.x - point.x, near.y - point.y, near.z - point.z);
+    if (distance >= cfg.splashRadius) continue;
+    const chest = { x: m.pos.x, y: m.pos.y + h * 0.55, z: m.pos.z };
+    const lift = { x: point.x + (normal?.x ?? 0) * 0.15, y: point.y + (normal?.y ?? 0) * 0.15, z: point.z + (normal?.z ?? 0) * 0.15 };
+    if (distance > 0.4 && traceRay(game.world, lift, chest).fraction < 0.95) continue;
+    const falloff = 1 - distance / cfg.splashRadius;
+    const isSelf = target === owner;
+    let dx = chest.x - point.x, dy = chest.y - point.y, dz = chest.z - point.z;
+    const len = Math.hypot(dx, dy, dz) || 1;
+    dx /= len; dy /= len; dz /= len;
+    const push = cfg.knockback * falloff;
+    m.vel.x += dx * push;
+    m.vel.y += dy * push;
+    m.vel.z += dz * push;
+    if (dy * push > 1) { m.isOnGround = false; m.hasJumpedSinceGround = true; m.isSliding = false; }
+    const amount = Math.round(cfg.splashDamage * falloff * (isSelf ? cfg.selfScale : 1));
+    if (amount > 0) applyDamage(game, target, owner, amount, rocket.weapon, false, point);
+  }
+}
+
+function fireProjectile(game, shooter, weaponId, view) {
+  const cfg = WEAPONS[weaponId].projectile;
+  const eye = eyePosition(shooter);
+  const dir = viewDirection(view.yaw, view.pitch);
+  const spawn = { x: eye.x + dir.x * 0.6, y: eye.y + dir.y * 0.6, z: eye.z + dir.z * 0.6 };
+  const rocket = { id: game.nextProjectileId++, owner: shooter.id, weapon: weaponId, pos: spawn, prev: { ...spawn }, vel: { x: dir.x * cfg.speed, y: dir.y * cfg.speed, z: dir.z * cfg.speed }, age: 0 };
+  game.events.push({ type: "shot", id: shooter.id, weapon: weaponId, origin: eye, traces: [] });
+  const blocked = traceRay(game.world, eye, spawn);
+  if (blocked.fraction < 1) return explode(game, rocket, blocked.end, blocked.normal);
+  game.projectiles.push(rocket);
+  game.events.push({ type: "rocket", id: rocket.id, owner: shooter.id, pos: { ...spawn }, vel: { ...rocket.vel } });
+}
+
+function stepProjectiles(game) {
+  const alive = [];
+  for (const rocket of game.projectiles) {
+    const cfg = WEAPONS[rocket.weapon].projectile;
+    rocket.prev = { ...rocket.pos };
+    rocket.age += C.TICK_DT;
+    const from = rocket.pos;
+    const to = { x: from.x + rocket.vel.x * C.TICK_DT, y: from.y + rocket.vel.y * C.TICK_DT, z: from.z + rocket.vel.z * C.TICK_DT };
+    const wall = traceBox(game.world, from, to, 0.08, 0.08, 0.08);
+    const segment = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+    const dir = { x: (to.x - from.x) / segment, y: (to.y - from.y) / segment, z: (to.z - from.z) / segment };
+    let best = wall.fraction * segment, hit = false;
+    for (const p of game.players) {
+      if (!p.isAlive || (p.id === rocket.owner && rocket.age < cfg.ownerGrace)) continue;
+      const boxes = hitboxes(p);
+      const min = { x: boxes.body.min.x - 0.08, y: boxes.body.min.y - 0.08, z: boxes.body.min.z - 0.08 };
+      const max = { x: boxes.head.max.x + 0.08, y: boxes.head.max.y + 0.08, z: boxes.head.max.z + 0.08 };
+      const t = rayBox(from, dir, best, min, max);
+      if (t >= 0 && t <= best) { best = t; hit = true; }
+    }
+    if (hit || wall.fraction < 1) {
+      const point = { x: from.x + dir.x * best, y: from.y + dir.y * best, z: from.z + dir.z * best };
+      explode(game, rocket, point, hit ? null : wall.normal);
+      continue;
+    }
+    if (rocket.age >= cfg.maxLife) {
+      explode(game, rocket, to, null);
+      continue;
+    }
+    rocket.pos = to;
+    alive.push(rocket);
+  }
+  game.projectiles = alive;
+}
+
 function touchPickups(game, player) {
   const p = player.move.pos;
   for (const item of game.pickups) {
@@ -213,6 +295,11 @@ function touchPickups(game, player) {
     } else if (item.kind === "mega" && player.health < C.MAX_OVERHEAL) {
       player.health = Math.min(C.MAX_OVERHEAL, player.health + item.amount);
       isTaken = true;
+    } else if (item.kind === "armor" && player.armor < C.MAX_ARMOR) {
+      player.armor = Math.min(C.MAX_ARMOR, player.armor + item.amount);
+      isTaken = true;
+    } else if (item.kind === "ammo") {
+      isTaken = giveAmmo(player.arsenal);
     } else if (item.kind === "weapon") {
       isTaken = giveWeapon(player.arsenal, item.weapon, game.time);
     }
@@ -241,7 +328,8 @@ export function stepPlayer(game, player, input) {
   if (shot === "dry") game.events.push({ type: "dry", id: player.id });
   else if (shot) {
     player.protectedUntil = Math.min(player.protectedUntil, game.time);
-    fireHitscan(game, player, player.arsenal.current, shot.spread, input, game.positionsAt?.bind(null, player));
+    if (WEAPONS[player.arsenal.current].projectile) fireProjectile(game, player, player.arsenal.current, input);
+    else fireHitscan(game, player, player.arsenal.current, shot.spread, input, game.positionsAt?.bind(null, player));
   }
   touchPickups(game, player);
   if (player.move.pos.y < C.FALL_KILL_Y) applyDamage(game, player, null, 999, "fall");
@@ -259,6 +347,7 @@ export function stepGame(game, inputs) {
     const input = player.isBot ? thinkBot(game, player) : inputs?.get(player.id) ?? { ...player.lastInput, buttons: 0 };
     stepPlayer(game, player, input);
   }
+  stepProjectiles(game);
   if (game.time >= game.timeLimit) checkMatchEnd(game);
   return game.events;
 }

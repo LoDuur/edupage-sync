@@ -92,12 +92,14 @@ The console command `arena` (also `fps`, `shooter`) and the "starpbrīdis" butto
 - `nav.js`: generates each map's bot waypoint graph at load.
 - `bots.js`: the bot AI, which steers by sending the same inputs a player does.
 - `game.js`: match rules.
-- `weapons.js`: weapon stats and the fire/reload state machine.
+- `weapons.js`: the six weapons (pistol, SMG, assault rifle, AA-12, sniper rifle, rocket launcher) and the fire/reload state machine. A weapon is one `WEAPONS` entry; rockets are projectiles with splash damage and knockback, so firing at your own feet is a rocket jump. The sniper zooms ×4 and is only accurate while scoped (right mouse button).
 - `maps/`: brush data.
 
 All tuning values live in `sim/constants.js` and the `WEAPONS` table.
 
-The weapon models (`docs/arena/assets/weapons/*.glb`) are built from code. Run `tools/arena/build_weapons.py` with headless Blender, and `tools/arena/render_previews.py` to render check images. Each model has named parts (`Body`, `Bolt`/`Slide`, `Drum`/`Mag`, `Trigger`, `Muzzle`, `Eject`, `HandL`) that `render/viewmodel.js` animates.
+Pickups are weapons, health, mega health, armor and ammo boxes. Bots fetch weapons, armor and ammo and choose a weapon by range.
+
+The weapon models (`docs/arena/assets/weapons/*.glb`) are built from code. Run `tools/arena/build_weapons.py` with headless Blender, and `tools/arena/render_previews.py` to render check images. Each model has named parts (`Body`, `Bolt`/`Slide`, `Drum`/`Mag`/`Rocket`, `Trigger`, `Muzzle`, `Eject`, `HandL`) that `render/viewmodel.js` animates. Its `CONFIG` table holds the per-weapon hold position, magazine direction, reload choreography and shell type.
 
 ```
 "/path/to/Blender" --background --factory-startup --python tools/arena/build_weapons.py

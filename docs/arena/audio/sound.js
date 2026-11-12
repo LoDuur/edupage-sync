@@ -1,4 +1,5 @@
 const MAX_VOICES = 48;
+const MAG_PITCH = { pistol: 2400, smg: 2200, ar: 1800, aa12: 1400, sniper: 1600, rocket: 800 };
 
 function noiseBuffer(ctx, seconds, color = "white") {
   const length = Math.floor(ctx.sampleRate * seconds);
@@ -152,6 +153,48 @@ export function createAudio() {
         click(out, t + 0.12, 1900, 0.28, 0.025);
       }
     },
+    smg(out, t, isLocal) {
+      const v = 0.92 + Math.random() * 0.16;
+      tone(out, { t, dur: 0.06, type: "sine", freq: 130 * v, freqEnd: 55, gain: 0.6 });
+      noise(out, { t, dur: 0.12, type: "lowpass", freq: 3400 * v, freqEnd: 700, q: 0.8, gain: 0.7, distortion: 10 });
+      noise(out, { t, dur: 0.03, type: "bandpass", freq: 4200, q: 1.2, gain: 0.35 });
+      noise(out, { t: t + 0.004, dur: 0.18, type: "lowpass", freq: 900, freqEnd: 160, gain: 0.18, color: "brown" });
+      click(out, t + 0.012, 1500 * v, isLocal ? 0.24 : 0.1, 0.022);
+    },
+    ar(out, t, isLocal) {
+      const v = 0.94 + Math.random() * 0.12;
+      tone(out, { t, dur: 0.1, type: "sine", freq: 150 * v, freqEnd: 48, gain: 0.95 });
+      tone(out, { t, dur: 0.05, type: "triangle", freq: 340 * v, freqEnd: 110, gain: 0.3 });
+      noise(out, { t, dur: 0.2, type: "bandpass", freq: 2600 * v, freqEnd: 800, q: 0.7, gain: 1, distortion: 32 });
+      noise(out, { t, dur: 0.04, type: "highpass", freq: 3600, gain: 0.6 });
+      noise(out, { t: t + 0.008, dur: 0.34, type: "lowpass", freq: 1100, freqEnd: 140, gain: 0.3, color: "brown" });
+      if (isLocal) click(out, t + 0.06, 2200, 0.14);
+    },
+    sniper(out, t, isLocal) {
+      tone(out, { t, dur: 0.4, type: "sine", freq: 78, freqEnd: 26, gain: 1.35 });
+      tone(out, { t, dur: 0.07, type: "triangle", freq: 260, freqEnd: 70, gain: 0.5 });
+      noise(out, { t, dur: 0.65, type: "lowpass", freq: 9000, freqEnd: 480, q: 0.6, gain: 1.3, distortion: 55 });
+      noise(out, { t, dur: 0.09, type: "highpass", freq: 3600, gain: 1 });
+      noise(out, { t: t + 0.02, dur: 1.1, type: "lowpass", freq: 700, freqEnd: 80, gain: 0.55, color: "brown" });
+      tone(out, { t: t + 0.02, dur: 0.9, type: "sine", freq: 2300, gain: 0.03, attack: 0.002 });
+      if (isLocal) {
+        click(out, t + 0.5, 1500, 0.3, 0.03);
+        click(out, t + 0.62, 2100, 0.34, 0.025);
+      }
+    },
+    rocket(out, t, isLocal) {
+      tone(out, { t, dur: 0.45, type: "sawtooth", freq: 75, freqEnd: 28, gain: 0.5 });
+      tone(out, { t, dur: 0.18, type: "sine", freq: 62, freqEnd: 30, gain: 1 });
+      noise(out, { t, dur: 0.6, type: "bandpass", freq: 300, freqEnd: 1900, q: 0.8, gain: 0.85, attack: 0.04 });
+      noise(out, { t: t + 0.05, dur: 0.9, type: "lowpass", freq: 4200, freqEnd: 700, q: 0.7, gain: 0.35, attack: 0.08 });
+      if (isLocal) click(out, t + 0.02, 900, 0.3, 0.04);
+    },
+    explosion(out, t) {
+      tone(out, { t, dur: 1, type: "sine", freq: 62, freqEnd: 18, gain: 1.6 });
+      noise(out, { t, dur: 1.2, type: "lowpass", freq: 6500, freqEnd: 180, q: 0.6, gain: 1.4, distortion: 60 });
+      noise(out, { t: t + 0.01, dur: 1.8, type: "lowpass", freq: 800, freqEnd: 60, gain: 0.8, color: "brown" });
+      noise(out, { t: t + 0.12, dur: 0.5, type: "highpass", freq: 2500, gain: 0.25 });
+    },
     pistol(out, t, isLocal) {
       const v = 0.94 + Math.random() * 0.12;
       tone(out, { t, dur: 0.07, type: "sine", freq: 190 * v, freqEnd: 60, gain: 0.7 });
@@ -162,12 +205,13 @@ export function createAudio() {
     },
     dry(out, t) { click(out, t, 2800, 0.25, 0.015); },
     magOut(out, t, isLocal, weapon) {
-      click(out, t, weapon === "aa12" ? 1400 : 2400, 0.3, 0.03);
+      click(out, t, MAG_PITCH[weapon] ?? 2000, 0.3, 0.03);
       noise(out, { t: t + 0.02, dur: 0.08, type: "bandpass", freq: 800, q: 2, gain: 0.15 });
     },
     magIn(out, t, isLocal, weapon) {
-      click(out, t, weapon === "aa12" ? 1100 : 2000, 0.45, 0.035);
-      tone(out, { t, dur: 0.06, type: "triangle", freq: weapon === "aa12" ? 180 : 320, freqEnd: 90, gain: 0.25 });
+      const pitch = MAG_PITCH[weapon] ?? 1800;
+      click(out, t, pitch * 0.8, 0.45, 0.035);
+      tone(out, { t, dur: 0.06, type: "triangle", freq: pitch / 8, freqEnd: pitch / 16, gain: 0.25 });
     },
     bolt(out, t) {
       click(out, t, 1700, 0.35, 0.03);
@@ -208,9 +252,10 @@ export function createAudio() {
       tone(out, { t, dur: 0.18, type: "sawtooth", freq: 120, freqEnd: 60, gain: 0.18 });
       noise(out, { t, dur: 0.12, type: "lowpass", freq: 800, gain: 0.2 });
     },
-    pickup(out, t, isLocal, weapon) {
+    pickup(out, t, isLocal, weapon, intensity) {
       tone(out, { t, dur: 0.1, type: "triangle", freq: weapon ? 520 : 660, gain: 0.22 });
       tone(out, { t: t + 0.07, dur: 0.16, type: "triangle", freq: weapon ? 780 : 990, gain: 0.22 });
+      if (intensity > 1) tone(out, { t: t + 0.15, dur: 0.2, type: "triangle", freq: 1240, gain: 0.2 });
     },
     death(out, t) {
       tone(out, { t, dur: 0.5, type: "sawtooth", freq: 300, freqEnd: 40, gain: 0.25 });

@@ -1,14 +1,14 @@
 import * as C from "./constants.js";
 import { findPath, linkBetween } from "./nav.js";
 import { traceBox } from "./collision.js";
-import { WEAPONS } from "./weapons.js";
+import { WEAPONS, WEAPON_ORDER } from "./weapons.js";
 import { angleDelta, chestPosition, eyePosition, hasLineOfSight, pitchTo, yawTo } from "./entity.js";
 
 export const DIFFICULTIES = Object.freeze({
-  easy: { name: "Viegli", reaction: 0.6, aimError: 0.09, turnSpeed: 4, bhop: 0, dodge: 0.25, dash: 0, wallJump: 0, aggression: 0.35, fov: 1.6, fireCone: 1.6, headshot: 0, strafeSwitch: [0.7, 1.4], hearing: 14 },
-  normal: { name: "Normāli", reaction: 0.38, aimError: 0.05, turnSpeed: 7, bhop: 0.35, dodge: 0.55, dash: 0.25, wallJump: 0.3, aggression: 0.55, fov: 2, fireCone: 1.25, headshot: 0.1, strafeSwitch: [0.45, 1], hearing: 22 },
-  hard: { name: "Grūti", reaction: 0.24, aimError: 0.028, turnSpeed: 11, bhop: 0.75, dodge: 0.8, dash: 0.55, wallJump: 0.6, aggression: 0.75, fov: 2.2, fireCone: 1, headshot: 0.3, strafeSwitch: [0.3, 0.75], hearing: 30 },
-  nightmare: { name: "Murgs", reaction: 0.14, aimError: 0.014, turnSpeed: 18, bhop: 1, dodge: 1, dash: 0.85, wallJump: 1, aggression: 0.9, fov: 2.4, fireCone: 0.85, headshot: 0.55, strafeSwitch: [0.2, 0.55], hearing: 40 },
+  easy: { lead: 0, name: "Viegli", reaction: 0.6, aimError: 0.09, turnSpeed: 4, bhop: 0, dodge: 0.25, dash: 0, wallJump: 0, aggression: 0.35, fov: 1.6, fireCone: 1.6, headshot: 0, strafeSwitch: [0.7, 1.4], hearing: 14 },
+  normal: { lead: 0.35, name: "Normāli", reaction: 0.38, aimError: 0.05, turnSpeed: 7, bhop: 0.35, dodge: 0.55, dash: 0.25, wallJump: 0.3, aggression: 0.55, fov: 2, fireCone: 1.25, headshot: 0.1, strafeSwitch: [0.45, 1], hearing: 22 },
+  hard: { lead: 0.8, name: "Grūti", reaction: 0.24, aimError: 0.028, turnSpeed: 11, bhop: 0.75, dodge: 0.8, dash: 0.55, wallJump: 0.6, aggression: 0.75, fov: 2.2, fireCone: 1, headshot: 0.3, strafeSwitch: [0.3, 0.75], hearing: 30 },
+  nightmare: { lead: 1, name: "Murgs", reaction: 0.14, aimError: 0.014, turnSpeed: 18, bhop: 1, dodge: 1, dash: 0.85, wallJump: 1, aggression: 0.9, fov: 2.4, fireCone: 0.85, headshot: 0.55, strafeSwitch: [0.2, 0.55], hearing: 40 },
 });
 
 const THINK_INTERVAL = 0.1;
@@ -26,7 +26,7 @@ export function createBrain(game, difficultyId) {
     path: null, pathIndex: 0, goal: null, repathAt: 0, isBhopping: false,
     targetId: null, targetSince: 0, lastSeenPos: null, lastSeenAt: -10,
     aimYaw: 0, aimPitch: 0, errYaw: 0, errPitch: 0, aimAtHead: false,
-    strafeSign: 1, strafeUntil: 0, airSign: 1, nextThinkAt: 0,
+    strafeSign: 1, strafeUntil: 0, airSign: 1, nextThinkAt: 0, weaponSlot: 1, nextWeaponAt: 0,
     stuckPos: null, stuckCheckAt: 0, stuckCount: 0, prevButtons: 0, fireToggle: false, wantsReload: false, lastHurtSeen: -1,
     reset(g, bot) {
       this.path = null;
@@ -102,21 +102,33 @@ function nearestAvailablePickup(game, bot, predicate) {
 
 function chooseGoal(game, bot, brain, target) {
   const d = brain.d;
-  const ownsShotgun = bot.arsenal.owned.aa12 && bot.arsenal.ammo.aa12.mag + bot.arsenal.ammo.aa12.reserve > 0;
+  const hasMainWeapon = WEAPON_ORDER.some(id => id !== "pistol" && bot.arsenal.owned[id] && bot.arsenal.ammo[id].mag + bot.arsenal.ammo[id].reserve > 0);
   const healthNeed = bot.health < 45 + (1 - d.aggression) * 40;
   if (healthNeed) {
     const item = nearestAvailablePickup(game, bot, i => i.kind === "health" || i.kind === "mega");
     if (item && (!target || bot.health < 40)) return { kind: "item", pos: item.pos };
   }
+  if (!hasMainWeapon) {
+    const nearWeapon = nearestAvailablePickup(game, bot, i => i.kind === "weapon");
+    const targetDistance = target ? Math.hypot(target.move.pos.x - bot.move.pos.x, target.move.pos.z - bot.move.pos.z) : Infinity;
+    if (nearWeapon && Math.hypot(nearWeapon.pos.x - bot.move.pos.x, nearWeapon.pos.z - bot.move.pos.z) < 30 && targetDistance > 9) return { kind: "item", pos: nearWeapon.pos };
+  }
   if (target) {
-    const range = ownsShotgun ? 7 : 16;
+    const range = WEAPONS[bot.arsenal.current].botMax * 0.6;
     const dist = Math.hypot(target.move.pos.x - bot.move.pos.x, target.move.pos.z - bot.move.pos.z);
     if (dist > range + 3 || !hasLineOfSight(game.world, eyePosition(bot), chestPosition(target))) return { kind: "chase", pos: target.move.pos };
     return { kind: "fight", pos: null };
   }
-  if (!ownsShotgun) {
-    const item = nearestAvailablePickup(game, bot, i => i.kind === "weapon");
-    if (item) return { kind: "item", pos: item.pos };
+  const wantedWeapon = nearestAvailablePickup(game, bot, i => i.kind === "weapon" && (!hasMainWeapon || !bot.arsenal.owned[i.weapon]));
+  if (wantedWeapon && (!hasMainWeapon || Math.hypot(wantedWeapon.pos.x - bot.move.pos.x, wantedWeapon.pos.z - bot.move.pos.z) < 22)) return { kind: "item", pos: wantedWeapon.pos };
+  if (bot.armor < 50) {
+    const armor = nearestAvailablePickup(game, bot, i => i.kind === "armor");
+    if (armor && Math.hypot(armor.pos.x - bot.move.pos.x, armor.pos.z - bot.move.pos.z) < 20) return { kind: "item", pos: armor.pos };
+  }
+  const lowAmmo = WEAPON_ORDER.some(id => id !== "pistol" && bot.arsenal.owned[id] && bot.arsenal.ammo[id].reserve < WEAPONS[id].magazine);
+  if (lowAmmo) {
+    const ammo = nearestAvailablePickup(game, bot, i => i.kind === "ammo");
+    if (ammo && Math.hypot(ammo.pos.x - bot.move.pos.x, ammo.pos.z - bot.move.pos.z) < 18) return { kind: "item", pos: ammo.pos };
   }
   if (brain.lastSeenPos && game.time - brain.lastSeenAt < HUNT_MEMORY * (0.5 + d.aggression)) return { kind: "hunt", pos: brain.lastSeenPos };
   if (brain.goal?.kind === "roam" && brain.path && brain.pathIndex < brain.path.length) return brain.goal;
@@ -213,12 +225,20 @@ function strafeJumpWish(m, desired, brain) {
   return dirOfYaw(velYaw - sign * offset);
 }
 
-function chooseWeapon(bot, target) {
-  const a = bot.arsenal;
-  const hasShotgunAmmo = a.owned.aa12 && a.ammo.aa12.mag + a.ammo.aa12.reserve > 0;
-  if (!target) return hasShotgunAmmo ? WEAPONS.aa12.slot : WEAPONS.pistol.slot;
-  const dist = Math.hypot(target.move.pos.x - bot.move.pos.x, target.move.pos.z - bot.move.pos.z);
-  return hasShotgunAmmo && dist < 20 ? WEAPONS.aa12.slot : WEAPONS.pistol.slot;
+function chooseWeapon(game, bot, brain, target) {
+  if (game.time < brain.nextWeaponAt) return brain.weaponSlot;
+  brain.nextWeaponAt = game.time + 0.6;
+  const dist = target ? Math.hypot(target.move.pos.x - bot.move.pos.x, target.move.pos.z - bot.move.pos.z) : 15;
+  let bestId = "pistol", bestScore = -Infinity;
+  for (const id of WEAPON_ORDER) {
+    const w = WEAPONS[id], a = bot.arsenal.ammo[id];
+    if (!bot.arsenal.owned[id] || a.mag + a.reserve <= 0) continue;
+    const gap = dist < w.botMin ? w.botMin - dist : dist > w.botMax ? (dist - w.botMax) * 0.5 : 0;
+    const score = w.botPriority - gap * 1.2 + (a.mag > 0 ? 0 : -1.5) + (id === bot.arsenal.current ? 0.4 : 0);
+    if (score > bestScore) { bestScore = score; bestId = id; }
+  }
+  brain.weaponSlot = WEAPONS[bestId].slot;
+  return brain.weaponSlot;
 }
 
 function aimAt(game, bot, brain, target, dt) {
@@ -227,7 +247,14 @@ function aimAt(game, bot, brain, target, dt) {
   if (target) {
     const eye = eyePosition(bot);
     const aimPoint = chestPosition(target);
-    if (brain.aimAtHead) aimPoint.y = target.move.pos.y + (target.move.isCrouched ? C.CROUCH_HEIGHT : C.STAND_HEIGHT) - C.HEAD_SIZE / 2;
+    if (brain.aimAtHead && bot.arsenal.current !== "rocket") aimPoint.y = target.move.pos.y + (target.move.isCrouched ? C.CROUCH_HEIGHT : C.STAND_HEIGHT) - C.HEAD_SIZE / 2;
+    const projectile = WEAPONS[bot.arsenal.current].projectile;
+    if (projectile) {
+      const travel = Math.hypot(aimPoint.x - eye.x, aimPoint.y - eye.y, aimPoint.z - eye.z) / projectile.speed;
+      aimPoint.x += target.move.vel.x * travel * d.lead;
+      aimPoint.z += target.move.vel.z * travel * d.lead;
+      if (target.move.isOnGround) aimPoint.y = target.move.pos.y + 0.15;
+    }
     const tracking = Math.exp(-(game.time - brain.targetSince) / 0.7);
     const lateral = Math.hypot(target.move.vel.x, target.move.vel.z) / Math.max(4, Math.hypot(aimPoint.x - eye.x, aimPoint.z - eye.z));
     const errScale = 1 + tracking * 2.5 + lateral * (1 - d.aggression) * 0.5;
@@ -266,7 +293,7 @@ export function thinkBot(game, bot) {
     toTarget.x /= dist;
     toTarget.z /= dist;
     const side = { x: -toTarget.z * brain.strafeSign, z: toTarget.x * brain.strafeSign };
-    const preferred = bot.arsenal.current === "aa12" ? 6 : 14;
+    const preferred = WEAPONS[bot.arsenal.current].botIdeal;
     const approach = brain.goal?.kind === "fight" ? Math.max(-1, Math.min(1, (dist - preferred) / 4)) * (0.4 + brain.d.aggression) : 0;
     const base = brain.goal?.kind === "fight" || !wish ? { x: toTarget.x * approach, z: toTarget.z * approach } : { x: wish.x * 0.8, z: wish.z * 0.8 };
     const dodge = brain.d.dodge;
@@ -290,7 +317,7 @@ export function thinkBot(game, bot) {
   if (!target && route && Math.hypot(m.vel.x, m.vel.z) > C.SLIDE_MIN_SPEED + 1 && m.isOnGround && game.rng.chance(brain.d.bhop * 0.02)) flags.crouch = true;
 
   aimAt(game, bot, brain, target, dt);
-  const weapon = chooseWeapon(bot, target);
+  const weapon = chooseWeapon(game, bot, brain, target);
   if (target && game.time - brain.targetSince >= brain.d.reaction) {
     const w = WEAPONS[bot.arsenal.current];
     const eye = eyePosition(bot);
@@ -298,7 +325,8 @@ export function thinkBot(game, bot) {
     const dist = Math.hypot(chest.x - eye.x, chest.y - eye.y, chest.z - eye.z);
     const off = Math.abs(angleDelta(brain.aimYaw, yawTo(eye, chest))) + Math.abs(brain.aimPitch - pitchTo(eye, chest));
     const cone = Math.max(w.botCone, 0.45 / dist) * brain.d.fireCone;
-    if (off < cone && dist < w.botRange * 1.8) {
+    const isTooClose = w.botMin > 0 && dist < w.botMin * 0.7 && w.projectile;
+    if (off < cone && dist < w.botRange * 1.8 && !isTooClose) {
       if (w.isAuto) flags.fire = true;
       else {
         brain.fireToggle = !brain.fireToggle;
@@ -316,6 +344,7 @@ export function thinkBot(game, bot) {
   if (flags.dash) buttons |= C.BUTTON.DASH;
   if (flags.fire) buttons |= C.BUTTON.FIRE;
   if (wantsReload) buttons |= C.BUTTON.RELOAD;
+  if (target && bot.arsenal.current === "sniper") buttons |= C.BUTTON.ALT;
   brain.prevButtons = buttons;
 
   let fwd = 0, side = 0;

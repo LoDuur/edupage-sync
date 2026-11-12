@@ -21,7 +21,10 @@ const LOCAL_ID = "local";
 const MAX_STEPS_PER_FRAME = 6;
 const STEP_DISTANCE = 2.3;
 const PIXEL_RATIO = { low: 0.75, medium: 1.25, high: 2 };
-const TRACERS_PER_SHOT = { aa12: 3, pistol: 1 };
+const TRACERS_PER_SHOT = { aa12: 3, pistol: 1, smg: 1, ar: 1, sniper: 1, rocket: 0 };
+const SHOT_SHAKE = { pistol: 0.12, smg: 0.07, ar: 0.1, aa12: 0.3, sniper: 0.35, rocket: 0.5 };
+const PICKUP_TEXT = { weapon: e => `+ ${WEAPONS[e.weapon].name}`, mega: () => "+ Mega veselība", health: () => "+ Veselība", armor: () => "+ Bruņas", ammo: () => "+ Munīcija" };
+const SHOT_LIGHT = { pistol: 3, smg: 2, ar: 4, aa12: 6, sniper: 7, rocket: 8 };
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -197,16 +200,16 @@ function handleEvents(events) {
         let from;
         if (isLocal) {
           from = viewmodel.muzzleWorldPosition(camera, new THREE.Vector3());
-          fx.muzzleLight(from, e.weapon === "aa12" ? 6 : 3);
-          view.trauma = Math.min(1, view.trauma + (e.weapon === "aa12" ? 0.3 : 0.12));
+          fx.muzzleLight(from, SHOT_LIGHT[e.weapon]);
+          view.trauma = Math.min(1, view.trauma + SHOT_SHAKE[e.weapon] * (local.arsenal.isScoped ? 0.4 : 1));
           input.addPitch(w.recoilPitch * (0.55 + Math.random() * 0.25));
-          input.addYaw((Math.random() - 0.5) * w.recoilYaw);
+          input.addYaw(Math.sin(local.arsenal.shotCount * 0.6) * w.recoilYaw * 0.8 + (Math.random() - 0.5) * w.recoilYaw * 0.4);
           view.punchVel += w.recoilPitch * 9;
         } else {
           players.notifyShot(e.id);
           const yaw = actor?.move.yaw ?? 0;
           from = new THREE.Vector3(e.origin.x + Math.cos(yaw) * 0.25, e.origin.y - 0.25, e.origin.z - Math.sin(yaw) * 0.25);
-          fx.muzzleLight(from, e.weapon === "aa12" ? 4 : 2);
+          fx.muzzleLight(from, SHOT_LIGHT[e.weapon] * 0.6);
         }
         e.traces.forEach((t, i) => {
           if (i < TRACERS_PER_SHOT[e.weapon]) fx.tracer(from, new THREE.Vector3(t.point.x, t.point.y, t.point.z));
@@ -255,9 +258,16 @@ function handleEvents(events) {
         if (isLocal) view.landVel -= Math.min(0.5, e.speed * 0.025);
         break;
       case "pickup":
-        audio.play("pickup", { isLocal, pos, weapon: e.kind === "weapon" });
-        if (isLocal) hud.message(e.kind === "weapon" ? `+ ${WEAPONS[e.weapon].name}` : e.kind === "mega" ? "+ Mega veselība" : "+ Veselība", 1.2, now);
+        audio.play("pickup", { isLocal, pos, weapon: e.kind === "weapon", intensity: e.kind === "mega" || e.kind === "armor" ? 2 : 1 });
+        if (isLocal) hud.message(PICKUP_TEXT[e.kind](e), 1.2, now);
         break;
+      case "explosion": {
+        fx.explosion(e.pos, e.normal, e.radius);
+        audio.play("explosion", { pos: e.pos });
+        const distance = Math.hypot(e.pos.x - camera.position.x, e.pos.y - camera.position.y, e.pos.z - camera.position.z);
+        view.trauma = Math.min(1, view.trauma + Math.max(0, 1 - distance / 24) * 0.9);
+        break;
+      }
       case "spawn":
         if (isLocal) {
           input.setView(e.yaw, 0);
@@ -339,15 +349,19 @@ function updateCamera(dt, look) {
   camera.rotation.set(input.pitch + view.punch + sy, input.yaw + sx, -view.roll);
   const speed = Math.hypot(m.vel.x, m.vel.z);
   view.fovKick = Math.max(0, view.fovKick - dt * 30);
+  const weapon = WEAPONS[local.arsenal.current];
+  const isScoped = local.isAlive && local.arsenal.isScoped;
   const fov = settings.fov + Math.min(12, Math.max(0, speed - 9) * 0.7) + view.fovKick;
-  const vfov = horizontalToVertical(fov, camera.aspect);
+  let vfov = horizontalToVertical(fov, camera.aspect);
+  if (isScoped) vfov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(vfov) / 2) / weapon.zoom));
+  input.setSensitivityScale(isScoped ? 1 / weapon.zoom : 1);
   if (Math.abs(camera.fov - vfov) > 0.01) {
     camera.fov += (vfov - camera.fov) * Math.min(1, dt * 10);
     camera.updateProjectionMatrix();
   }
   audio.updateListener(camera);
   audio.setSliding(local.isAlive && m.isSliding && m.isOnGround);
-  return { speed, onGround: m.isOnGround, sliding: m.isSliding, slide: m.isSliding ? 1 : 0, roll: view.roll, landKick: view.landKick, lookDX: look.dx, lookDY: look.dy, isFiring: input.isLocked && (local.lastInput.buttons & 8) !== 0 };
+  return { isScoped, speed, onGround: m.isOnGround, sliding: m.isSliding, slide: m.isSliding ? 1 : 0, roll: view.roll, landKick: view.landKick, lookDX: look.dx, lookDY: look.dy, isFiring: input.isLocked && (local.lastInput.buttons & 8) !== 0 };
 }
 
 let lastFrame = performance.now();
@@ -366,6 +380,8 @@ function frame(now) {
   match.pickups.update(match.game, now / 1000);
   match.world.update(now / 1000, Date.now());
   match.fx.update(isRunning ? dt : 0);
+  match.fx.updateRockets(match.game, alpha, dt, now / 1000);
+  hud.setScoped(motion.isScoped);
   viewmodel.update(isRunning ? dt : 0, match.game.time, match.local, motion);
   hud.update(match.game, match.local, { showScoreboard: input.isHeld("scoreboard") || body.dataset.screen === "pause", showSpeed: settings.showSpeed, now });
   renderer.clear();

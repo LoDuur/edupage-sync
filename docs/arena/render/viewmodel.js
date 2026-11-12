@@ -4,13 +4,17 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { WEAPONS } from "../sim/weapons.js";
 import { canvasTexture } from "./textures.js";
 
-const MODEL_URLS = { aa12: "assets/weapons/aa12.glb?v=2", pistol: "assets/weapons/pistol.glb?v=2" };
-const MOVING_PART = { aa12: "Bolt", pistol: "Slide" };
-const MAG_PART = { aa12: "Drum", pistol: "Mag" };
-const HOLD = {
-  aa12: { pos: new THREE.Vector3(0.15, -0.235, -0.43), kickBack: 0.075, kickPitch: 0.16, kickYaw: 0.02, boltTravel: 0.07, flashScale: 0.5, shake: 0.22 },
-  pistol: { pos: new THREE.Vector3(0.15, -0.15, -0.36), kickBack: 0.035, kickPitch: 0.2, kickYaw: 0.015, boltTravel: 0.03, flashScale: 0.22, shake: 0.08 },
+const MODEL_URLS = Object.fromEntries(["pistol", "smg", "ar", "aa12", "sniper", "rocket"].map(id => [id, `assets/weapons/${id}.glb?v=4`]));
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const CONFIG = {
+  pistol: { moving: "Slide", mag: "Mag", magDir: [0, -1, 0.15], hold: V(0.15, -0.15, -0.36), kickBack: 0.035, kickPitch: 0.2, kickYaw: 0.015, boltTravel: 0.03, flashScale: 0.22, light: 1.4, sideFlash: false, shell: { r: 0.0048, len: 0.019, brass: true }, reload: { tilt: -0.35, drop: 0.3, empty: "slide" }, handL: [-0.25, -0.2] },
+  smg: { moving: "Bolt", mag: "Mag", magDir: [0, -1, 0.05], hold: V(0.15, -0.19, -0.4), kickBack: 0.02, kickPitch: 0.1, kickYaw: 0.03, boltTravel: 0.035, flashScale: 0.2, light: 1.2, sideFlash: false, shell: { r: 0.0048, len: 0.019, brass: true }, reload: { tilt: -0.3, drop: 0.28, empty: "bolt" }, handL: [0.15, 1.2] },
+  ar: { moving: "Bolt", mag: "Mag", magDir: [0, -1, 0.25], hold: V(0.15, -0.2, -0.42), kickBack: 0.03, kickPitch: 0.12, kickYaw: 0.02, boltTravel: 0.045, flashScale: 0.34, light: 2, sideFlash: false, shell: { r: 0.0057, len: 0.045, brass: true }, reload: { tilt: -0.35, drop: 0.32, empty: "bolt+hand" }, handL: [0.2, 1.3] },
+  aa12: { moving: "Bolt", mag: "Drum", magDir: [0, -1, 0.15], hold: V(0.15, -0.235, -0.43), kickBack: 0.075, kickPitch: 0.16, kickYaw: 0.02, boltTravel: 0.07, flashScale: 0.5, light: 3, sideFlash: true, shell: { r: 0.0095, len: 0.065, brass: false }, reload: { tilt: 0.5, drop: 0.42, empty: "bolt+hand" }, handL: [0.2, 1.35] },
+  sniper: { moving: "Bolt", mag: "Mag", magDir: [0, -1, 0.1], hold: V(0.14, -0.22, -0.44), kickBack: 0.13, kickPitch: 0.36, kickYaw: 0.015, boltTravel: 0.1, flashScale: 0.6, light: 3.5, sideFlash: true, shell: { r: 0.0065, len: 0.07, brass: true }, reload: { tilt: 0.25, drop: 0.2, empty: "bolt+hand", alwaysBolt: true }, handL: [0.2, 1.3] },
+  rocket: { moving: null, mag: "Rocket", magDir: [0, 0, 1], hold: V(0.3, -0.27, -0.66), kickBack: 0.11, kickPitch: 0.26, kickYaw: 0.015, boltTravel: 0, flashScale: 0.9, light: 5, sideFlash: true, shell: null, reload: { tilt: 0.3, drop: 0.62, empty: "none" }, handL: [0.3, 1.3] },
 };
+const HOLD = CONFIG;
 const SHELL_LIFETIME = 0.9;
 
 const ease = t => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
@@ -128,17 +132,16 @@ export function createViewmodel({ onCue } = {}) {
   let bobPhase = 0, lastShotCount = -1, lastWeapon = null, boltT = 1, flashT = 1, lastReloadCue = -1;
   const shells = [];
 
-  const shellGeo = { aa12: new THREE.CylinderGeometry(0.0095, 0.0095, 0.065, 10), pistol: new THREE.CylinderGeometry(0.0048, 0.0048, 0.019, 8) };
-  const shellMat = { aa12: new THREE.MeshStandardMaterial({ color: 0xb3262c, roughness: 0.5 }), pistol: new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.9, roughness: 0.3 }) };
   const brassMat = new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.9, roughness: 0.3 });
+  const hullMat = new THREE.MeshStandardMaterial({ color: 0xb3262c, roughness: 0.5 });
 
   function makeShell(id) {
     const g = new THREE.Group();
-    const body = new THREE.Mesh(shellGeo[id], shellMat[id]);
-    g.add(body);
-    if (id === "aa12") {
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.0098, 0.0098, 0.014, 10), brassMat);
-      base.position.y = -0.028;
+    const cfg = CONFIG[id].shell;
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(cfg.r, cfg.r, cfg.len, 10), cfg.brass ? brassMat : hullMat));
+    if (!cfg.brass) {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(cfg.r * 1.03, cfg.r * 1.03, 0.014, 10), brassMat);
+      base.position.y = -cfg.len / 2 + 0.004;
       g.add(base);
     }
     g.visible = false;
@@ -164,8 +167,8 @@ export function createViewmodel({ onCue } = {}) {
       root.add(model);
       root.visible = false;
       sway.add(root);
-      const part = name => model.getObjectByName(name);
-      const moving = part(MOVING_PART[id]), mag = part(MAG_PART[id]);
+      const part = name => (name ? model.getObjectByName(name) : null);
+      const moving = part(CONFIG[id].moving), mag = part(CONFIG[id].mag);
       const muzzle = part("Muzzle") || new THREE.Object3D();
       const handLAnchor = part("HandL") || new THREE.Object3D();
       const eject = part("Eject") || muzzle;
@@ -183,7 +186,7 @@ export function createViewmodel({ onCue } = {}) {
       rigs[id] = {
         id, root, model, moving, mag, muzzle, eject, handR, handL, handLAnchor, flash, sideFlash,
         movingBase: moving?.position.clone(), magBase: mag?.position.clone(), trigger: part("Trigger"), hammer: part("Hammer"),
-        shellPool: Array.from({ length: id === "aa12" ? 10 : 8 }, () => makeShell(id)), shellIndex: 0,
+        shellPool: CONFIG[id].shell ? Array.from({ length: 10 }, () => makeShell(id)) : [], shellIndex: 0,
       };
     }
     isReady = true;
@@ -191,6 +194,7 @@ export function createViewmodel({ onCue } = {}) {
   }
 
   function spawnShell(rig) {
+    if (!rig.shellPool.length) return;
     const shell = rig.shellPool[rig.shellIndex++ % rig.shellPool.length];
     shells.push(shell);
     rig.eject.updateWorldMatrix(true, false);
@@ -205,25 +209,23 @@ export function createViewmodel({ onCue } = {}) {
   }
 
   function reloadPose(rig, ars, time, out) {
-    const w = WEAPONS[rig.id];
+    const w = WEAPONS[rig.id], cfg = CONFIG[rig.id].reload;
     const duration = ars.reloadWasEmpty ? w.emptyReloadTime : w.reloadTime;
     const t = Math.min(1, Math.max(0, 1 - (ars.stateUntil - time) / duration));
     const tilt = window01(t, 0, 0.12) * (1 - window01(t, 0.86, 1));
-    out.rotZ += (rig.id === "aa12" ? 0.5 : -0.35) * tilt;
+    out.rotZ += cfg.tilt * tilt;
     out.rotX += 0.18 * tilt;
     out.posY -= 0.03 * tilt;
     const magOut = window01(t, 0.14, 0.3), magIn = window01(t, 0.5, 0.72);
-    const drop = rig.id === "aa12" ? 0.42 : 0.3;
-    out.magOffset = magOut * (1 - magIn) * drop + (magOut >= 1 && magIn <= 0 ? drop : 0);
+    out.magOffset = magOut * (1 - magIn) * cfg.drop + (magOut >= 1 && magIn <= 0 ? cfg.drop : 0);
     out.magHidden = t > 0.32 && t < 0.5;
     out.handToMag = window01(t, 0.08, 0.16) * (1 - window01(t, 0.76, 0.86));
-    if (rig.id === "aa12" && ars.reloadWasEmpty) {
-      out.bolt = window01(t, 0.78, 0.86) * (1 - window01(t, 0.88, 0.9));
-      out.handToBolt = window01(t, 0.74, 0.8) * (1 - window01(t, 0.9, 0.95));
-    }
-    if (rig.id === "pistol" && ars.reloadWasEmpty) out.bolt = 1 - window01(t, 0.8, 0.84);
+    const wantsBolt = ars.reloadWasEmpty || cfg.alwaysBolt;
+    if (wantsBolt && cfg.empty.includes("bolt")) out.bolt = window01(t, 0.78, 0.86) * (1 - window01(t, 0.88, 0.9));
+    if (wantsBolt && cfg.empty.includes("hand")) out.handToBolt = window01(t, 0.74, 0.8) * (1 - window01(t, 0.9, 0.95));
+    if (ars.reloadWasEmpty && cfg.empty === "slide") out.bolt = 1 - window01(t, 0.8, 0.84);
     for (const [cue, at] of [["magOut", 0.16], ["magIn", 0.7], ["bolt", 0.84]]) {
-      if (t >= at && lastReloadCue < at) onCue?.(cue, rig.id);
+      if (t >= at && lastReloadCue < at && (cue !== "bolt" || (wantsBolt && cfg.empty !== "none"))) onCue?.(cue, rig.id);
     }
     lastReloadCue = t;
     out.bump = t > 0.7 && t < 0.76;
@@ -234,12 +236,13 @@ export function createViewmodel({ onCue } = {}) {
     const ars = player?.arsenal;
     const id = player?.isAlive ? ars.current : null;
     current = id;
-    for (const [rid, rig] of Object.entries(rigs)) rig.root.visible = rid === id;
+    for (const [rid, rig] of Object.entries(rigs)) rig.root.visible = rid === id && !motion.isScoped;
     const rig = id ? rigs[id] : null;
     flashLight.intensity = 0;
     stepShells(dt);
     if (!rig) return;
-    const hold = HOLD[id];
+    const cfg = CONFIG[id];
+    const hold = { ...cfg, pos: cfg.hold };
     if (lastWeapon !== id) {
       lastWeapon = id;
       lastShotCount = ars.shotCount;
@@ -287,12 +290,13 @@ export function createViewmodel({ onCue } = {}) {
     sway.rotation.set(look.y + recoilRot.value.x * 0.01 + pose.rotX + motion.landKick * 0.05, look.x * 2 + recoilRot.value.y * 0.01, -motion.roll * 0.6 + recoilRot.value.z * 0.01 + pose.rotZ + motion.slide * 0.35);
     rig.root.position.set(0, 0, 0);
 
-    const isLockedBack = id === "pistol" && ars.ammo.pistol.mag === 0;
+    const isLockedBack = cfg.reload.empty === "slide" && ars.ammo[id].mag === 0;
     const cycle = boltT < 1 ? Math.sin(boltT * Math.PI) : 0;
     const boltAmount = Math.max(cycle, pose.bolt, isLockedBack && ars.state !== "reload" ? 1 : 0);
     if (rig.moving && rig.movingBase) rig.moving.position.set(rig.movingBase.x, rig.movingBase.y, rig.movingBase.z + boltAmount * hold.boltTravel);
     if (rig.mag && rig.magBase) {
-      rig.mag.position.set(rig.magBase.x, rig.magBase.y - pose.magOffset, rig.magBase.z + pose.magOffset * 0.15);
+      const dir = cfg.magDir;
+      rig.mag.position.set(rig.magBase.x + dir[0] * pose.magOffset, rig.magBase.y + dir[1] * pose.magOffset, rig.magBase.z + dir[2] * pose.magOffset);
       rig.mag.visible = !pose.magHidden;
     }
     if (rig.trigger) rig.trigger.rotation.x = (motion.isFiring ? 0.25 : 0);
@@ -317,17 +321,17 @@ export function createViewmodel({ onCue } = {}) {
       anchor.lerp(boltPos.add(new THREE.Vector3(-0.03, 0.02, 0)), pose.handToBolt);
     }
     rig.handL.position.copy(anchor);
-    rig.handL.rotation.set(id === "pistol" ? -0.25 : 0.2, 0, id === "pistol" ? -0.2 : 1.35);
+    rig.handL.rotation.set(cfg.handL[0], 0, cfg.handL[1]);
     rig.handR.position.set(0, 0, 0);
     rig.handR.rotation.set(-0.26, 0, 0);
 
     const isFlashing = flashT < 0.045;
     rig.flash.visible = isFlashing;
-    rig.sideFlash.visible = isFlashing && id === "aa12";
+    rig.sideFlash.visible = isFlashing && cfg.sideFlash;
     if (isFlashing) {
       rig.muzzle.updateWorldMatrix(true, false);
       flashLight.position.setFromMatrixPosition(rig.muzzle.matrixWorld);
-      flashLight.intensity = id === "aa12" ? 3 : 1.4;
+      flashLight.intensity = cfg.light;
     }
   }
 

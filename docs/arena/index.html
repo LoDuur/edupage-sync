@@ -10,42 +10,43 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap&subset=latin-ext">
-<link rel="stylesheet" href="arena.css?v=2">
+<link rel="stylesheet" href="arena.css?v=4">
 <script type="importmap">
 {
  "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-  "./audio/sound.js": "./audio/sound.js?v=2",
-  "./hud.js": "./hud.js?v=2",
-  "./input.js": "./input.js?v=2",
-  "./render/fx.js": "./render/fx.js?v=2",
-  "./render/players.js": "./render/players.js?v=2",
-  "./render/textures.js": "./render/textures.js?v=2",
-  "./render/viewmodel.js": "./render/viewmodel.js?v=2",
-  "./render/world.js": "./render/world.js?v=2",
-  "./settings.js": "./settings.js?v=2",
-  "./sim/bots.js": "./sim/bots.js?v=2",
-  "./sim/collision.js": "./sim/collision.js?v=2",
-  "./sim/constants.js": "./sim/constants.js?v=2",
-  "./sim/entity.js": "./sim/entity.js?v=2",
-  "./sim/game.js": "./sim/game.js?v=2",
-  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=2",
-  "./sim/maps/index.js": "./sim/maps/index.js?v=2",
-  "./sim/movement.js": "./sim/movement.js?v=2",
-  "./sim/nav.js": "./sim/nav.js?v=2",
-  "./sim/random.js": "./sim/random.js?v=2",
-  "./sim/weapons.js": "./sim/weapons.js?v=2"
+  "./audio/sound.js": "./audio/sound.js?v=4",
+  "./hud.js": "./hud.js?v=4",
+  "./input.js": "./input.js?v=4",
+  "./render/fx.js": "./render/fx.js?v=4",
+  "./render/players.js": "./render/players.js?v=4",
+  "./render/textures.js": "./render/textures.js?v=4",
+  "./render/viewmodel.js": "./render/viewmodel.js?v=4",
+  "./render/world.js": "./render/world.js?v=4",
+  "./settings.js": "./settings.js?v=4",
+  "./sim/bots.js": "./sim/bots.js?v=4",
+  "./sim/collision.js": "./sim/collision.js?v=4",
+  "./sim/constants.js": "./sim/constants.js?v=4",
+  "./sim/entity.js": "./sim/entity.js?v=4",
+  "./sim/game.js": "./sim/game.js?v=4",
+  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=4",
+  "./sim/maps/index.js": "./sim/maps/index.js?v=4",
+  "./sim/movement.js": "./sim/movement.js?v=4",
+  "./sim/nav.js": "./sim/nav.js?v=4",
+  "./sim/random.js": "./sim/random.js?v=4",
+  "./sim/weapons.js": "./sim/weapons.js?v=4"
  }
 }
 </script>
-<script type="module" src="main.js?v=2"></script>
+<script type="module" src="main.js?v=4"></script>
 </head>
 <body data-screen="loading">
 
 <canvas id="view" tabindex="-1"></canvas>
 
 <div id="hud" aria-hidden="true">
+  <div class="scope" id="scope" hidden><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><path d="M-100 0H-8M8 0H100M0 -100V-8M0 8V100" /><path class="thin" d="M-100 0H100M0 -100V100" /><g class="dots"><circle cx="-24" cy="0" r="0.9"/><circle cx="-48" cy="0" r="0.9"/><circle cx="24" cy="0" r="0.9"/><circle cx="48" cy="0" r="0.9"/><circle cx="0" cy="24" r="0.9"/><circle cx="0" cy="48" r="0.9"/><circle cx="0" cy="72" r="0.9"/></g></svg></div>
   <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
   <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
   <div class="damage-ring" id="damage-ring"></div>
@@ -154,7 +155,9 @@
       <dt>Sienu lēciens</dt><dd>Gaisā pie sienas nospied lēcienu – līdz 2 reizēm pirms piezemēšanās.</dd>
       <dt>Rāviens</dt><dd>Shift – straujš grūdiens kustības virzienā, saglabā ātrumu. Atjaunojas uz zemes.</dd>
       <dt>Rampas lēciens</dt><dd>Lec, skrienot augšup pa rampu – iegūsi papildu augstumu.</dd>
-      <dt>Ieroči</dt><dd>1/2, Q vai ritenītis – maiņa. R – pārlādēt. Tab – rezultāti. Esc – pauze.</dd>
+      <dt>Ieroči</dt><dd>1–6, Q vai ritenītis – maiņa. R – pārlādēt. Tab – rezultāti. Esc – pauze.</dd>
+      <dt>Tēmēklis</dt><dd>Snaiperšautenei turi labo peli – tuvinājums ×4 un precīzs šāviens. Bez tēmēkļa šāviens neprecīzs.</dd>
+      <dt>Raķešu lēciens</dt><dd>Raķešu palaidējs: šauj sev pie kājām un lec – sprādziens tevi paceļ augstu un tālu. Sāp, bet daudz mazāk nekā pretiniekam.</dd>
     </dl>
     <div class="row"><button class="button primary" type="button" data-screen-target="menu">◄ Atpakaļ</button></div>
   </div>

@@ -40,6 +40,8 @@ def materials():
         "dot": make_material("Dot", (0.2, 1.0, 0.5), 0.0, 0.3, (0.3, 1.0, 0.55), 12.0),
         "brass": make_material("Brass", (0.6, 0.42, 0.14), 0.95, 0.3),
         "shell": make_material("Shell", (0.45, 0.05, 0.06), 0.0, 0.45),
+        "olive": make_material("Olive", (0.085, 0.105, 0.08), 0.35, 0.6),
+        "warhead": make_material("Warhead", (0.5, 0.08, 0.04), 0.2, 0.45),
     }
 
 
@@ -465,6 +467,314 @@ def build_pistol(m):
     return [body, slide, trigger, hammer, mag]
 
 
+def build_ar(m):
+    parts = []
+    upper = box("Upper", (0.04, 0.36, 0.056), (0, 0.12, 0.052), m["gunmetal"], bevel=0.0035, segments=3)
+    port = box("Port", (0.012, 0.075, 0.022), (0.02, 0.125, 0.056), m["gunmetal"], bevel=0.001)
+    upper = cut(upper, port)
+    for side in (-1, 1):
+        upper = cut(upper, box("UpperGroove", (0.003, 0.3, 0.003), (side * 0.0205, 0.12, 0.072), m["gunmetal"], bevel=0))
+    parts.append(upper)
+    lower = box("Lower", (0.036, 0.2, 0.048), (0, 0.04, 0.0), m["polymer"], bevel=0.004, segments=3)
+    lower = cut(lower, box("LowerCut", (0.007, 0.07, 0.028), (0.018, 0.06, 0.0), m["polymer"], bevel=0.001))
+    parts.append(lower)
+    magwell = box("MagWell", (0.04, 0.074, 0.05), (0, 0.082, -0.03), m["polymer"], bevel=0.004, segments=3)
+    release = box("MagRelease", (0.012, 0.012, 0.014), (0.022, 0.05, -0.012), m["parkerized"], bevel=0.001)
+    parts += [magwell, release]
+    for y in (0.02, 0.14):
+        for side in (-1, 1):
+            parts.append(screw("Pin", (side * 0.0205, y, 0.044), "X", m["parkerized"], 0.0032))
+    grip_profile = [(0.02, 0.0), (0.014, -0.03), (0.016, -0.045), (0.007, -0.062), (0.002, -0.082), (-0.004, -0.098), (-0.014, -0.116), (-0.05, -0.116), (-0.052, -0.1), (-0.046, -0.06), (-0.036, 0.0)]
+    grip = profile("Grip", grip_profile, 0.03, m["polymer"], bevel=0.005, segments=3)
+    for side in (-1, 1):
+        for i in range(6):
+            parts.append(box("GripRidge", (0.0035, 0.024, 0.0022), (side * 0.0156, -0.01 - i * 0.003, -0.034 - i * 0.0105), m["rubber"], bevel=0.0007))
+    parts.append(grip)
+    guard = tube_path("TriggerGuard", [(0, 0.02, -0.001), (0, 0.024, -0.03), (0, 0.06, -0.042), (0, 0.095, -0.03), (0, 0.098, -0.002)], 0.0035, m["polymer"])
+    parts.append(guard)
+    parts.append(picatinny("Rail", -0.06, 0.4, 0.08, 0.021, m["parkerized"]))
+    handguard = box("Handguard", (0.05, 0.27, 0.052), (0, 0.42, 0.045), m["polymer"], bevel=0.008, segments=4)
+    handguard = cut(handguard, cylinder("HandguardBore", 0.017, 0.4, (0, 0.42, 0.048), m["polymer"], axis="Y", vertices=24, bevel=0))
+    for side in (-1, 1):
+        for row in range(2):
+            for k in range(6):
+                handguard = cut(handguard, box("Slot", (0.014, 0.026, 0.01), (side * 0.025, 0.325 + k * 0.034, 0.03 + row * 0.02), m["polymer"], bevel=0.004, segments=2))
+    parts.append(handguard)
+    parts.append(picatinny("HandguardRail", 0.31, 0.22, 0.07, 0.021, m["parkerized"]))
+    for y in (0.34, 0.5):
+        parts.append(cylinder("HandguardBand", 0.0275, 0.006, (0, y, 0.045), m["accent"], axis="Y", vertices=32, bevel=0.0008))
+    barrel = cylinder("Barrel", 0.0115, 0.2, (0, 0.63, 0.048), m["parkerized"], axis="Y", vertices=24)
+    hider = cylinder("FlashHider", 0.0155, 0.07, (0, 0.72, 0.048), m["gunmetal"], axis="Y", vertices=28, bevel=0.0012)
+    hider = cut(hider, cylinder("HiderBore", 0.0085, 0.09, (0, 0.72, 0.048), m["gunmetal"], axis="Y", vertices=20, bevel=0))
+    for k in range(5):
+        slot = box("HiderSlot", (0.004, 0.036, 0.04), (0, 0.724, 0.048), m["gunmetal"], bevel=0)
+        slot.rotation_euler = (0, math.radians(k * 36), 0)
+        hider = cut(hider, slot)
+    gas = box("GasBlock", (0.026, 0.03, 0.03), (0, 0.545, 0.075), m["parkerized"], bevel=0.003)
+    post = box("FrontPost", (0.004, 0.008, 0.026), (0, 0.55, 0.098), m["parkerized"], bevel=0.0008)
+    parts += [barrel, hider, gas, post]
+    optic_body = cylinder("OpticBody", 0.0185, 0.1, (0, 0.06, 0.109), m["gunmetal"], axis="Y", vertices=32, bevel=0.002)
+    optic_front = cylinder("OpticFront", 0.0235, 0.03, (0, 0.118, 0.109), m["gunmetal"], axis="Y", vertices=32, bevel=0.002, radius2=0.0195)
+    lens_f = cylinder("LensFront", 0.0205, 0.002, (0, 0.134, 0.109), m["lens"], axis="Y", vertices=32, bevel=0)
+    lens_r = cylinder("LensRear", 0.014, 0.002, (0, 0.009, 0.109), m["lens"], axis="Y", vertices=24, bevel=0)
+    ring = cylinder("OpticRing", 0.0195, 0.008, (0, 0.04, 0.109), m["accent"], axis="Y", vertices=32, bevel=0.0005)
+    mount = box("OpticMount", (0.034, 0.05, 0.012), (0, 0.06, 0.088), m["parkerized"], bevel=0.002)
+    turret = cylinder("OpticTurret", 0.006, 0.01, (0, 0.07, 0.132), m["parkerized"], axis="Z", vertices=14, bevel=0.0008)
+    parts += [optic_body, optic_front, lens_f, lens_r, ring, mount, turret]
+    stock_profile = [(-0.02, 0.05), (-0.2, 0.048), (-0.285, 0.046), (-0.3, 0.042), (-0.305, -0.07), (-0.288, -0.076), (-0.2, -0.024), (-0.02, 0.0)]
+    stock = profile("Stock", stock_profile, 0.036, m["polymer"], bevel=0.005, segments=4)
+    stock = cut(stock, box("StockWindow", (0.02, 0.1, 0.022), (0, -0.19, 0.012), m["polymer"], bevel=0.004))
+    parts.append(box("StockJoin", (0.034, 0.06, 0.04), (0, -0.07, 0.03), m["polymer"], bevel=0.004))
+    parts.append(stock)
+    pad = profile("ButtPad", [(-0.3, 0.046), (-0.314, 0.044), (-0.318, -0.07), (-0.304, -0.076)], 0.038, m["rubber"], bevel=0.003, segments=3)
+    parts.append(pad)
+    parts.append(box("CheekRest", (0.03, 0.12, 0.008), (0, -0.2, 0.055), m["rubber"], bevel=0.003))
+    parts.append(cylinder("StockTube", 0.012, 0.12, (0, -0.16, 0.026), m["parkerized"], axis="Y", vertices=16, bevel=0.0008))
+    selector = cylinder("Selector", 0.005, 0.048, (0, 0.02, 0.022), m["parkerized"], axis="X", vertices=14)
+    lever = box("SelectorLever", (0.003, 0.016, 0.006), (0.026, 0.026, 0.022), m["parkerized"], bevel=0.001)
+    parts += [selector, lever]
+    body = join(parts, "Body")
+    finish(body, (0, 0, 0))
+    trigger = tube_path("Trigger", [(0, 0.052, -0.002), (0, 0.054, -0.014), (0, 0.049, -0.026)], 0.0027, m["parkerized"])
+    finish(trigger, (0, 0.052, -0.002))
+    handle = box("ChargeHandle", (0.03, 0.03, 0.014), (0, -0.038, 0.092), m["gunmetal"], bevel=0.003)
+    latch = box("ChargeLatch", (0.012, 0.022, 0.016), (0, -0.046, 0.084), m["gunmetal"], bevel=0.002)
+    grip_l = box("ChargeGripL", (0.008, 0.026, 0.01), (-0.014, -0.05, 0.092), m["accent"], bevel=0.002)
+    grip_r = box("ChargeGripR", (0.008, 0.026, 0.01), (0.014, -0.05, 0.092), m["accent"], bevel=0.002)
+    bolt = join([handle, latch, grip_l, grip_r], "Bolt")
+    finish(bolt, (0, -0.04, 0.09))
+    mag_profile = [(0.052, -0.03), (0.096, -0.03), (0.102, -0.09), (0.118, -0.15), (0.14, -0.2), (0.108, -0.205), (0.084, -0.15), (0.066, -0.09)]
+    mag_body = profile("MagBody", mag_profile, 0.026, m["polymer"], bevel=0.003, segments=3)
+    for k in range(5):
+        parts_rib = box("MagRib", (0.027, 0.004, 0.004), (0, 0.075 + k * 0.012, -0.04 - k * 0.026), m["rubber"], bevel=0.0006)
+        mag_body = join([mag_body, parts_rib], "MagBody")
+    base = box("MagBase", (0.03, 0.04, 0.01), (0, 0.124, -0.206), m["parkerized"], bevel=0.002)
+    base.rotation_euler = (math.radians(-25), 0, 0)
+    stripe = box("MagStripe", (0.0275, 0.03, 0.002), (0, 0.118, -0.18), m["accent"], bevel=0.0005)
+    stripe.rotation_euler = (math.radians(-25), 0, 0)
+    mag = join([mag_body, base, stripe], "Mag")
+    finish(mag, (0, 0.074, -0.03))
+    empty("Muzzle", (0, 0.76, 0.048))
+    empty("Eject", (0.024, 0.125, 0.056))
+    empty("HandL", (-0.004, 0.4, 0.0))
+    return [body, trigger, bolt, mag]
+
+
+def build_smg(m):
+    parts = []
+    body_box = box("Receiver", (0.046, 0.24, 0.064), (0, 0.06, 0.04), m["gunmetal"], bevel=0.005, segments=3)
+    body_box = cut(body_box, box("Port", (0.012, 0.07, 0.024), (0.023, 0.08, 0.05), m["gunmetal"], bevel=0.001))
+    for side in (-1, 1):
+        for k in range(4):
+            body_box = cut(body_box, box("Vent", (0.01, 0.034, 0.008), (side * 0.023, 0.0 + k * 0.045, 0.026), m["gunmetal"], bevel=0.003))
+    parts.append(body_box)
+    parts.append(picatinny("Rail", -0.05, 0.28, 0.072, 0.02, m["parkerized"]))
+    for y in (-0.02, 0.15):
+        for side in (-1, 1):
+            parts.append(screw("Pin", (side * 0.0235, y, 0.02), "X", m["parkerized"], 0.003))
+    shroud = box("Shroud", (0.04, 0.1, 0.048), (0, 0.23, 0.042), m["gunmetal"], bevel=0.006, segments=3)
+    shroud = cut(shroud, cylinder("ShroudBore", 0.016, 0.2, (0, 0.23, 0.042), m["gunmetal"], axis="Y", vertices=24, bevel=0))
+    for k in range(3):
+        shroud = cut(shroud, box("ShroudSlot", (0.05, 0.016, 0.012), (0, 0.2 + k * 0.03, 0.058), m["gunmetal"], bevel=0.003))
+    parts.append(shroud)
+    can = cylinder("Suppressor", 0.0215, 0.22, (0, 0.38, 0.042), m["polymer"], axis="Y", vertices=36, bevel=0.002)
+    can_bore = cylinder("CanBore", 0.007, 0.25, (0, 0.38, 0.042), m["polymer"], axis="Y", vertices=16, bevel=0)
+    can = cut(can, can_bore)
+    parts.append(can)
+    for k in range(6):
+        parts.append(cylinder("CanRib", 0.0228, 0.004, (0, 0.29 + k * 0.034, 0.042), m["parkerized"], axis="Y", vertices=36, bevel=0.0004))
+    parts.append(cylinder("CanBand", 0.0225, 0.01, (0, 0.495, 0.042), m["accent"], axis="Y", vertices=36, bevel=0.0006))
+    parts.append(cylinder("CanMount", 0.016, 0.03, (0, 0.28, 0.042), m["parkerized"], axis="Y", vertices=24, bevel=0.001))
+    grip_profile = [(0.02, 0.0), (0.012, -0.03), (0.014, -0.046), (0.004, -0.064), (0.0, -0.084), (-0.006, -0.1), (-0.018, -0.114), (-0.052, -0.114), (-0.054, -0.1), (-0.048, -0.06), (-0.04, 0.0)]
+    grip = profile("Grip", grip_profile, 0.03, m["polymer"], bevel=0.005, segments=3)
+    parts.append(grip)
+    for side in (-1, 1):
+        for i in range(6):
+            parts.append(box("GripRidge", (0.0035, 0.024, 0.0022), (side * 0.0156, -0.012 - i * 0.003, -0.034 - i * 0.0105), m["rubber"], bevel=0.0007))
+    parts.append(tube_path("TriggerGuard", [(0, 0.02, -0.001), (0, 0.024, -0.026), (0, 0.055, -0.036), (0, 0.082, -0.026), (0, 0.084, -0.002)], 0.0033, m["polymer"]))
+    fore = box("Foregrip", (0.03, 0.03, 0.09), (0, 0.17, -0.025), m["polymer"], bevel=0.006, segments=3)
+    for k in range(5):
+        parts.append(box("ForeRidge", (0.032, 0.03, 0.0022), (0, 0.17, -0.04 - k * 0.011), m["rubber"], bevel=0.0007))
+    foregrip_mount = box("ForeMount", (0.036, 0.05, 0.012), (0, 0.17, 0.0), m["parkerized"], bevel=0.002)
+    parts += [fore, foregrip_mount]
+    wire = tube_path("StockWire", [(0.0, -0.02, 0.055), (0.0, -0.2, 0.052), (0.0, -0.245, 0.02), (0.0, -0.24, -0.02), (0.0, -0.215, -0.045)], 0.0075, m["parkerized"])
+    for side in (-1, 1):
+        rod = tube_path("StockRod", [(side * 0.02, -0.01, 0.05), (side * 0.024, -0.16, 0.05), (side * 0.028, -0.245, 0.02), (side * 0.028, -0.24, -0.02), (side * 0.018, -0.215, -0.045)], 0.0042, m["parkerized"])
+        parts.append(rod)
+    parts.append(box("ButtPad", (0.044, 0.02, 0.1), (0, -0.245, 0.0), m["rubber"], bevel=0.005, segments=3))
+    bpy.data.objects.remove(wire, do_unlink=True)
+    rear = box("RearSight", (0.024, 0.01, 0.018), (0, -0.04, 0.1), m["parkerized"], bevel=0.0012)
+    rear = cut(rear, box("RearNotch", (0.004, 0.02, 0.01), (0, -0.04, 0.108), m["parkerized"], bevel=0))
+    front = box("FrontSight", (0.016, 0.012, 0.03), (0, 0.19, 0.1), m["parkerized"], bevel=0.0012)
+    front = cut(front, box("FrontCut", (0.006, 0.02, 0.02), (0, 0.19, 0.104), m["parkerized"], bevel=0))
+    parts += [rear, front, cylinder("FrontDot", 0.0013, 0.001, (0, 0.1835, 0.108), m["dot"], axis="Y", vertices=10, bevel=0)]
+    body = join(parts, "Body")
+    finish(body, (0, 0, 0))
+    trigger = tube_path("Trigger", [(0, 0.04, -0.002), (0, 0.042, -0.012), (0, 0.037, -0.024)], 0.0026, m["parkerized"])
+    finish(trigger, (0, 0.04, -0.002))
+    knob = cylinder("Knob", 0.007, 0.018, (-0.032, 0.05, 0.062), m["parkerized"], axis="X", vertices=16, bevel=0.001)
+    cap = cylinder("KnobCap", 0.0085, 0.005, (-0.043, 0.05, 0.062), m["accent"], axis="X", vertices=16, bevel=0.0008)
+    stem = box("KnobStem", (0.012, 0.012, 0.008), (-0.026, 0.05, 0.062), m["parkerized"], bevel=0.001)
+    bolt = join([knob, cap, stem], "Bolt")
+    finish(bolt, (-0.026, 0.05, 0.062))
+    mag_body = box("MagBody", (0.024, 0.034, 0.18), (0, 0.082, -0.075), m["parkerized"], bevel=0.002)
+    mag_body.rotation_euler = (math.radians(-6), 0, 0)
+    ribs = []
+    for k in range(7):
+        r = box("MagRib", (0.0255, 0.036, 0.003), (0, 0.082 - 0.0, -0.03 - k * 0.019), m["gunmetal"], bevel=0.0006)
+        r.rotation_euler = (math.radians(-6), 0, 0)
+        ribs.append(r)
+    base = box("MagBase", (0.03, 0.044, 0.01), (0, 0.093, -0.168), m["polymer"], bevel=0.003, segments=3)
+    stripe = box("MagStripe", (0.031, 0.03, 0.002), (0, 0.093, -0.174), m["accent"], bevel=0.0005)
+    mag = join([mag_body, base, stripe, *ribs], "Mag")
+    finish(mag, (0, 0.07, -0.04))
+    empty("Muzzle", (0, 0.5, 0.042))
+    empty("Eject", (0.023, 0.08, 0.05))
+    empty("HandL", (0, 0.17, -0.07))
+    return [body, trigger, bolt, mag]
+
+
+def build_sniper(m):
+    parts = []
+    receiver = cylinder("ReceiverTube", 0.027, 0.5, (0, 0.14, 0.05), m["gunmetal"], axis="Y", vertices=36, bevel=0.0012)
+    receiver = cut(receiver, box("EjectionPort", (0.03, 0.07, 0.02), (0.016, 0.07, 0.056), m["gunmetal"], bevel=0.001))
+    receiver = cut(receiver, box("BoltSlot", (0.008, 0.16, 0.012), (0.026, 0.02, 0.05), m["gunmetal"], bevel=0))
+    parts.append(receiver)
+    parts.append(picatinny("Rail", -0.08, 0.36, 0.074, 0.022, m["parkerized"]))
+    chassis_profile = [(-0.42, 0.075), (-0.36, 0.1), (-0.24, 0.1), (-0.16, 0.07), (-0.1, 0.03), (0.0, 0.026), (0.12, 0.028), (0.34, 0.03), (0.34, -0.012), (0.12, -0.016), (0.02, -0.024), (0.026, -0.07), (0.034, -0.1), (0.012, -0.124), (-0.04, -0.124), (-0.05, -0.07), (-0.07, -0.032), (-0.16, -0.03), (-0.26, -0.04), (-0.38, -0.06), (-0.425, -0.05)]
+    chassis = profile("Chassis", chassis_profile, 0.044, m["polymer"], bevel=0.005, segments=3)
+    chassis = cut(chassis, box("ThumbHole", (0.06, 0.06, 0.05), (0, -0.1, 0.0), m["polymer"], bevel=0.01, segments=3))
+    for side in (-1, 1):
+        for k in range(5):
+            chassis = cut(chassis, box("ChassisSlot", (0.012, 0.032, 0.012), (side * 0.022, 0.15 + k * 0.04, 0.008), m["polymer"], bevel=0.004, segments=2))
+    parts.append(chassis)
+    parts.append(profile("ButtPad", [(-0.425, 0.073), (-0.443, 0.07), (-0.447, -0.05), (-0.428, -0.052)], 0.048, m["rubber"], bevel=0.004, segments=3))
+    parts.append(box("CheekRiser", (0.036, 0.16, 0.012), (0, -0.28, 0.108), m["rubber"], bevel=0.004, segments=3))
+    for k in range(5):
+        parts.append(box("PadRib", (0.05, 0.004, 0.006), (0, -0.449, -0.04 + k * 0.02), m["rubber"], bevel=0.001))
+    parts.append(tube_path("TriggerGuard", [(0, -0.01, 0.0), (0, -0.008, -0.026), (0, 0.03, -0.04), (0, 0.065, -0.026), (0, 0.068, -0.004)], 0.0032, m["polymer"]))
+    shroud = cylinder("Shroud", 0.026, 0.3, (0, 0.5, 0.05), m["gunmetal"], axis="Y", vertices=36, bevel=0.001)
+    shroud = cut(shroud, cylinder("ShroudBore", 0.0215, 0.4, (0, 0.5, 0.05), m["gunmetal"], axis="Y", vertices=28, bevel=0))
+    for side in (-1, 1):
+        for k in range(8):
+            shroud = cut(shroud, cylinder("ShroudHole", 0.0065, 0.07, (0, 0.38 + k * 0.032, 0.05), m["gunmetal"], axis="X", vertices=12, bevel=0))
+    parts.append(shroud)
+    barrel = cylinder("Barrel", 0.0135, 0.7, (0, 0.58, 0.05), m["parkerized"], axis="Y", vertices=28)
+    brake = cylinder("Brake", 0.0225, 0.085, (0, 0.865, 0.05), m["gunmetal"], axis="Y", vertices=32, bevel=0.0015)
+    brake = cut(brake, cylinder("BrakeBore", 0.0105, 0.11, (0, 0.865, 0.05), m["gunmetal"], axis="Y", vertices=20, bevel=0))
+    for k in range(3):
+        brake = cut(brake, box("BrakePort", (0.06, 0.01, 0.012), (0, 0.84 + k * 0.022, 0.05), m["gunmetal"], bevel=0))
+    parts += [barrel, brake, cylinder("BrakeRing", 0.0235, 0.006, (0, 0.82, 0.05), m["accent"], axis="Y", vertices=32, bevel=0.0006)]
+    for y in (0.0, 0.14):
+        parts.append(box("ScopeRingBase", (0.03, 0.026, 0.024), (0, y, 0.087), m["parkerized"], bevel=0.002))
+        ring = cylinder("ScopeRing", 0.0235, 0.022, (0, y, 0.12), m["parkerized"], axis="Y", vertices=28, bevel=0.0012)
+        ring = cut(ring, cylinder("RingBore", 0.0185, 0.03, (0, y, 0.12), m["parkerized"], axis="Y", vertices=24, bevel=0))
+        parts.append(ring)
+    scope = cylinder("ScopeTube", 0.0185, 0.4, (0, 0.07, 0.12), m["gunmetal"], axis="Y", vertices=32, bevel=0.0012)
+    objective = cylinder("Objective", 0.0295, 0.085, (0, 0.285, 0.12), m["gunmetal"], axis="Y", vertices=36, bevel=0.0018, radius2=0.0205)
+    objective.rotation_euler = (0, 0, 0)
+    eyepiece = cylinder("Eyepiece", 0.0195, 0.07, (0, -0.145, 0.12), m["gunmetal"], axis="Y", vertices=32, bevel=0.0018, radius2=0.0265)
+    parts += [scope, objective, eyepiece]
+    parts.append(cylinder("ObjectiveLens", 0.0275, 0.002, (0, 0.3275, 0.12), m["lens"], axis="Y", vertices=36, bevel=0))
+    parts.append(cylinder("EyepieceLens", 0.0235, 0.002, (0, -0.1805, 0.12), m["lens"], axis="Y", vertices=32, bevel=0))
+    parts.append(cylinder("ScopeBand", 0.0192, 0.008, (0, -0.02, 0.12), m["accent"], axis="Y", vertices=32, bevel=0.0005))
+    parts.append(cylinder("ZoomRing", 0.0215, 0.03, (0, -0.07, 0.12), m["rubber"], axis="Y", vertices=32, bevel=0.0008))
+    parts.append(cylinder("ElevationTurret", 0.011, 0.02, (0, 0.07, 0.147), m["parkerized"], axis="Z", vertices=24, bevel=0.001))
+    parts.append(cylinder("ElevationCap", 0.0125, 0.006, (0, 0.07, 0.159), m["accent"], axis="Z", vertices=24, bevel=0.0008))
+    parts.append(cylinder("WindageTurret", 0.011, 0.02, (0.027, 0.07, 0.12), m["parkerized"], axis="X", vertices=24, bevel=0.001))
+    for side in (-1, 1):
+        leg = cylinder("BipodLeg", 0.006, 0.17, (side * 0.03, 0.42, 0.012), m["parkerized"], axis="Y", vertices=12, bevel=0.0005)
+        parts.append(leg)
+    parts.append(box("BipodMount", (0.07, 0.03, 0.018), (0, 0.44, 0.02), m["parkerized"], bevel=0.003))
+    body = join(parts, "Body")
+    finish(body, (0, 0, 0))
+    trigger = tube_path("Trigger", [(0, 0.012, 0.002), (0, 0.014, -0.01), (0, 0.009, -0.022)], 0.0026, m["parkerized"])
+    finish(trigger, (0, 0.012, 0.002))
+    bolt_body = cylinder("BoltBody", 0.0125, 0.08, (0.016, 0.0, 0.052), m["parkerized"], axis="Y", vertices=20, bevel=0.0008)
+    stem = tube_path("BoltStem", [(0.02, 0.0, 0.052), (0.05, 0.0, 0.044), (0.075, 0.0, 0.03)], 0.0055, m["parkerized"])
+    knob = cylinder("BoltKnob", 0.0125, 0.026, (0.078, 0.0, 0.03), m["accent"], axis="Z", vertices=20, bevel=0.003, radius2=0.0095)
+    bolt = join([bolt_body, stem, knob], "Bolt")
+    finish(bolt, (0.02, 0.0, 0.05))
+    mag_body = box("MagBody", (0.03, 0.062, 0.07), (0, 0.075, -0.045), m["gunmetal"], bevel=0.003, segments=3)
+    mag_base = box("MagBase", (0.034, 0.066, 0.008), (0, 0.075, -0.083), m["accent"], bevel=0.0015)
+    mag = join([mag_body, mag_base], "Mag")
+    finish(mag, (0, 0.075, -0.01))
+    empty("Muzzle", (0, 0.91, 0.05))
+    empty("Eject", (0.03, 0.07, 0.056))
+    empty("HandL", (0, 0.32, -0.03))
+    return [body, trigger, bolt, mag]
+
+
+def build_rocket(m):
+    parts = []
+    tube_len = 0.96
+    tube = cylinder("Tube", 0.066, tube_len, (0, 0.2, 0.07), m["olive"], axis="Y", vertices=48, bevel=0.0015)
+    tube = cut(tube, cylinder("TubeBore", 0.056, tube_len + 0.1, (0, 0.2, 0.07), m["olive"], axis="Y", vertices=40, bevel=0))
+    parts.append(tube)
+    muzzle_flare = cylinder("MuzzleFlare", 0.066, 0.06, (0, 0.71, 0.07), m["olive"], axis="Y", vertices=48, bevel=0.0012, radius2=0.082)
+    muzzle_flare = cut(muzzle_flare, cylinder("MuzzleFlareBore", 0.056, 0.1, (0, 0.71, 0.07), m["olive"], axis="Y", vertices=40, bevel=0))
+    parts.append(muzzle_flare)
+    rear = cylinder("RearFlare", 0.094, 0.1, (0, -0.33, 0.07), m["olive"], axis="Y", vertices=48, bevel=0.0012, radius2=0.066)
+    rear = cut(rear, cylinder("RearBore", 0.056, 0.2, (0, -0.33, 0.07), m["olive"], axis="Y", vertices=40, bevel=0))
+    parts.append(rear)
+    for y, w in ((-0.2, 0.012), (0.02, 0.008), (0.4, 0.012), (0.6, 0.008)):
+        parts.append(cylinder("TubeBand", 0.0685, w, (0, y, 0.07), m["accent"] if w == 0.012 else m["gunmetal"], axis="Y", vertices=48, bevel=0.0007))
+    for k in range(5):
+        parts.append(cylinder("RearRib", 0.0675, 0.006, (0, 0.18 + k * 0.032, 0.07), m["gunmetal"], axis="Y", vertices=48, bevel=0.0006))
+    shield = box("HeatShield", (0.1, 0.34, 0.03), (0, 0.18, 0.003), m["polymer"], bevel=0.008, segments=4)
+    for k in range(6):
+        shield = cut(shield, box("ShieldVent", (0.07, 0.02, 0.05), (0, 0.06 + k * 0.05, 0.003), m["polymer"], bevel=0.005, segments=2))
+    parts.append(shield)
+    for side in (-1, 1):
+        parts.append(box("ShieldClamp", (0.012, 0.03, 0.07), (side * 0.045, 0.02, 0.028), m["parkerized"], bevel=0.002))
+        parts.append(box("ShieldClampF", (0.012, 0.03, 0.07), (side * 0.045, 0.34, 0.028), m["parkerized"], bevel=0.002))
+    grip_profile = [(0.02, 0.0), (0.014, -0.03), (0.016, -0.048), (0.006, -0.066), (0.002, -0.088), (-0.006, -0.104), (-0.016, -0.122), (-0.054, -0.122), (-0.056, -0.108), (-0.05, -0.064), (-0.04, -0.01), (-0.03, 0.0)]
+    grip = profile("Grip", grip_profile, 0.034, m["polymer"], bevel=0.005, segments=3)
+    parts.append(grip)
+    for i in range(7):
+        parts.append(box("GripRidge", (0.039, 0.024, 0.0022), (0, -0.012 - i * 0.003, -0.034 - i * 0.0105), m["rubber"], bevel=0.0007))
+    parts.append(tube_path("TriggerGuard", [(0, 0.022, -0.001), (0, 0.026, -0.03), (0, 0.062, -0.042), (0, 0.095, -0.03), (0, 0.098, -0.002)], 0.0036, m["polymer"]))
+    fore_profile = [(0.0, 0.0), (-0.022, -0.04), (-0.026, -0.1), (-0.012, -0.14), (0.02, -0.14), (0.032, -0.1), (0.03, -0.04), (0.016, 0.0)]
+    fore = profile("Foregrip", fore_profile, 0.036, m["polymer"], bevel=0.005, segments=3)
+    fore.location = (0, 0.3, 0.0)
+    activate(fore)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    parts.append(fore)
+    for i in range(5):
+        parts.append(box("ForeRidge", (0.04, 0.03, 0.0022), (0, 0.3, -0.05 - i * 0.016), m["rubber"], bevel=0.0007))
+    parts.append(box("ForeMount", (0.06, 0.06, 0.02), (0, 0.3, 0.01), m["parkerized"], bevel=0.003))
+    sight_mount = box("SightMount", (0.022, 0.12, 0.03), (-0.076, 0.1, 0.082), m["parkerized"], bevel=0.003)
+    sight_body = cylinder("SightBody", 0.018, 0.12, (-0.088, 0.1, 0.108), m["gunmetal"], axis="Y", vertices=28, bevel=0.0015)
+    sight_lens = cylinder("SightLens", 0.0155, 0.002, (-0.088, 0.161, 0.108), m["lens"], axis="Y", vertices=28, bevel=0)
+    sight_dot = cylinder("SightDot", 0.0012, 0.001, (-0.088, 0.1615, 0.108), m["dot"], axis="Y", vertices=10, bevel=0)
+    sight_hood = cylinder("SightHood", 0.021, 0.03, (-0.088, 0.145, 0.108), m["polymer"], axis="Y", vertices=28, bevel=0.001, radius2=0.018)
+    parts += [sight_mount, sight_body, sight_lens, sight_dot, sight_hood]
+    parts.append(picatinny("TopRail", -0.06, 0.3, 0.134, 0.02, m["parkerized"]))
+    parts.append(box("FrontSightPost", (0.004, 0.008, 0.02), (0, 0.5, 0.146), m["parkerized"], bevel=0.0008))
+    parts.append(box("RearSightBlock", (0.022, 0.012, 0.016), (0, -0.04, 0.152), m["parkerized"], bevel=0.0012))
+    parts.append(box("SwitchBox", (0.04, 0.05, 0.024), (0.06, 0.04, 0.012), m["gunmetal"], bevel=0.003))
+    body = join(parts, "Body")
+    finish(body, (0, 0, 0))
+    trigger = tube_path("Trigger", [(0, 0.05, -0.002), (0, 0.052, -0.014), (0, 0.047, -0.026)], 0.0028, m["parkerized"])
+    finish(trigger, (0, 0.05, -0.002))
+    rocket_parts = []
+    rocket_parts.append(cylinder("RocketBody", 0.05, 0.54, (0, 0.32, 0.07), m["parkerized"], axis="Y", vertices=36, bevel=0.002))
+    rocket_parts.append(cylinder("Warhead", 0.05, 0.2, (0, 0.69, 0.07), m["warhead"], axis="Y", vertices=36, bevel=0.002, radius2=0.012))
+    rocket_parts.append(cylinder("WarheadTip", 0.012, 0.03, (0, 0.795, 0.07), m["parkerized"], axis="Y", vertices=16, bevel=0.002))
+    rocket_parts.append(cylinder("WarheadBand", 0.0505, 0.018, (0, 0.6, 0.07), m["accent"], axis="Y", vertices=36, bevel=0.0008))
+    for k in range(4):
+        fin = box("Fin", (0.004, 0.08, 0.08), (0, -0.04, 0.07 + 0.0), m["gunmetal"], bevel=0.0012)
+        fin.rotation_euler = (math.radians(k * 90 + 45), 0, 0)
+        fin.location = (0, 0.07, 0.07)
+        rocket_parts.append(fin)
+    rocket = join(rocket_parts, "Rocket")
+    finish(rocket, (0, 0.32, 0.07))
+    empty("Muzzle", (0, 0.84, 0.07))
+    empty("Eject", (0, -0.4, 0.07))
+    empty("HandL", (0, 0.3, -0.05))
+    return [body, trigger, rocket]
+
+
 def export(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     for o in bpy.context.view_layer.objects:
@@ -475,10 +785,7 @@ def export(path):
 def build(kind):
     reset_scene()
     m = materials()
-    if kind == "aa12":
-        build_aa12(m)
-    else:
-        build_pistol(m)
+    {"aa12": build_aa12, "pistol": build_pistol, "ar": build_ar, "smg": build_smg, "sniper": build_sniper, "rocket": build_rocket}[kind](m)
     export(os.path.join(OUT_DIR, f"{kind}.glb"))
     report = {"kind": kind, "triangles": 0, "objects": []}
     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -493,6 +800,6 @@ def build(kind):
 
 
 if __name__ == "__main__":
-    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["aa12", "pistol"]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else ["aa12", "pistol", "ar", "smg", "sniper", "rocket"]
     for kind in args:
         build(kind)

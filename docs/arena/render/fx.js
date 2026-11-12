@@ -97,7 +97,97 @@ export function createEffects(scene) {
 
   const flashLight = new THREE.PointLight(0xffb070, 0, 9, 2);
   scene.add(flashLight);
-  let flashLife = 0;
+  let flashLife = 0, flashDuration = 0.05, flashPeak = 0;
+  const rocketLight = new THREE.PointLight(0xff8a3a, 0, 7, 2);
+  scene.add(rocketLight);
+  const bursts = Array.from({ length: 14 }, () => {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    sprite.visible = false;
+    scene.add(sprite);
+    return { sprite, life: 0, max: 1, size: 1 };
+  });
+  let burstCursor = 0;
+  const rocketMeshes = new Map();
+  const rocketBody = new THREE.MeshStandardMaterial({ color: 0x4a5240, roughness: 0.5, metalness: 0.4 });
+  const rocketHead = new THREE.MeshStandardMaterial({ color: 0xc23a1c, roughness: 0.4, metalness: 0.2 });
+  const rocketFin = new THREE.MeshStandardMaterial({ color: 0x24272b, roughness: 0.5, metalness: 0.6 });
+  const exhaustMaterial = new THREE.SpriteMaterial({ map: soft, color: 0xffa040, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+
+  function makeRocket() {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.5, 14), rocketBody);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.16, 14), rocketHead);
+    head.position.y = 0.33;
+    g.add(body, head);
+    for (let k = 0; k < 4; k++) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.11), rocketFin);
+      fin.position.y = -0.2;
+      fin.rotation.y = (k * Math.PI) / 2;
+      fin.translateZ(0.06);
+      g.add(fin);
+    }
+    const flame = new THREE.Sprite(exhaustMaterial);
+    flame.scale.set(0.5, 0.5, 1);
+    flame.position.y = -0.38;
+    g.add(flame);
+    const holder = new THREE.Group();
+    g.rotation.x = Math.PI / 2;
+    holder.add(g);
+    scene.add(holder);
+    return { holder, smokeAt: 0 };
+  }
+
+  function updateRockets(game, alpha, dt, time) {
+    const seen = new Set();
+    let lit = null;
+    for (const r of game.projectiles) {
+      seen.add(r.id);
+      let v = rocketMeshes.get(r.id);
+      if (!v) { v = makeRocket(); rocketMeshes.set(r.id, v); }
+      const x = r.prev.x + (r.pos.x - r.prev.x) * alpha, y = r.prev.y + (r.pos.y - r.prev.y) * alpha, z = r.prev.z + (r.pos.z - r.prev.z) * alpha;
+      v.holder.position.set(x, y, z);
+      v.holder.lookAt(x + r.vel.x, y + r.vel.y, z + r.vel.z);
+      lit = v.holder.position;
+      if (time >= v.smokeAt) {
+        v.smokeAt = time + 0.025;
+        addPuff({ x: x - r.vel.x * 0.012, y: y - r.vel.y * 0.012, z: z - r.vel.z * 0.012 }, null, 0xd4cfc6, 0.28);
+        emitSparks({ x: x - r.vel.x * 0.015, y: y - r.vel.y * 0.015, z: z - r.vel.z * 0.015 }, null, 1, 0xffa040, 2, 0.3);
+      }
+    }
+    for (const [id, v] of rocketMeshes) {
+      if (seen.has(id)) continue;
+      scene.remove(v.holder);
+      rocketMeshes.delete(id);
+    }
+    if (lit) {
+      rocketLight.position.copy(lit);
+      rocketLight.intensity = 4 + Math.sin(time * 60) * 0.8;
+    } else rocketLight.intensity = 0;
+    void dt;
+  }
+
+  function explosion(pos, normal, radius) {
+    const n = normal ? new THREE.Vector3(normal.x, normal.y, normal.z) : new THREE.Vector3(0, 1, 0);
+    const center = new THREE.Vector3(pos.x, pos.y, pos.z).addScaledVector(n, 0.3);
+    for (const [color, life, size] of [[0xff7a1f, 0.42, radius * 1.15], [0xffe2a0, 0.22, radius * 0.7], [0xff3d0a, 0.6, radius * 1.5]]) {
+      const b = bursts[burstCursor];
+      burstCursor = (burstCursor + 1) % bursts.length;
+      b.life = b.max = life;
+      b.size = size;
+      b.sprite.material.color.set(color);
+      b.sprite.position.copy(center);
+      b.sprite.visible = true;
+    }
+    emitSparks(center, n, 70, 0xffb35a, 11, 0.9);
+    emitSparks(center, n, 30, 0xfff0c0, 16, 0.5);
+    for (let i = 0; i < 6; i++) addPuff({ x: center.x + (Math.random() - 0.5) * 1.2, y: center.y + Math.random() * 0.8, z: center.z + (Math.random() - 0.5) * 1.2 }, n, 0x4a4743, 1.5 + Math.random());
+    if (normal) addDecal(pos, normal, 0.9 + Math.random() * 0.25);
+    flashLight.position.copy(center);
+    flashLight.intensity = 30;
+    flashLight.distance = 16;
+    flashLife = flashDuration = 0.25;
+    flashPeak = 30;
+  }
 
   function emitSparks(pos, normal, count, color, speed = 6, life = 0.5) {
     for (let i = 0; i < count; i++) {
@@ -113,13 +203,13 @@ export function createEffects(scene) {
     }
   }
 
-  function addDecal(pos, normal) {
+  function addDecal(pos, normal, size = 0.09 + Math.random() * 0.05) {
     const n = new THREE.Vector3(normal.x, normal.y, normal.z);
     tmpQuat.setFromUnitVectors(zAxis, n);
     const spin = new THREE.Quaternion().setFromAxisAngle(n, Math.random() * Math.PI * 2);
     tmpQuat.premultiply(spin);
     tmpPos.set(pos.x + n.x * 0.004, pos.y + n.y * 0.004, pos.z + n.z * 0.004);
-    tmpScale.setScalar(0.09 + Math.random() * 0.05);
+    tmpScale.setScalar(size);
     tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
     decals.setMatrixAt(decalCursor, tmpMatrix);
     decalCursor = (decalCursor + 1) % MAX_DECALS;
@@ -166,7 +256,9 @@ export function createEffects(scene) {
   function muzzleLight(pos, intensity) {
     flashLight.position.copy(pos);
     flashLight.intensity = intensity;
-    flashLife = 0.05;
+    flashLight.distance = 9;
+    flashLife = flashDuration = 0.05;
+    flashPeak = intensity;
   }
 
   function deathBurst(pos, color) {
@@ -214,13 +306,34 @@ export function createEffects(scene) {
       p.sprite.material.opacity = (1 - k) * 0.45;
       p.sprite.position.addScaledVector(p.vel, dt);
     }
+    for (const b of bursts) {
+      if (!b.sprite.visible) continue;
+      b.life -= dt;
+      if (b.life <= 0) { b.sprite.visible = false; continue; }
+      const k = 1 - b.life / b.max;
+      b.sprite.scale.setScalar(b.size * (0.25 + 0.85 * Math.sqrt(k)));
+      b.sprite.material.opacity = (1 - k) ** 1.5;
+    }
     if (flashLife > 0) {
       flashLife -= dt;
-      if (flashLife <= 0) flashLight.intensity = 0;
+      flashLight.intensity = flashLife <= 0 ? 0 : flashPeak * (flashLife / flashDuration);
     }
   }
 
-  return { tracer, impact, update, muzzleLight, deathBurst, emitSparks };
+  return { tracer, impact, update, muzzleLight, deathBurst, emitSparks, updateRockets, explosion };
+}
+
+function frameModel(model, length) {
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+  model.position.sub(center);
+  const wrapper = new THREE.Group();
+  wrapper.add(model);
+  wrapper.rotation.y = Math.PI / 2;
+  wrapper.scale.setScalar(length / Math.max(size.x, size.y, size.z));
+  const outer = new THREE.Group();
+  outer.add(wrapper);
+  return outer;
 }
 
 export function createPickupVisuals(scene, pickups, weaponFactory) {
@@ -241,10 +354,35 @@ export function createPickupVisuals(scene, pickups, weaponFactory) {
     group.add(spinner);
     if (item.kind === "weapon") {
       const model = weaponFactory?.(item.weapon);
-      if (model) {
-        model.scale.setScalar(1.15);
-        model.position.z = 0.25;
-        spinner.add(model);
+      if (model) spinner.add(frameModel(model, 1.25));
+    } else if (item.kind === "armor") {
+      const isHeavy = item.amount >= 100;
+      const plateMaterial = new THREE.MeshStandardMaterial({ color: isHeavy ? 0x3f6fb8 : 0x4f8fd8, roughness: 0.35, metalness: 0.6, emissive: 0x1d3f7a, emissiveIntensity: 0.35 });
+      const vest = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.5, 0.17, 4, 0.05), plateMaterial);
+      const strap = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.18, 0.2, 3, 0.02), baseMaterial);
+      strap.position.set(-0.19, 0.2, 0);
+      const strap2 = strap.clone();
+      strap2.position.x = 0.19;
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.26, 0.24, 0.05, 3, 0.02), new THREE.MeshStandardMaterial({ color: 0xe9eef2, roughness: 0.3, metalness: 0.4 }));
+      plate.position.set(0, 0.02, 0.1);
+      vest.castShadow = true;
+      spinner.add(vest, strap, strap2, plate);
+      if (isHeavy) spinner.scale.setScalar(1.25);
+    } else if (item.kind === "ammo") {
+      const crate = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.26, 0.3, 3, 0.03), new THREE.MeshStandardMaterial({ color: 0x4d5a3a, roughness: 0.6, metalness: 0.3 }));
+      crate.castShadow = true;
+      spinner.add(crate);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.04, 0.31), ringMaterial.clone());
+      stripe.position.y = 0.02;
+      spinner.add(stripe);
+      const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.9, roughness: 0.3 });
+      for (let k = 0; k < 5; k++) {
+        const bullet = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.11, 10), bulletMaterial);
+        bullet.position.set(-0.16 + k * 0.08, 0.17, 0);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.05, 10), new THREE.MeshStandardMaterial({ color: 0x6d4b2a, roughness: 0.4, metalness: 0.6 }));
+        tip.position.y = 0.08;
+        bullet.add(tip);
+        spinner.add(bullet);
       }
     } else {
       const isMega = item.kind === "mega";

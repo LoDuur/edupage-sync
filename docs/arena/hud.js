@@ -4,6 +4,7 @@ import { scoreboard } from "./sim/game.js";
 
 const $ = id => document.getElementById(id);
 const KILLFEED_MAX = 5;
+const SHORT_NAMES = { pistol: "Pistole", smg: "SMG", ar: "AR", aa12: "AA-12", sniper: "Snaiperis", rocket: "Raķete" };
 
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -20,7 +21,7 @@ export function createHud() {
     score: $("hud-score"), timer: $("hud-timer"), leader: $("hud-leader"), killfeed: $("killfeed"), center: $("center-message"),
     speed: $("speed"), speedValue: $("speed-value"), health: $("hud-health"), healthBar: $("hud-health-bar"), armor: $("hud-armor"), armorBar: $("hud-armor-bar"),
     dash: $("hud-dash"), slots: $("weapon-slots"), mag: $("hud-mag"), reserve: $("hud-reserve"), weaponName: $("hud-weapon-name"),
-    scoreboard: $("scoreboard"), scoreRows: $("scoreboard-rows"),
+    scoreboard: $("scoreboard"), scoreRows: $("scoreboard-rows"), scope: $("scope"),
   };
   let hitTimer = 0, centerUntil = 0, lastSlotsKey = "", lastBoardAt = 0;
   const cache = new Map();
@@ -92,7 +93,7 @@ export function createHud() {
     const slotsKey = WEAPON_ORDER.map(id => `${id}:${!!ars.owned[id]}:${ars.current === id}`).join();
     if (slotsKey !== lastSlotsKey) {
       lastSlotsKey = slotsKey;
-      el.slots.innerHTML = WEAPON_ORDER.filter(id => ars.owned[id]).map(id => `<li class="${ars.current === id ? "active" : ""}">${WEAPONS[id].slot} ${escapeHtml(WEAPONS[id].name)}</li>`).join("");
+      el.slots.innerHTML = WEAPON_ORDER.filter(id => ars.owned[id]).map(id => `<li class="${ars.current === id ? "active" : ""}">${WEAPONS[id].slot} ${escapeHtml(SHORT_NAMES[id])}</li>`).join("");
     }
     const gap = 5 + Math.min(26, (w.spread + ars.bloom) * 260);
     el.crosshair.style.setProperty("--gap", `${gap.toFixed(1)}px`);
@@ -114,6 +115,11 @@ export function createHud() {
     }
   }
 
+  function setScoped(isScoped) {
+    el.scope.hidden = !isScoped;
+    el.crosshair.hidden = isScoped;
+  }
+
   function reset() {
     el.killfeed.textContent = "";
     el.center.textContent = "";
@@ -122,5 +128,5 @@ export function createHud() {
     lastSlotsKey = "";
   }
 
-  return { update, hit, damageFrom, message, killfeed, renderBoard, reset };
+  return { update, setScoped, hit, damageFrom, message, killfeed, renderBoard, reset };
 }

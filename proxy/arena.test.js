@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { BUTTON, DASH_SPEED, RUN_SPEED, TICK_DT, WALLJUMP_WINDOW } from "../docs/arena/sim/constants.js";
 import { box, createWorld, ramp } from "../docs/arena/sim/collision.js";
 import { createMoveState, horizontalSpeed, stepMovement } from "../docs/arena/sim/movement.js";
-import { WEAPONS, createArsenal, giveWeapon, updateArsenal } from "../docs/arena/sim/weapons.js";
+import { WEAPONS, WEAPON_ORDER, createArsenal, giveAmmo, giveWeapon, updateArsenal } from "../docs/arena/sim/weapons.js";
 import { addPlayer, applyDamage, createGame, fillWithBots, loadMap, sanitizeInput, stepGame, stepPlayer } from "../docs/arena/sim/game.js";
 import { findPath } from "../docs/arena/sim/nav.js";
 
@@ -124,11 +124,11 @@ test("AA-12 fires full auto at its rate; pistol is semi-auto", () => {
   const ars = createArsenal(0);
   giveWeapon(ars, "aa12", 0);
   let shots = 0;
-  for (let t = 0; t < 60; t++) if (updateArsenal(ars, input({ weapon: 2, buttons: BUTTON.FIRE }), 0.3 + t * TICK_DT, TICK_DT)?.spread !== undefined) shots++;
+  for (let t = 0; t < 60; t++) if (updateArsenal(ars, input({ weapon: WEAPONS.aa12.slot, buttons: BUTTON.FIRE }), 0.3 + t * TICK_DT, TICK_DT)?.spread !== undefined) shots++;
   assert.equal(shots, Math.round(1 / WEAPONS.aa12.fireInterval));
   const pistol = createArsenal(0);
   let pistolShots = 0;
-  for (let t = 0; t < 60; t++) if (updateArsenal(pistol, input({ weapon: 1, buttons: BUTTON.FIRE }), 0.3 + t * TICK_DT, TICK_DT)?.spread !== undefined) pistolShots++;
+  for (let t = 0; t < 60; t++) if (updateArsenal(pistol, input({ weapon: WEAPONS.pistol.slot, buttons: BUTTON.FIRE }), 0.3 + t * TICK_DT, TICK_DT)?.spread !== undefined) pistolShots++;
   assert.equal(pistolShots, 1);
 });
 
@@ -137,7 +137,7 @@ test("empty magazine auto-reloads from reserve", () => {
   giveWeapon(ars, "aa12", 0);
   ars.ammo.aa12.mag = 0;
   let time = 1;
-  for (let i = 0; i < 300; i++, time += TICK_DT) updateArsenal(ars, input({ weapon: 2 }), time, TICK_DT);
+  for (let i = 0; i < 300; i++, time += TICK_DT) updateArsenal(ars, input({ weapon: WEAPONS.aa12.slot }), time, TICK_DT);
   assert.equal(ars.ammo.aa12.mag, WEAPONS.aa12.magazine);
   assert.equal(ars.ammo.aa12.reserve, 0);
 });
@@ -224,4 +224,117 @@ test("sanitizeInput clamps hostile payloads", () => {
   assert.equal(clean.buttons, 63);
   assert.equal(clean.weapon, 9);
   assert.deepEqual(sanitizeInput("nope"), { fwd: 0, side: 0, yaw: 0, pitch: 0, buttons: 0, weapon: 0 });
+});
+
+function duel(seed = 5) {
+  const game = createGame({ seed });
+  const a = addPlayer(game, { id: "a", name: "A" });
+  const b = addPlayer(game, { id: "b", name: "B" });
+  game.time = 10;
+  a.protectedUntil = b.protectedUntil = 0;
+  a.move.pos = { x: -20, y: 0.02, z: 8 };
+  b.move.pos = { x: -20, y: 0.02, z: -8 };
+  return { game, a, b };
+}
+
+function b0(game) {
+  game.players.find(p => p.id === "b").move.pos = { x: 20, y: 0.02, z: -17 };
+}
+
+function fireOnce(game, shooter, weaponId, aim) {
+  giveWeapon(shooter.arsenal, weaponId, game.time);
+  shooter.arsenal.current = weaponId;
+  shooter.arsenal.state = "ready";
+  shooter.arsenal.nextFireAt = 0;
+  shooter.arsenal.fireBufferedUntil = game.time + 1;
+  const events = [];
+  for (let i = 0; i < 3; i++) {
+    game.time += TICK_DT;
+    events.push(...(stepGame(game, new Map([[shooter.id, { fwd: 0, side: 0, yaw: 0, pitch: 0, buttons: BUTTON.FIRE, weapon: WEAPONS[weaponId].slot, ...aim }]])) || []).map(e => e));
+  }
+  return events;
+}
+
+test("every weapon has its own slot, rate and ammo identity", () => {
+  assert.equal(new Set(WEAPON_ORDER.map(id => WEAPONS[id].slot)).size, WEAPON_ORDER.length);
+  assert.equal(new Set(WEAPON_ORDER.map(id => WEAPONS[id].fireInterval)).size, WEAPON_ORDER.length);
+  assert.ok(WEAPONS.smg.fireInterval < WEAPONS.ar.fireInterval && WEAPONS.ar.fireInterval < WEAPONS.aa12.fireInterval);
+  assert.ok(WEAPONS.sniper.damage * WEAPONS.sniper.headMultiplier >= 150);
+});
+
+test("sniper is only accurate when scoped", () => {
+  const ars = createArsenal(0);
+  giveWeapon(ars, "sniper", 0);
+  ars.state = "ready";
+  const unscoped = updateArsenal(ars, input({ weapon: WEAPONS.sniper.slot, buttons: BUTTON.FIRE }), 1, TICK_DT);
+  assert.equal(unscoped.spread, WEAPONS.sniper.spread);
+  ars.nextFireAt = 0;
+  ars.wasFireHeld = false;
+  const scoped = updateArsenal(ars, input({ weapon: WEAPONS.sniper.slot, buttons: BUTTON.FIRE | BUTTON.ALT }), 3, TICK_DT);
+  assert.equal(scoped.spread, WEAPONS.sniper.scopeSpread);
+  assert.ok(ars.isScoped);
+});
+
+test("a rocket flies, explodes on a player and deals splash damage", () => {
+  const { game, a, b } = duel();
+  const events = fireOnce(game, a, "rocket", { pitch: 0 });
+  assert.ok(events.some(e => e.type === "rocket") || game.projectiles.length === 1);
+  for (let i = 0; i < 90 && b.isAlive && b.health === 100; i++) stepGame(game);
+  assert.ok(b.health < 50 || !b.isAlive, `health ${b.health}`);
+});
+
+test("rocket splash falls off with distance and self damage is reduced", () => {
+  const { game, a, b } = duel();
+  a.move.pos = { x: -20, y: 0.02, z: 2.5 };
+  b.move.pos = { x: -18, y: 0.02, z: 0 };
+  game.projectiles = [{ id: 1, owner: "a", weapon: "rocket", pos: { x: -20, y: 0.3, z: 0 }, prev: { x: -20, y: 0.3, z: 0 }, vel: { x: 0, y: -30, z: 0 }, age: 1 }];
+  stepGame(game);
+  const cfg = WEAPONS.rocket.projectile;
+  assert.ok(b.health < 100 && b.health > 100 - cfg.splashDamage, `b ${b.health}`);
+  assert.ok(a.health < 100, `self ${a.health}`);
+  assert.ok(100 - a.health < 100 - b.health, "self damage should be smaller than damage to an enemy at similar range");
+});
+
+test("rocket jump: firing at your feet launches you upward", () => {
+  const { game, a } = duel();
+  a.move.pos = { x: -20, y: 0.02, z: 0 };
+  fireOnce(game, a, "rocket", { pitch: -1.5 });
+  for (let i = 0; i < 6; i++) stepGame(game);
+  assert.ok(a.move.vel.y > 6 || a.move.pos.y > 1, `vy ${a.move.vel.y} y ${a.move.pos.y}`);
+  assert.ok(a.health > 40, `self damage too high ${a.health}`);
+});
+
+test("walls stop rockets", () => {
+  const { game, a } = duel();
+  a.move.pos = { x: -20, y: 0.02, z: 8 };
+  b0(game);
+  fireOnce(game, a, "rocket", { yaw: Math.PI, pitch: 0 });
+  for (let i = 0; i < 60; i++) stepGame(game);
+  assert.equal(game.projectiles.length, 0);
+});
+
+test("armor and ammo pickups work and respawn", () => {
+  const game = createGame({ seed: 8 });
+  const p = addPlayer(game, { id: "p", name: "P" });
+  const armor = game.pickups.find(i => i.kind === "armor");
+  p.move.pos = { ...armor.pos, y: armor.pos.y + 0.02 };
+  stepPlayer(game, p, input());
+  assert.equal(p.armor, armor.amount);
+  assert.ok(armor.availableAt > game.time);
+  giveWeapon(p.arsenal, "ar", game.time);
+  p.arsenal.ammo.ar.reserve = 0;
+  assert.ok(giveAmmo(p.arsenal));
+  assert.ok(p.arsenal.ammo.ar.reserve > 0);
+  assert.ok(!giveAmmo(createArsenal(0)));
+});
+
+test("bots pick up and use several different weapons", () => {
+  const game = createGame({ seed: 31, fragLimit: 999, timeLimit: 999 });
+  fillWithBots(game, 8, "hard");
+  const used = new Set();
+  for (let i = 0; i < 60 * 180; i++) {
+    for (const e of stepGame(game)) if (e.type === "shot") used.add(e.weapon);
+  }
+  assert.ok(used.size >= 4, `weapons used: ${[...used].join(",")}`);
+  assert.ok(used.has("rocket") || used.has("sniper"), "bots never used a heavy weapon");
 });

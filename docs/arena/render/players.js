@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { WEAPON_ORDER } from "../sim/weapons.js";
 
 const TEAM_COLORS = [0x3fae7a, 0xe08a3a];
 const FFA_HUES = [0.42, 0.08, 0.58, 0.95, 0.15, 0.72, 0.5, 0.0, 0.33, 0.85, 0.25, 0.65];
@@ -138,7 +139,7 @@ function buildRig(color, weaponFactory) {
   armR.wrist.add(gunMount);
   const weapons = {};
   if (weaponFactory) {
-    for (const id of ["pistol", "aa12"]) {
+    for (const id of WEAPON_ORDER) {
       const model = weaponFactory(id);
       if (!model) continue;
       model.rotation.x = -Math.PI / 2;

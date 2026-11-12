@@ -6,7 +6,7 @@ const PITCH_LIMIT = 1.54;
 export function createInput(canvas, getSettings) {
   const down = new Set();
   let yaw = 0, pitch = 0, lookDX = 0, lookDY = 0, wheel = 0, isLocked = false;
-  let pendingSlot = 0, lastSlot = 1, currentSlot = 1;
+  let pendingSlot = 0, lastSlot = 1, currentSlot = 1, sensitivityScale = 1;
   const listeners = new Set();
 
   const actionDown = action => down.has(getSettings().binds[action]);
@@ -18,9 +18,8 @@ export function createInput(canvas, getSettings) {
     if (e.repeat) return;
     down.add(e.code);
     const binds = getSettings().binds;
-    if (e.code === binds.slot1) pendingSlot = 1;
-    else if (e.code === binds.slot2) pendingSlot = 2;
-    else if (e.code === binds.lastWeapon) pendingSlot = lastSlot;
+    for (let slot = 1; slot <= 6; slot++) if (e.code === binds[`slot${slot}`]) pendingSlot = slot;
+    if (e.code === binds.lastWeapon) pendingSlot = lastSlot;
   };
   const onKeyUp = e => { down.delete(e.code); };
   const onMouseDown = e => {
@@ -32,7 +31,7 @@ export function createInput(canvas, getSettings) {
   const onMouseMove = e => {
     if (!isLocked) return;
     const s = getSettings();
-    const scale = s.sensitivity * MOUSE_YAW;
+    const scale = s.sensitivity * MOUSE_YAW * sensitivityScale;
     yaw -= e.movementX * scale;
     pitch -= e.movementY * scale * (s.invertY ? -1 : 1);
     pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
@@ -125,6 +124,7 @@ export function createInput(canvas, getSettings) {
   return {
     lock, sample, syncSlot, consumeLook, setView, dispose,
     isHeld: action => actionDown(action),
+    setSensitivityScale(value) { sensitivityScale = value; },
     onLockChange: fn => listeners.add(fn),
     get isLocked() { return isLocked; },
     get yaw() { return yaw; },
