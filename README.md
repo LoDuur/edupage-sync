@@ -90,6 +90,24 @@ Real-time sync runs in the `edupage-proxy` Worker: `/paint/rooms/<room>` upgrade
 
 When changing any file in `docs/paint/`, bump the `?v=` number in `index.html` and in the imports at the top of `paint.js`; GitHub Pages caches each file for 10 minutes, and without the bump a browser can mix a new page with an old script. Deploy after changing it: `cd proxy && npx wrangler deploy --config wrangler.toml` (the first deploy runs the `paint-v1` migration that creates the Durable Object class). Locally: `npx wrangler dev --config proxy/wrangler.toml --port 8790` and serve `docs/` on port 8123.
 
+## Stundu saraksts v2 (`docs/v2/`)
+
+A separate student dashboard next to the current lesson list (v1 stays the default). Switch with the console command `versions 2`; the v2 terminal (`` ` `` or ⌘K) has `versions 1` to go back. `?v=1` always opens v1. Both versions share the `prefs` object in `localStorage`: v2 only adds `prefs.version` and `prefs.v2` (class, tab, consultation day, bus stop, trip, seen changes), so themes, colours and history survive switching.
+
+Sections: timetable for any class, change log, teacher consultations, VTU Valmiera city buses and intercity journeys. No build step: plain ES modules in `docs/v2/js/`, opencode-style design in `docs/v2/app.css` (JetBrains Mono stands in for the commercial Berkeley Mono).
+
+**All classes.** Each sync run also calls `classes.publish` (`classes.py`) with the tables and substitution pages already fetched for the main class, so there are no extra EduPage requests. It writes `docs/classes/index.json` (classes, bells, published weeks, next-week status), `docs/classes/<slug>.json` (the snapshot: events and substitutions) and `docs/classes/<slug>.changes.json` (last 100 change entries: `published`, `updated` with added/changed/moved/removed lessons, `substitutions`, each with `detectedAt`). Only weeks present in the current fetch are compared; a week that is not (yet) published keeps its last known lessons. Files are written only when their content changes. A failure in this step is logged as a warning and never blocks the v1 pipeline. Tests: `python -m unittest tests/test_classes.py`.
+
+**Consultations.** `docs/data/consultations.json` is transcribed by hand from the school's PDF (a scanned image without a text layer). When the school publishes a new schedule, update the JSON (`approved`, `source`, `teachers[].days.mon…fri`) and push.
+
+**City buses.** Live from the Valmiera municipality ArcGIS services (stops, routes, directions); timetables are the official per-stop images attached there. No times are copied into this repo.
+
+**Intercity.** `transit.py` (workflow `transit.yml`, daily) builds a compact timetable and fare shards from the ATD (buses) and VIVI (trains) GTFS feeds and stores them in the `TRANSIT` KV namespace; the `edupage-proxy` Worker serves them at `/transit/*`, and `docs/v2/js/route.js` searches journeys in the browser. 1188.lv offers no API and disallows automated searches, so it is only linked.
+
+**PWA.** `docs/v2/manifest.webmanifest` + `docs/v2/sw.js`, scoped to `/v2/`. The service worker precaches the app shell, serves class and consultation data network-first with an offline fallback (the page then shows a "Bezsaistē" banner with the data's timestamp) and never caches ArcGIS. **When changing any file in `docs/v2/`, bump `VERSION` in `sw.js`**; open apps then show "Pieejama jauna versija · Atjaunot" instead of reloading on their own.
+
+**Cloudflare.** The site is served by Workers static assets (`wrangler.jsonc`, directory `docs/`). With the repo secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts + KV edit) and `CLOUDFLARE_ACCOUNT_ID`, the sync workflow runs `wrangler deploy` after every pushed sync commit and the transit workflow uploads to KV. One-time: `cd proxy && npx wrangler kv namespace create TRANSIT`, put the id in `proxy/wrangler.toml`, deploy the Worker.
+
 ## Local run
 
 ```bash

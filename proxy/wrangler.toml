@@ -13,6 +13,10 @@ database_name = "edupage-schedule"
 database_id = "6455c732-3f63-4e7d-8382-3484891d25f0"
 migrations_dir = "migrations"
 
+[[kv_namespaces]]
+binding = "TRANSIT"
+id = "REPLACE_WITH_TRANSIT_NAMESPACE_ID"
+
 [[durable_objects.bindings]]
 name = "PAINT"
 class_name = "PaintRoom"

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fdfcfc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#201d1d" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Stundu saraksts, izmaiņas, konsultācijas un autobusi Valmieras tehnikuma audzēkņiem">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Saraksts">
+<title>Stundu saraksts</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="app.css?v=1">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="brand" href="#saraksts" aria-label="Stundu saraksts">
+      <span class="brand-mark" aria-hidden="true">▚</span>
+      <span class="brand-name">stundu-saraksts</span>
+      <span class="badge">v2</span>
+    </a>
+    <nav class="nav" aria-label="Sadaļas">
+      <a href="#saraksts" data-tab="saraksts"><span class="nav-icon" aria-hidden="true">[≡]</span><span class="nav-label">Stundu saraksts</span><span class="nav-short">Saraksts</span></a>
+      <a href="#izmainas" data-tab="izmainas"><span class="nav-icon" aria-hidden="true">[±]</span><span class="nav-label">Izmaiņas</span><span class="nav-short">Izmaiņas</span><span class="nav-count" id="changes-count" hidden></span></a>
+      <a href="#konsultacijas" data-tab="konsultacijas"><span class="nav-icon" aria-hidden="true">[?]</span><span class="nav-label">Konsultācijas</span><span class="nav-short">Konsult.</span></a>
+      <a href="#autobusi" data-tab="autobusi"><span class="nav-icon" aria-hidden="true">[⊡]</span><span class="nav-label">Pilsētas autobusi</span><span class="nav-short">Autobusi</span></a>
+      <a href="#starppilsetu" data-tab="starppilsetu"><span class="nav-icon" aria-hidden="true">[→]</span><span class="nav-label">Starppilsētu</span><span class="nav-short">Ceļojums</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="button button-secondary button-block" id="install" type="button" hidden>[+] Instalēt lietotni</button>
+      <button class="button-link" id="open-terminal-side" type="button">terminālis <kbd>`</kbd></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="class-button" id="class-button" type="button" aria-haspopup="dialog">
+        <span class="eyebrow">Klase</span>
+        <span class="class-name" id="class-name">Izvēlies klasi</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+      <div class="topbar-right">
+        <span class="status" id="status" role="status" hidden></span>
+        <span class="clock" id="clock" aria-hidden="true"></span>
+        <button class="icon-button" id="open-terminal" type="button" aria-label="Atvērt termināli">&gt;_</button>
+      </div>
+    </header>
+
+    <div class="notice" id="notice" role="status" hidden></div>
+
+    <main class="content">
+      <section class="view" data-view="saraksts" aria-labelledby="h-saraksts">
+        <div class="view-head">
+          <h1 id="h-saraksts">Stundu saraksts</h1>
+          <div class="toolbar">
+            <div class="week-nav">
+              <button class="icon-button" id="week-prev" type="button" aria-label="Iepriekšējā nedēļa">‹</button>
+              <span class="week-label" id="week-label" aria-live="polite"></span>
+              <button class="icon-button" id="week-next" type="button" aria-label="Nākamā nedēļa">›</button>
+              <button class="button button-secondary button-small" id="week-today" type="button">Šodien</button>
+            </div>
+            <div class="segmented" role="radiogroup" aria-label="Skats">
+              <button type="button" role="radio" data-layout="week" aria-checked="true">Nedēļa</button>
+              <button type="button" role="radio" data-layout="day" aria-checked="false">Diena</button>
+            </div>
+          </div>
+        </div>
+        <div class="now-strip" id="now-strip" hidden></div>
+        <div id="timetable"></div>
+      </section>
+
+      <section class="view" data-view="izmainas" aria-labelledby="h-izmainas" hidden>
+        <div class="view-head"><h1 id="h-izmainas">Izmaiņas</h1><p class="lead" id="changes-lead"></p></div>
+        <div id="changes"></div>
+      </section>
+
+      <section class="view" data-view="konsultacijas" aria-labelledby="h-konsultacijas" hidden>
+        <div class="view-head"><h1 id="h-konsultacijas">Konsultācijas</h1><p class="lead" id="consult-lead"></p></div>
+        <div id="consult"></div>
+      </section>
+
+      <section class="view" data-view="autobusi" aria-labelledby="h-autobusi" hidden>
+        <div class="view-head"><h1 id="h-autobusi">Pilsētas autobusi</h1><p class="lead">VTU Valmiera pieturas, maršruti un oficiālie kustības saraksti</p></div>
+        <div id="bus"></div>
+      </section>
+
+      <section class="view" data-view="starppilsetu" aria-labelledby="h-starppilsetu" hidden>
+        <div class="view-head"><h1 id="h-starppilsetu">Starppilsētu maršruti</h1><p class="lead">Autobusi un vilcieni pa visu Latviju, ar laikiem, pārsēšanos un cenām</p></div>
+        <div id="intercity"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog class="sheet" id="class-sheet" aria-labelledby="class-sheet-title">
+  <form method="dialog" class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="class-sheet-title">Izvēlies klasi</h2>
+      <button class="icon-button" value="close" aria-label="Aizvērt">×</button>
+    </div>
+    <input class="input" id="class-search" type="search" placeholder="Meklēt klasi vai grupu…" autocomplete="off" spellcheck="false">
+    <div class="class-list" id="class-list"></div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="ios-sheet" aria-labelledby="ios-sheet-title">
+  <form method="dialog" class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="ios-sheet-title">Pievieno sākuma ekrānam</h2>
+      <button class="icon-button" value="close" aria-label="Aizvērt">×</button>
+    </div>
+    <ol class="steps">
+      <li>Atver šo lapu <b>Safari</b>.</li>
+      <li>Spied <b>Kopīgot</b> <span aria-hidden="true">[↑]</span> rīkjoslā.</li>
+      <li>Izvēlies <b>Pievienot sākuma ekrānam</b>.</li>
+      <li>Spied <b>Pievienot</b>. Lietotne atvērsies savā logā.</li>
+    </ol>
+  </form>
+</dialog>
+
+<div class="terminal" id="terminal" hidden>
+  <div class="terminal-out" id="terminal-out" aria-live="polite"></div>
+  <form class="terminal-row" id="terminal-form">
+    <span class="terminal-prompt" aria-hidden="true">❯</span>
+    <input class="terminal-input" id="terminal-input" autocomplete="off" spellcheck="false" autocapitalize="off" aria-label="Komanda" placeholder="help">
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="update-bar" id="update-bar" hidden>
+  <span>Pieejama jauna versija</span>
+  <button class="button button-primary button-small" id="update-apply" type="button">Atjaunot</button>
+</div>
+
+<script type="module" src="js/app.js?v=1"></script>
+</body>
+</html>

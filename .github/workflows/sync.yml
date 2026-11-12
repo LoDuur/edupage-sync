@@ -18,6 +18,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,6 +42,7 @@ jobs:
           GREEN_API_TOKEN: ${{ secrets.GREEN_API_TOKEN }}
           WHATSAPP_CHAT_ID: ${{ secrets.WHATSAPP_CHAT_ID }}
       - name: Commit state
+        id: commit
         run: |
           git config user.name "edupage-sync bot"
           git config user.email "actions@users.noreply.github.com"
@@ -51,6 +54,7 @@ jobs:
           git commit -m "sync $(date -u +'%Y-%m-%d %H:%M UTC')"
           for attempt in 1 2 3; do
             if git push; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "push failed (attempt $attempt), rebasing on origin/${GITHUB_REF_NAME}"
@@ -59,6 +63,12 @@ jobs:
           done
           echo "::error::could not push sync commit after 3 attempts; state.json may be re-sent next run"
           exit 1
+      - name: Deploy site to Cloudflare
+        if: steps.commit.outputs.pushed == 'true' && env.HAS_CLOUDFLARE == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
       - name: Report failure
         if: failure()
         env:

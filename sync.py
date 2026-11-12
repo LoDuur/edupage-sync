@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 import bells
+import classes
 import messages
 import render
 import substitutions
@@ -124,13 +125,15 @@ def fix_name(name):
     return " ".join(out)
 
 
-def build_events(tables, week_start, tt_num, overrides):
-    classes = [c for c in tables["classes"].values() if c["name"].strip() == CLASS_NAME.strip()]
-    if not classes:
-        raise SystemExit(f"Class '{CLASS_NAME}' not found. Available: {[c['name'] for c in tables['classes'].values()]}")
-    class_id = classes[0]["id"]
-    global CLASS_SHORT
-    CLASS_SHORT = classes[0]["short"].strip()
+def build_events(tables, week_start, tt_num, overrides, class_name=CLASS_NAME):
+    is_main_class = class_name.strip() == CLASS_NAME.strip()
+    matches = [c for c in tables["classes"].values() if c["name"].strip() == class_name.strip()]
+    if not matches:
+        raise SystemExit(f"Class '{class_name}' not found. Available: {[c['name'] for c in tables['classes'].values()]}")
+    class_id = matches[0]["id"]
+    if is_main_class:
+        global CLASS_SHORT
+        CLASS_SHORT = matches[0]["short"].strip()
     periods = tables["periods"]
     events = {}
     for card in tables["cards"].values():
@@ -155,7 +158,7 @@ def build_events(tables, week_start, tt_num, overrides):
             if win:
                 start_min, end_min = win
                 edupage_start, _ = period_window(periods, str(first), day_idx)
-                if not bells.subject_slots(subject) and bells.day_type(day, overrides) == WEEKDAY_TYPE_CHECK.get(day.weekday()) and edupage_start != start_min:
+                if is_main_class and not bells.subject_slots(subject) and bells.day_type(day, overrides) == WEEKDAY_TYPE_CHECK.get(day.weekday()) and edupage_start != start_min:
                     print(f"WARNING: EduPage start for {day} period {first} is {edupage_start // 60:02d}:{edupage_start % 60:02d}, bells table says {start_min // 60:02d}:{start_min % 60:02d}")
             else:
                 start_min, _ = period_window(periods, str(first), day_idx)
@@ -332,15 +335,27 @@ def write_site_data(events, versions, added, changed, removed, subs=None):
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False) + "\n")
 
 
-def fetch_substitutions(today, overrides):
-    rows = []
+def fetch_substitution_pages(today):
+    pages = {}
     for i in range(0, 8):
         d = today + timedelta(days=i)
         if d.weekday() >= 5 or bells.is_holiday(d):
             continue
-        page = api("substitution/server/viewer.js?__func=getSubstViewerDayDataHtml", [None, {"date": d.isoformat(), "mode": "classes"}])
-        rows += substitutions.parse(page, [CLASS_SHORT, CLASS_NAME], fix_name, d.isoformat())
+        pages[d.isoformat()] = api("substitution/server/viewer.js?__func=getSubstViewerDayDataHtml", [None, {"date": d.isoformat(), "mode": "classes"}])
+    return pages
+
+
+def fetch_substitutions(pages):
+    rows = [r for iso, page in pages.items() for r in substitutions.parse(page, [CLASS_SHORT, CLASS_NAME], fix_name, iso)]
     return {substitutions.key(r): r for r in rows}
+
+
+def publish_classes(versions, tables_by_version, subst_pages, overrides, today, dry_run):
+    try:
+        classes.publish(lambda tables, ws, tt, name: build_events(tables, ws, tt, overrides, name), versions, tables_by_version,
+                        subst_pages, fix_name, today, datetime.now(TZ).isoformat(timespec="seconds"), dry_run)
+    except Exception as e:
+        print(f"::warning::per-class data not updated: {e!r}")
 
 
 def discord_text(title, lines, color):
@@ -404,9 +419,10 @@ def main():
         print("No visible timetable versions in range; nothing to do.")
         return
     overrides = bells.load_overrides()
+    tables_by_version = {tt_num: fetch_tables(tt_num) for _, tt_num in versions}
     new_events = {}
     for week_start, tt_num in versions:
-        new_events.update(build_events(fetch_tables(tt_num), week_start, tt_num, overrides))
+        new_events.update(build_events(tables_by_version[tt_num], week_start, tt_num, overrides))
     print(f"Versions: {versions}; events: {len(new_events)}")
 
     state = load_state()
@@ -417,7 +433,8 @@ def main():
         for key in sorted(group, key=lambda k: group[k]["start"]):
             print(mark, event_line(group[key]))
 
-    subs_new = fetch_substitutions(today, overrides)
+    subst_pages = fetch_substitution_pages(today)
+    subs_new = fetch_substitutions(subst_pages)
     subs_old = state.get("substitutions", {})
     subs_added = [r for k, r in subs_new.items() if k not in subs_old]
     subs_removed = [r for k, r in subs_old.items() if k not in subs_new and r["date"] >= today.isoformat()]
@@ -436,6 +453,7 @@ def main():
         print("--- vakara ziņas priekšskatījums (rīt) ---")
         print(messages.daily(CLASS_NAME, tomorrow.isoformat(), [e for e in new_events.values() if e["date"] == tomorrow.isoformat()],
                              [r for r in subs_new.values() if r["date"] == tomorrow.isoformat()], []))
+        publish_classes(versions, tables_by_version, subst_pages, overrides, today, dry_run=True)
         return
 
     if added or changed or removed:
@@ -513,6 +531,7 @@ def main():
     write_ics(state["events"])
     write_site_data({**state["events"], **new_events}, versions, added, changed, removed, subs_new)
     save_state(state)
+    publish_classes(versions, tables_by_version, subst_pages, overrides, today, dry_run=False)
 
 
 if __name__ == "__main__":

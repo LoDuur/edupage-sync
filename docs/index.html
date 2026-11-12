@@ -485,6 +485,7 @@ let data,weekStart,rangeStart=8*60,rangeEnd=17*60,bells={},hueMap={},changesData
 let prefs={colors:{},theme:"auto",design:"remastered"};
 try{prefs={...prefs,...JSON.parse(localStorage.getItem("prefs")||"{}")}}catch(e){}
 function savePrefs(){try{localStorage.setItem("prefs",JSON.stringify(prefs))}catch(e){}}
+if(prefs.version===2&&!/[?&]v=1\b/.test(location.search))location.replace("v2/"+location.hash);
 const juarch=()=>!!(prefs.juarch&&prefs.juarch.installed);
 const THEMES={auto:"seko sistēmai",light:"gaišā",dark:"tumšā",nord:"Nord – arktiski zils",dracula:"Dracula – violets",forest:"Forest – gaišs, zaļš",sunset:"Sunset – gaišs, silts",rose:"Rosé Pine – tumšs, maigs"};
 const themeList=()=>Object.keys(THEMES).concat(juarch()?["juarch"]:[]);
@@ -1200,6 +1201,7 @@ const CMDS={
   }},
   reset:{g:"Saraksts",u:"[priekšmets]",d:"atiestata krāsas",f(a){if(!a.length){prefs.colors={}}else{const name=pickSubject(a.join(" "));if(!name)return;delete prefs.colors[name]}savePrefs();render();print("ok","ok")}},
   theme:{g:"Saraksts",u:"[nosaukums]",d:"tēma; bez argumenta parāda sarakstu",m:"Tēmas: "+Object.keys(THEMES).join(", ")+" (+ juarch pēc instalēšanas).",f(a){if(!a.length)return FILES.themes().forEach(l=>print(l));if(!themeList().includes(a[0]))return print(`nezināma tēma · ${themeList().join(" | ")}`,"err");prefs.theme=a[0];savePrefs();applyTheme();setPrompt();print("ok","ok")}},
+  versions:{g:"Saraksts",u:"[1|2]",d:"stundu saraksta versija: 1 – pašreizējā, 2 – jaunā; saglabājas",m:"1 (Legacy) – šis stundu saraksts. 2 (New) – jaunais paneļa saraksts ar klašu izvēli, izmaiņu žurnālu, konsultācijām un autobusiem. Atpakaļ uz 1 ar versions 1 jaunās versijas terminālī vai adresi ?v=1.",f(a){const cur=prefs.version===2?2:1;if(!a.length){print(`${cur===1?"<b>●</b>":" "} <b>1</b> <span class="dim">Legacy – pašreizējais saraksts</span>`);print(`${cur===2?"<b>●</b>":" "} <b>2</b> <span class="dim">New – jaunais saraksts ar papildu sadaļām</span>`);return}if(a[0]!=="1"&&a[0]!=="2")return print("lietojums: versions 1|2","err");prefs.version=Number(a[0]);savePrefs();if(prefs.version===2){print("pārslēdz uz 2. versiju…","ok");location.href="v2/"}else print("ok","ok")}},
   design:{g:"Saraksts",u:"[default|remastered|claude]",d:"dizains: klasiskais EduPage, jaunais vai claude; saglabājas",m:"default – klasiskais EduPage režģis (dienas rindās, stundas kolonnās). remastered – jaunais dizains ar laika asi, starpbrīžiem un tagadnes līniju. claude – silts, redakcionāls dizains: krēmkrāsas fons, serif virsraksti, katra diena kā kartīte ar stundu sarakstu un pašreizējās stundas progresu.",f(a){if(!a.length)return FILES.designs().forEach(l=>print(l));if(!DESIGNS[a[0]])return print("lietojums: design default|remastered|claude","err");prefs.design=a[0];savePrefs();render();print("ok","ok")}},
   compiler:{g:"Kods",u:"[python|java|c|cpp|csharp|lua|pil|js|bash|list|<id>]",d:"atver 28teh – kodu redaktoru ar termināli (Python, Java, C, C++, C#, Lua, PIL, JavaScript, Bash; vajag piekļuves kodu)",m:"compiler – atver 28teh: redaktors ar īstu termināli, saglabātiem projektiem, kopīgošanu ar saiti un AI palīgu. compiler <valoda> izveido jaunu projektu šajā valodā (piem. compiler pil, compiler java). compiler list – projektu saraksts. compiler <id> – atver kopīgotu projektu. Terminālī jebkuru failu palaiž ar vienu komandu: compiler main.py. Saīsinājumi: java, pil.",f(a){const langs=["python","java","c","cpp","csharp","lua","pil","js","bash"];const arg=(a[0]||"").toLowerCase();const lang=arg==="js"?"javascript":arg;const url=!arg?"compiler/":arg==="list"||arg==="works"?"compiler/?list":langs.includes(arg)?`compiler/?lang=${lang}`:`compiler/?p=${encodeURIComponent(a[0])}`;const w=window.open(url,"_blank");if(!w)location.href=url;print(`atver ${url}`,"ok")}},
   works:{g:"Kods",d:"saglabāto darbu arhīvs (vajag piekļuves kodu)",f(){CMDS.compiler.f(["works"])}},
@@ -1347,6 +1349,7 @@ function pools(){
   }
   else if(cmd==="theme")pool=themeList();
   else if(cmd==="design")pool=Object.keys(DESIGNS);
+  else if(cmd==="versions")pool=["1","2"];
   else if(cmd==="week")pool=["today","next","prev"];
   else if(cmd==="cat"||cmd==="rm")pool=Object.keys(FILES);
   else if(cmd==="man"||((cmd==="sudo"||cmd==="judo")&&n===1))pool=Object.keys(CMDS).filter(c=>!["sudo","judo"].includes(c)&&!(CMDS[c].hide&&CMDS[c].hide()));

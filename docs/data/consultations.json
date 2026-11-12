@@ -1,0 +1,735 @@
+{
+ "title": "Konsultāciju grafiks 2026./2027.m.g.",
+ "approved": "2026-11-02",
+ "source": "https://valmierastehnikums.lv/wp-content/uploads/2026/10/BP-50C26_vertikali.pdf",
+ "notice": "Pirms konsultācijas aicinām E-klasē sazināties ar pedagogu, norādot nepieciešamo konsultācijas mērķi.",
+ "footnotes": {
+  "*": "Ja pedagogiem nenotiek metodiskā aktivitāte"
+ },
+ "teachers": [
+  {
+   "name": "A. Andriksone",
+   "room": "307.",
+   "days": {
+    "thu": [
+     "15.50-16.30",
+     "16.40-16.57"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Āboliņa",
+   "room": "V108.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-9.01*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "D. Ārne",
+   "room": "212.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.19"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "V. Beļajeva",
+   "room": "352.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "wed": [
+     "15.50-16.10"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "R. Beriņš",
+   "room": "Metālapstrādes laboratorija",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.57*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "R. Brigmane",
+   "room": "224.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ],
+    "fri": [
+     "15.00-15.24"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Čerkovskis",
+   "room": "207.",
+   "days": {
+    "tue": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "wed": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "thu": [
+     "Dienā, kad pedagogs ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "R. Deduškevičs",
+   "room": "219.",
+   "days": {
+    "mon": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "tue": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "wed": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "thu": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "fri": [
+     "Dienā, kad pedagogs ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Drubiņa",
+   "room": "225.",
+   "days": {
+    "mon": [
+     "16.00-16.29"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Eiklone",
+   "room": "354.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.58*",
+     "16.40-17.20"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "N. Intenbergs",
+   "room": "219.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.20"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "J. Ivanovs",
+   "room": "119.",
+   "days": {
+    "tue": [
+     "8.10-8.47*"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "G. Jaunzems",
+   "room": "222.",
+   "days": {
+    "wed": [
+     "15.50-16.19"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "E. Jākobsone",
+   "room": "353.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.36"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "G. Kaņepe",
+   "room": "Bibliotēkā",
+   "days": {
+    "mon": [
+     "16.00-16.27"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "O. Kholod",
+   "room": "409.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-9.00*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.40"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "M. Kitners",
+   "room": "107.",
+   "days": {
+    "wed": [
+     "15.50-16.34"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "I. Kobiaka",
+   "room": "104.",
+   "days": {
+    "tue": [
+     "8.10-9.00*"
+    ],
+    "thu": [
+     "15.50-16.39"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "R. Kobiaks",
+   "room": "222.",
+   "days": {
+    "fri": [
+     "Dienā, kad pedagogs ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Kokars",
+   "room": "208.",
+   "days": {
+    "tue": [
+     "8.10-8.56*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "M. Konopacka",
+   "room": "105.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.24"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "S. Krastiņa",
+   "room": "213.",
+   "days": {
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.30",
+     "16.40-17.01"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Krieviņa",
+   "room": "306.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-9.00*"
+    ],
+    "wed": [
+     "15.50-16.36"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "I. Lancmane",
+   "room": "245.",
+   "days": {
+    "tue": [
+     "16.40-17.20"
+    ],
+    "thu": [
+     "15.50-16.40"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "L. Māziņa",
+   "room": "303.",
+   "days": {
+    "tue": [
+     "8.10-8.59*"
+    ],
+    "thu": [
+     "15.50-16.30",
+     "16.40-17.20"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "L. Miķīte",
+   "room": "410.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.44*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "E. Millere",
+   "room": "356.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "16.40-17.20"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ],
+    "fri": [
+     "15.00-15.44"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "T. Misiņa",
+   "room": "223.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.50*",
+     "16.40-17.16"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "E. Nelke",
+   "room": "118.",
+   "days": {
+    "mon": [
+     "16.00-16.40",
+     "16.50-17.00"
+    ],
+    "tue": [
+     "8.10-9.00*"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Paldiņš",
+   "room": "222.",
+   "days": {
+    "thu": [
+     "15.50-16.30",
+     "16.40-17.00"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "S. Pazāne",
+   "room": "107.",
+   "days": {
+    "mon": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "tue": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "wed": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Pizika",
+   "room": "353.",
+   "days": {
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.27"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "I. Posse",
+   "room": "221.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.23"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "L. Riba",
+   "room": "105.",
+   "days": {
+    "tue": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "wed": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "thu": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "fri": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "S. Reinfelde",
+   "room": "245.",
+   "days": {
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "wed": [
+     "15.50-16.30",
+     "16.40-16.57"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "I. Salmane",
+   "room": "204.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "wed": [
+     "15.50-16.40"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "O. Sorochynska",
+   "room": "310.",
+   "days": {
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ],
+    "fri": [
+     "15.00-15.34"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Šamšele",
+   "room": "355.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-9.00*"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "K. Tomsons",
+   "room": "205.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.36"
+    ],
+    "thu": [
+     "15.50-16.30"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "K. Trēziņš",
+   "room": "V114.",
+   "days": {
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.26"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A. Upeniece",
+   "room": "104.",
+   "days": {
+    "tue": [
+     "8.30-9.04*"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "S. Upīte",
+   "room": "202.",
+   "days": {
+    "mon": [
+     "16.00-16.40",
+     "16.50-17.17"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "K. Uškāns",
+   "room": "V115.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "wed": [
+     "15.50-16.30"
+    ],
+    "thu": [
+     "15.50-16.20"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "I. Vilkaplatere",
+   "room": "409./410.",
+   "days": {
+    "thu": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ],
+    "fri": [
+     "Dienā, kad pedagoģe ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "A.V. Vimba",
+   "room": null,
+   "days": {
+    "mon": [
+     "Datorium platformā (Attālināti)."
+    ],
+    "tue": [
+     "Datorium platformā (Attālināti)."
+    ],
+    "wed": [
+     "Datorium platformā (Attālināti)."
+    ],
+    "thu": [
+     "Datorium platformā (Attālināti)."
+    ],
+    "fri": [
+     "Datorium platformā (Attālināti)."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "V. Vintere",
+   "room": "307.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "16.40-17.07"
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "K. Ziediņš",
+   "room": "222.",
+   "days": {
+    "mon": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "tue": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "wed": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "thu": [
+     "Dienā, kad pedagogs ir klātienē."
+    ],
+    "fri": [
+     "Dienā, kad pedagogs ir klātienē."
+    ]
+   },
+   "note": null
+  },
+  {
+   "name": "M. Žagariņa",
+   "room": "203.",
+   "days": {
+    "mon": [
+     "16.00-16.40"
+    ],
+    "tue": [
+     "8.10-8.50*"
+    ],
+    "thu": [
+     "15.50-16.30",
+     "16.40-17.00"
+    ]
+   },
+   "note": null
+  }
+ ]
+}

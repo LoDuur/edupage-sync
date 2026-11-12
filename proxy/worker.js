@@ -2,12 +2,13 @@ import { handleSchedule } from "./schedule.js";
 import { handlePaint } from "./paint.js";
 import { handleIde } from "./ide.js";
 import { handlePingPong } from "./pingpong.js";
+import { handleTransit } from "./transit.js";
 
 export { PaintRoom } from "./paint.js";
 export { PingPongLobby } from "./pingpong.js";
 
 const ALLOWED = /^\/(timetable\/server\/(ttviewer|regulartt)|substitution\/server\/viewer)\.js$/;
-const ORIGINS = ["https://loduur.github.io", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
+const ORIGINS = ["https://loduur.github.io", "https://edupage-sync.loduur.workers.dev", "http://localhost:8123", "http://127.0.0.1:8123", "http://localhost:5173", "http://127.0.0.1:5173"];
 const OPENROUTER = "https://openrouter.ai/api/v1";
 // The five assistant models. Mirrored in ide/src/lib/models.js – keep both lists identical.
 const MODELS = [
@@ -97,6 +98,7 @@ export default {
     if (url.pathname.startsWith("/schedule/")) return handleSchedule(request, env, url, cors);
     if (url.pathname.startsWith("/paint/")) return handlePaint(request, env, url, ORIGINS);
     if (url.pathname.startsWith("/pingpong/")) return handlePingPong(request, env, url, ORIGINS);
+    if (url.pathname.startsWith("/transit/")) return handleTransit(request, env, url, cors);
 
     if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
     if (request.headers.get("X-Proxy-Key") !== env.PROXY_KEY) return new Response("forbidden", { status: 403 });
