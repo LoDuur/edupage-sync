@@ -15,7 +15,7 @@ migrations_dir = "migrations"
 
 [[kv_namespaces]]
 binding = "TRANSIT"
-id = "REPLACE_WITH_TRANSIT_NAMESPACE_ID"
+id = "91a94796b3bb409e87fe8ee3237031b8"
 
 [[durable_objects.bindings]]
 name = "PAINT"
