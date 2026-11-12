@@ -1,5 +1,42 @@
 [
  {
+  "time": "2026-11-12T20:37:45+02:00",
+  "versions": [
+   "521",
+   "522",
+   "523"
+  ],
+  "added": [
+   "Pr 16.11 1.–2. Dabaszinības (212.)",
+   "Pr 16.11 3.–4. Literatūra I (354.)",
+   "Pr 16.11 5. Valoda, kult.izpratne un izpausmes (1.l.) (353.)",
+   "Pr 16.11 6. Pusdienas",
+   "Pr 16.11 7. Latviešu val. I (354.)",
+   "Pr 16.11 8.–9. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 16.11 10. Grupas stunda (104.)",
+   "Ot 17.11 2.–3. Matemātikas speciālās nodaļas (223.)",
+   "Ot 17.11 4.–5. Svešval. I (B2) - angļu val. (213.)",
+   "Ot 17.11 6. Pusdienas",
+   "Ot 17.11 7.–8. Svešval.(B1)- krievu val. (310.)",
+   "Ot 17.11 9.–10. Dabaszinības (221.)",
+   "Ce 19.11 2.–3. Fizika I (355.)",
+   "Ce 19.11 4. Pusdienas",
+   "Ce 19.11 5.–6. Matemātikas speciālās nodaļas (223.)",
+   "Ce 19.11 7. Dabaszinības (212.)",
+   "Ce 19.11 8.–9. Svešval.(B1)- krievu val. (310.)",
+   "Ce 19.11 10. Fizika I",
+   "Pk 20.11 2. Latviešu val. I (354.)",
+   "Pk 20.11 3.–4. Matemātikas speciālās nodaļas (223.)",
+   "Pk 20.11 5. Pusdienas",
+   "Pk 20.11 6.–7. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pk 20.11 8.–9. Dabaszinības (221.)"
+  ],
+  "changed": [
+   "Ce 05.11 10. Fizika I (Attālināti)"
+  ],
+  "removed": []
+ },
+ {
   "time": "2026-11-05T19:35:46+02:00",
   "versions": [
    "519",
