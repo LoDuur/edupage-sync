@@ -5,7 +5,7 @@ import { WEAPONS } from "../sim/weapons.js";
 import { canvasTexture } from "./textures.js";
 import { mergeObjectIntoGeometry } from "./bake.js";
 
-const MODEL_URLS = Object.fromEntries(["pistol", "smg", "ar", "aa12", "sniper", "rocket"].map(id => [id, `assets/weapons/${id}.glb?v=6`]));
+const MODEL_URLS = Object.fromEntries(["pistol", "smg", "ar", "aa12", "sniper", "rocket"].map(id => [id, `assets/weapons/${id}.glb?v=11`]));
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const tmpAnchor = V(0, 0, 0), tmpOther = V(0, 0, 0), MAG_HAND_OFFSET = V(-0.03, -0.02, 0), BOLT_HAND_OFFSET = V(-0.03, 0.02, 0);
 const CONFIG = {

@@ -1,11 +1,11 @@
-const VERSION = "v2-6";
+const VERSION = "v2-7";
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = "data-v1";
 const FONT_CACHE = "fonts-v1";
 const LIB_CACHE = "libs-v1";
 const SHELL = [
-  "./", "index.html", "app.css?v=3", "manifest.webmanifest",
-  "js/app.js?v=4", "js/store.js", "js/timetable.js", "js/changes.js", "js/consult.js", "js/bus.js", "js/intercity.js", "js/route.js", "js/terminal.js", "js/commands.js", "js/pwa.js",
+  "./", "index.html", "app.css?v=4", "manifest.webmanifest",
+  "js/app.js?v=5", "js/store.js", "js/timetable.js", "js/changes.js", "js/consult.js", "js/bus.js", "js/intercity.js", "js/route.js", "js/terminal.js", "js/commands.js", "js/pwa.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
 ];
 const TRANSIT_ORIGINS = ["https://edupage-proxy.loduur.workers.dev", "http://localhost:8790"];

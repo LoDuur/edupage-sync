@@ -10,37 +10,41 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap&subset=latin-ext">
-<link rel="stylesheet" href="arena.css?v=6">
+<link rel="stylesheet" href="arena.css?v=11">
 <script type="importmap">
 {
  "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-  "./audio/sound.js": "./audio/sound.js?v=6",
-  "./hud.js": "./hud.js?v=6",
-  "./input.js": "./input.js?v=6",
-  "./render/bake.js": "./render/bake.js?v=6",
-  "./render/fx.js": "./render/fx.js?v=6",
-  "./render/players.js": "./render/players.js?v=6",
-  "./render/textures.js": "./render/textures.js?v=6",
-  "./render/viewmodel.js": "./render/viewmodel.js?v=6",
-  "./render/world.js": "./render/world.js?v=6",
-  "./settings.js": "./settings.js?v=6",
-  "./sim/bots.js": "./sim/bots.js?v=6",
-  "./sim/collision.js": "./sim/collision.js?v=6",
-  "./sim/constants.js": "./sim/constants.js?v=6",
-  "./sim/entity.js": "./sim/entity.js?v=6",
-  "./sim/game.js": "./sim/game.js?v=6",
-  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=6",
-  "./sim/maps/index.js": "./sim/maps/index.js?v=6",
-  "./sim/movement.js": "./sim/movement.js?v=6",
-  "./sim/nav.js": "./sim/nav.js?v=6",
-  "./sim/random.js": "./sim/random.js?v=6",
-  "./sim/weapons.js": "./sim/weapons.js?v=6"
+  "./audio/sound.js": "./audio/sound.js?v=11",
+  "./hud.js": "./hud.js?v=11",
+  "./input.js": "./input.js?v=11",
+  "./net/client.js": "./net/client.js?v=11",
+  "./render/bake.js": "./render/bake.js?v=11",
+  "./render/fx.js": "./render/fx.js?v=11",
+  "./render/players.js": "./render/players.js?v=11",
+  "./render/textures.js": "./render/textures.js?v=11",
+  "./render/viewmodel.js": "./render/viewmodel.js?v=11",
+  "./render/world.js": "./render/world.js?v=11",
+  "./session-offline.js": "./session-offline.js?v=11",
+  "./settings.js": "./settings.js?v=11",
+  "./sim/bots.js": "./sim/bots.js?v=11",
+  "./sim/collision.js": "./sim/collision.js?v=11",
+  "./sim/constants.js": "./sim/constants.js?v=11",
+  "./sim/entity.js": "./sim/entity.js?v=11",
+  "./sim/game.js": "./sim/game.js?v=11",
+  "./sim/maps/aktuzale.js": "./sim/maps/aktuzale.js?v=11",
+  "./sim/maps/index.js": "./sim/maps/index.js?v=11",
+  "./sim/movement.js": "./sim/movement.js?v=11",
+  "./sim/nav.js": "./sim/nav.js?v=11",
+  "./sim/protocol.js": "./sim/protocol.js?v=11",
+  "./sim/random.js": "./sim/random.js?v=11",
+  "./sim/weapons.js": "./sim/weapons.js?v=11",
+  "./touch.js": "./touch.js?v=11"
  }
 }
 </script>
-<script type="module" src="main.js?v=6"></script>
+<script type="module" src="main.js?v=11"></script>
 </head>
 <body data-screen="loading">
 
@@ -85,13 +89,6 @@
   </div>
 </main>
 
-<main class="screen" id="screen-gate">
-  <div class="panel narrow">
-    <h1 class="logo">Starp<span>brīdis</span></h1>
-    <p>Šai spēlei vajag tastatūru un peli. Atver Stundu sarakstu datorā, lai spēlētu.</p>
-    <button class="button primary" type="button" data-action="exit">◄ Atpakaļ uz sarakstu</button>
-  </div>
-</main>
 
 <main class="screen" id="screen-menu">
   <div class="panel">
@@ -99,7 +96,7 @@
     <p class="tagline">Arēnas šāvējs pēc pēdējās stundas. Bhop, slīde, sienu lēcieni.</p>
     <nav class="menu-list">
       <button class="button primary" type="button" data-screen-target="setup">Spēlēt pret botiem</button>
-      <button class="button" type="button" disabled title="Tiešsaistes spēle tiek būvēta">Tiešsaistē <small>drīzumā</small></button>
+      <button class="button" type="button" data-screen-target="online">Spēlēt tiešsaistē <small>ar draugiem</small></button>
       <button class="button" type="button" data-screen-target="settings">Iestatījumi</button>
       <button class="button" type="button" data-screen-target="controls">Vadība</button>
       <button class="button" type="button" data-action="fullscreen" data-fullscreen-label>Pilnekrāns</button>
@@ -120,9 +117,31 @@
       <label>Fragu limits <output id="setup-frags-out">20</output><input type="range" id="setup-frags" min="5" max="50" step="5"></label>
       <label>Laika limits<select id="setup-time"><option value="300">5 min</option><option value="600">10 min</option><option value="900">15 min</option></select></label>
     </div>
+    <h3>Ekipējums</h3>
+    <div class="loadout" data-loadout-picker></div>
     <div class="row">
       <button class="button ghost" type="button" data-screen-target="menu">◄ Atpakaļ</button>
       <button class="button primary" type="button" id="start-match">Sākt</button>
+    </div>
+  </div>
+</main>
+
+<main class="screen" id="screen-online">
+  <div class="panel">
+    <h2>Spēlēt tiešsaistē</h2>
+    <div class="form-grid">
+      <label>Tavs vārds<input type="text" id="online-name" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="Piemēram, Anna"></label>
+      <label>Istabas kods<input type="text" id="online-code" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC23"></label>
+    </div>
+    <h3>Ekipējums</h3>
+    <div class="loadout" data-loadout-picker></div>
+    <p class="hint">Jaunā istabā botu skaits, grūtība un limiti ņemti no "Mačs pret botiem". Istabā līdz 6 cilvēkiem, brīvās vietas aizpilda boti.</p>
+    <p class="error" id="online-error" hidden></p>
+    <div class="row">
+      <button class="button ghost" type="button" data-screen-target="menu">◄ Atpakaļ</button>
+      <span class="spacer"></span>
+      <button class="button" type="button" id="online-join">Pievienoties ar kodu</button>
+      <button class="button primary" type="button" id="online-create">Izveidot istabu</button>
     </div>
   </div>
 </main>
@@ -135,6 +154,7 @@
       <label>Redzes lauks (FOV) <output id="set-fov-out"></output><input type="range" id="set-fov" min="80" max="130" step="1"></label>
       <label>Kvalitāte<select id="set-quality"><option value="low">Zema (vājiem datoriem)</option><option value="medium">Vidēja</option><option value="high">Augsta</option></select></label>
       <label>Skaļums <output id="set-volume-out"></output><input type="range" id="set-volume" min="0" max="1" step="0.05"></label>
+      <label>Skārienekrāna jutība <output id="set-touch-out"></output><input type="range" id="set-touch" min="0.2" max="4" step="0.1"></label>
       <label class="check"><input type="checkbox" id="set-invert"> Apgriezt Y asi</label>
       <label class="check"><input type="checkbox" id="set-speed"> Rādīt ātrumu</label>
       <label class="check"><input type="checkbox" id="set-fps"> Rādīt FPS un kadru laiku</label>
@@ -160,6 +180,7 @@
       <dt>Sienu lēciens</dt><dd>Gaisā pie sienas nospied lēcienu – līdz 2 reizēm pirms piezemēšanās.</dd>
       <dt>Rāviens</dt><dd>Shift – straujš grūdiens kustības virzienā, saglabā ātrumu. Atjaunojas uz zemes.</dd>
       <dt>Rampas lēciens</dt><dd>Lec, skrienot augšup pa rampu – iegūsi papildu augstumu.</dd>
+      <dt>Skārienekrāns</dt><dd>Kreisā puse – kustība (velc pirkstu). Labā puse – skatīšanās. Pogas: ● šaut (vari arī vilkt, lai tēmētu), ⤒ lēkt (turi bhop), ⤓ slīde, » rāviens, R pārlādēt, ⇄ ierocis, ◎ tēmēklis.</dd>
       <dt>Pilnekrāns</dt><dd>F spēles laikā vai poga izvēlnē. Esc iziet no pilnekrāna un liek spēli uz pauzi.</dd>
       <dt>Ieroči</dt><dd>1–6, Q vai ritenītis – maiņa. R – pārlādēt. Tab – rezultāti. Esc – pauze.</dd>
       <dt>Tēmēklis</dt><dd>Snaiperšautenei turi labo peli – tuvinājums ×4 un precīzs šāviens. Bez tēmēkļa šāviens neprecīzs.</dd>
@@ -172,6 +193,12 @@
 <main class="screen" id="screen-pause">
   <div class="panel narrow">
     <h2>Pauze</h2>
+    <div class="room-info" id="room-info" hidden>
+      <p>Istaba <b id="room-code"></b> · <span id="room-ping"></span></p>
+      <button class="button" type="button" data-action="copy-invite" id="copy-invite">Kopēt uzaicinājuma saiti</button>
+    </div>
+    <h3>Ekipējums</h3>
+    <div class="loadout compact" data-loadout-picker></div>
     <nav class="menu-list">
       <button class="button primary" type="button" data-action="resume">Turpināt</button>
       <button class="button" type="button" data-action="fullscreen" data-fullscreen-label>Pilnekrāns</button>
@@ -185,6 +212,7 @@
   <div class="panel">
     <h2 id="results-title">Mačs beidzies</h2>
     <table class="results"><thead><tr><th>#</th><th>Spēlētājs</th><th>Fragi</th><th>Nāves</th></tr></thead><tbody id="results-rows"></tbody></table>
+    <p class="hint" id="results-note"></p>
     <div class="row">
       <button class="button ghost" type="button" data-action="quit-match">Uz izvēlni</button>
       <button class="button primary" type="button" data-action="rematch">Vēlreiz</button>
@@ -193,5 +221,6 @@
 </main>
 
 <div class="click-to-play" id="click-to-play" hidden>Noklikšķini, lai spēlētu</div>
+<div class="rotate-hint" id="rotate-hint">Pagriez ierīci horizontāli ⟳</div>
 </body>
 </html>

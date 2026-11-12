@@ -7,6 +7,7 @@ export function createInput(canvas, getSettings) {
   const down = new Set();
   let yaw = 0, pitch = 0, lookDX = 0, lookDY = 0, wheel = 0, isLocked = false;
   let pendingSlot = 0, lastSlot = 1, currentSlot = 1, sensitivityScale = 1;
+  let touchFwd = 0, touchSide = 0, touchButtons = 0, cycleRequests = 0;
   const listeners = new Set();
   let fullscreenHandler = null;
 
@@ -71,15 +72,19 @@ export function createInput(canvas, getSettings) {
   }
 
   function sample(ownedSlots) {
-    const fwd = (actionDown("forward") ? 1 : 0) - (actionDown("back") ? 1 : 0);
-    const side = (actionDown("right") ? 1 : 0) - (actionDown("left") ? 1 : 0);
-    let buttons = 0;
+    const fwd = Math.max(-1, Math.min(1, (actionDown("forward") ? 1 : 0) - (actionDown("back") ? 1 : 0) + touchFwd));
+    const side = Math.max(-1, Math.min(1, (actionDown("right") ? 1 : 0) - (actionDown("left") ? 1 : 0) + touchSide));
+    let buttons = touchButtons;
     if (actionDown("jump")) buttons |= BUTTON.JUMP;
     if (actionDown("crouch")) buttons |= BUTTON.CROUCH;
     if (actionDown("dash")) buttons |= BUTTON.DASH;
     if (actionDown("reload")) buttons |= BUTTON.RELOAD;
     if (down.has("Mouse0")) buttons |= BUTTON.FIRE;
     if (down.has("Mouse2")) buttons |= BUTTON.ALT;
+    if (cycleRequests > 0) {
+      wheel += cycleRequests;
+      cycleRequests = 0;
+    }
     if (wheel !== 0 && ownedSlots.length) {
       const index = ownedSlots.indexOf(currentSlot);
       pendingSlot = ownedSlots[(index + (wheel > 0 ? 1 : -1) + ownedSlots.length) % ownedSlots.length];
@@ -127,6 +132,10 @@ export function createInput(canvas, getSettings) {
     lock, sample, syncSlot, consumeLook, setView, dispose,
     isHeld: action => actionDown(action),
     setSensitivityScale(value) { sensitivityScale = value; },
+    get sensitivityScale() { return sensitivityScale; },
+    setTouchAxes(fwd, side) { touchFwd = fwd; touchSide = side; },
+    setTouchButtons(mask) { touchButtons = mask; },
+    cycleWeapon() { cycleRequests++; },
     setFullscreenHandler(fn) { fullscreenHandler = fn; },
     onLockChange: fn => listeners.add(fn),
     get isLocked() { return isLocked; },

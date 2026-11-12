@@ -198,7 +198,8 @@ createTerminal(
   { panel: $("terminal"), output: $("terminal-out"), form: $("terminal-form"), input: $("terminal-input"), prompt: $("terminal-prompt"), hint: $("terminal-hint"), openers: [$("open-terminal"), $("open-terminal-side")] },
   { tabs: TABS, classes: () => state.index?.classes || [], selectClass, openTab, timetable, refresh: reloadData, classData: () => state.classData, entries: () => state.entries, index: () => state.index },
 );
-$("open-arena").addEventListener("click", () => openArena(() => $("open-arena").focus()));
+$("open-arena").addEventListener("click", () => openArena(null, () => $("open-arena").focus()));
+$("open-arena-top").addEventListener("click", () => openArena(null, () => $("open-arena-top").focus()));
 setupPwa({ installButton: $("install"), iosSheet: $("ios-sheet"), updateBar: $("update-bar"), updateButton: $("update-apply") });
 
 applyTheme();

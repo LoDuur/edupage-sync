@@ -1,3 +1,5 @@
+import { LOADOUT_WEAPONS } from "./sim/weapons.js";
+
 const STORE_KEY = "arena-settings-v1";
 
 export const DEFAULT_BINDS = Object.freeze({
@@ -14,7 +16,7 @@ export const BIND_LABELS = Object.freeze({
 
 export const DEFAULT_SETTINGS = Object.freeze({
   sensitivity: 2.2, fov: 105, quality: "medium", volume: 0.8, invertY: false, showSpeed: true, showFps: false, adaptive: true, binds: DEFAULT_BINDS,
-  bots: 5, difficulty: "normal", fragLimit: 20, timeLimit: 600, map: "aktuzale",
+  bots: 5, difficulty: "normal", fragLimit: 20, timeLimit: 600, map: "aktuzale", loadout: "ar", name: "", touchSensitivity: 1,
 });
 
 const QUALITIES = ["low", "medium", "high"];
@@ -35,6 +37,9 @@ function sanitize(raw) {
   s.difficulty = ["easy", "normal", "hard", "nightmare"].includes(raw.difficulty) ? raw.difficulty : s.difficulty;
   s.fragLimit = num(raw.fragLimit, 5, 100, s.fragLimit) | 0;
   s.timeLimit = num(raw.timeLimit, 120, 1800, s.timeLimit) | 0;
+  s.loadout = raw.loadout === null || LOADOUT_WEAPONS.includes(raw.loadout) ? raw.loadout : s.loadout;
+  s.name = typeof raw.name === "string" ? raw.name.replace(/[\u0000-\u001f\u007f<>]/g, "").slice(0, 16) : "";
+  s.touchSensitivity = num(raw.touchSensitivity, 0.2, 4, s.touchSensitivity);
   if (raw.binds && typeof raw.binds === "object") {
     for (const action of Object.keys(DEFAULT_BINDS)) {
       if (typeof raw.binds[action] === "string" && raw.binds[action].length < 32) s.binds[action] = raw.binds[action];

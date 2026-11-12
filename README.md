@@ -107,7 +107,13 @@ The weapon models (`docs/arena/assets/weapons/*.glb`) are built from code. Run `
 
 Performance: bot bodies, held weapons, pickups and static decor are merged into a few meshes (`render/bake.js`), which cut draw calls per frame from about 460 to about 110 with 7 bots. Settings has "Rādīt FPS" (fps, frame time, draw calls) and automatic resolution scaling for slow GPUs. Fullscreen: the menu and pause buttons or the F key (the iframe launchers set `allowFullscreen`, and `webkit` prefixed calls cover Safari).
 
-Tests: `node --test proxy/arena.test.js`. After changing any file in `docs/arena/`, run `python3 tools/arena/stamp_version.py <n>` with a higher number. It rewrites the import map so every module and model URL carries `?v=<n>`, because GitHub Pages caches files for 10 minutes. Locally, `python3 tools/arena/devserver.py 8124 docs` serves without caching.
+Online play: "Spēlēt tiešsaistē" creates a room with a 5-letter code (or joins one; `arena <kods>` in the console, or `?join=<kods>`). `/arena/create` and `/arena/rooms/<code>` upgrade to a WebSocket handled by one `ArenaRoom` Durable Object per code (`proxy/arena.js`). The room logic itself is `proxy/arena-server.js`, a plain class tested in Node. The server runs the same sim at 60 Hz and is authoritative for movement, ammo, hits, damage, pickups and score. Clients send only inputs, four ticks per message (15 messages a second, to stay inside the free Durable Object quota). The server validates, rate-limits and queues the inputs, and sends a snapshot every 4 ticks. Each client predicts its own player with the same sim, replays unacknowledged inputs on every snapshot and smooths small corrections. Other players are drawn 6 ticks in the past, interpolated between snapshots, and hitscan shots are lag-compensated by rewinding targets to the tick the shooter saw (up to 18 ticks). Rooms hold 6 humans; bots fill up to 8. Matches restart 12 s after they end, and an empty room closes after a minute. Wire format: `docs/arena/sim/protocol.js`.
+
+Loadouts: before a match and in the pause menu you pick a primary weapon (SMG, assault rifle, AA-12 or sniper rifle) that you spawn with next to the pistol. The rocket launcher stays a map pickup.
+
+Mobile: touch devices get a floating left stick, a right-side look area and buttons for fire (drag it to aim), jump, slide, dash, reload, weapon swap, scope and pause. Quality defaults to low on touch devices, and a hint asks for landscape. In the v2 Lesson List the game opens from the ⌖ button in the top bar on phones.
+
+Tests: `node --test proxy/arena.test.js proxy/arena-server.test.js`. After changing any file in `docs/arena/`, run `python3 tools/arena/stamp_version.py <n>` with a higher number. It rewrites the import map so every module and model URL carries `?v=<n>`, because GitHub Pages caches files for 10 minutes. Locally, `python3 tools/arena/devserver.py 8124 docs` serves without caching.
 
 ## Collaborative drawing
 

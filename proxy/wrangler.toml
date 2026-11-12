@@ -32,3 +32,11 @@ class_name = "PingPongLobby"
 [[migrations]]
 tag = "pingpong-v1"
 new_sqlite_classes = ["PingPongLobby"]
+
+[[durable_objects.bindings]]
+name = "ARENA"
+class_name = "ArenaRoom"
+
+[[migrations]]
+tag = "arena-v1"
+new_sqlite_classes = ["ArenaRoom"]

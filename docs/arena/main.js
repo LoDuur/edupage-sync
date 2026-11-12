@@ -5,11 +5,15 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { TICK_DT } from "./sim/constants.js";
-import { addPlayer, createGame, fillWithBots, loadMap, stepGame } from "./sim/game.js";
+import { addPlayer, createGame, fillWithBots, loadMap } from "./sim/game.js";
+import { createOfflineSession } from "./session-offline.js";
+import { createOnlineSession } from "./net/client.js";
 import { eyeHeight } from "./sim/movement.js";
-import { WEAPONS, WEAPON_ORDER } from "./sim/weapons.js";
+import { LOADOUT_WEAPONS, WEAPONS, WEAPON_ORDER } from "./sim/weapons.js";
+import { CODE_PATTERN, cleanName } from "./sim/protocol.js";
 import { BIND_LABELS, DEFAULT_SETTINGS, DEFAULT_BINDS, keyLabel, loadSettings, saveSettings } from "./settings.js";
 import { createInput } from "./input.js";
+import { createTouchControls } from "./touch.js";
 import { createHud } from "./hud.js";
 import { createAudio } from "./audio/sound.js";
 import { buildWorld } from "./render/world.js";
@@ -18,7 +22,6 @@ import { createEffects, createPickupVisuals } from "./render/fx.js";
 import { createViewmodel } from "./render/viewmodel.js";
 
 const LOCAL_ID = "local";
-const MAX_STEPS_PER_FRAME = 6;
 const STEP_DISTANCE = 2.3;
 const PIXEL_RATIO = { low: 0.75, medium: 1.25, high: 2 };
 const TRACERS_PER_SHOT = { aa12: 3, pistol: 1, smg: 1, ar: 1, sniper: 1, rocket: 0 };
@@ -65,8 +68,19 @@ function exitToLessonList() {
   else location.href = "../v2/";
 }
 
-function isTouchOnly() {
-  return !matchMedia("(any-pointer: fine)").matches && (navigator.maxTouchPoints > 0 || "ontouchstart" in window);
+const isTouch = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && !matchMedia("(any-pointer: fine)").matches);
+
+function hasSavedSettings() {
+  try {
+    return localStorage.getItem("arena-settings-v1") !== null;
+  } catch {
+    return false;
+  }
+}
+
+if (isTouch) {
+  body.classList.add("touch");
+  if (!hasSavedSettings()) settings.quality = "low";
 }
 
 const canvas = $("view");
@@ -124,13 +138,20 @@ function disposeScene(scene) {
   });
 }
 
-function startMatch() {
+function createLocalGame() {
+  const game = createGame({ mapId: settings.map, mode: "ffa", seed: (Math.random() * 1e9) | 0, fragLimit: settings.fragLimit, timeLimit: settings.timeLimit });
+  const local = addPlayer(game, { id: LOCAL_ID, name: "Tu", loadout: settings.loadout });
+  fillWithBots(game, settings.bots, settings.difficulty);
+  return createOfflineSession(game, local);
+}
+
+function startMatch(makeSession = createLocalGame) {
   const quality = settings.quality;
   $("loading-text").textContent = "Būvē arēnu…";
   showScreen("loading");
   requestAnimationFrame(() => setTimeout(() => {
     try {
-      buildMatch(quality);
+      buildMatch(quality, makeSession());
     } catch (error) {
       console.error(error);
       $("asset-error").hidden = false;
@@ -143,12 +164,10 @@ function startMatch() {
   }, 30));
 }
 
-function buildMatch(quality) {
-  endMatch();
-  const { brushes } = loadMap(settings.map);
-  const game = createGame({ mapId: settings.map, mode: "ffa", seed: (Math.random() * 1e9) | 0, fragLimit: settings.fragLimit, timeLimit: settings.timeLimit });
-  const local = addPlayer(game, { id: LOCAL_ID, name: "Tu" });
-  fillWithBots(game, settings.bots, settings.difficulty);
+function buildMatch(quality, session) {
+  endMatch(session);
+  const { game, local } = session;
+  const { brushes } = loadMap(game.map.id);
   const scene = new THREE.Scene();
   scene.environment = environment;
   renderer.shadowMap.enabled = quality !== "low";
@@ -166,19 +185,22 @@ function buildMatch(quality) {
     composer.addPass(new OutputPass());
   }
   match = {
-    game, local, scene, world, fx, pickups, players, composer, quality,
-    accumulator: 0, prevPositions: new Map(), stepDistances: new Map(), isPaused: false, shadowTick: 0, ownedSlots: [], inputs: new Map([[LOCAL_ID, null]]),
+    session, game, local, localId: session.localId, scene, world, fx, pickups, players, composer, quality,
+    stepDistances: new Map(), isPaused: false, shadowTick: 0, ownedSlots: [],
     view: { landKick: 0, landVel: 0, eyeOffset: 0, roll: 0, trauma: 0, fovKick: 0, punch: 0, punchVel: 0 },
   };
   input.setView(local.move.yaw, 0);
-  input.syncSlot(1);
+  input.syncSlot(WEAPONS[local.arsenal.current].slot);
   hud.reset();
   resize();
-  hud.message(`Mačs sākas!<small>${game.fragLimit} fragi · ${Math.round(game.timeLimit / 60)} min · ${settings.bots} boti</small>`, 3, performance.now());
+  const roomLine = session.isOnline ? `Istaba ${session.code} · ${game.players.length} spēlētāji` : `${settings.bots} boti`;
+  hud.message(`Mačs sākas!<small>${game.fragLimit} fragi · ${Math.round(game.timeLimit / 60)} min · ${roomLine}</small>`, 3, performance.now());
+  renderRoomInfo();
 }
 
-function endMatch() {
+function endMatch(keepSession = null) {
   if (!match) return;
+  if (match.session !== keepSession) match.session.dispose();
   audio.setSliding(false);
   disposeScene(match.scene);
   match.composer?.dispose();
@@ -187,17 +209,30 @@ function endMatch() {
 
 function requestLock() {
   audio.ensure();
+  if (isTouch) {
+    if (!match) return;
+    match.isPaused = false;
+    touch?.reset();
+    if (body.dataset.screen !== "game") showScreen("game");
+    return;
+  }
   input.lock().then(ok => { $("click-to-play").hidden = ok; });
+}
+
+function pauseMatch() {
+  if (!match || match.game.isOver) return;
+  match.isPaused = true;
+  audio.setSliding(false);
+  touch?.reset();
+  $("copy-invite").textContent = "Kopēt uzaicinājuma saiti";
+  renderRoomInfo();
+  showScreen("pause");
 }
 
 input.onLockChange(isLocked => {
   if (!match) return;
   $("click-to-play").hidden = true;
-  if (!isLocked && body.dataset.screen === "game" && !match.game.isOver) {
-    match.isPaused = true;
-    audio.setSliding(false);
-    showScreen("pause");
-  }
+  if (!isLocked && body.dataset.screen === "game" && !match.game.isOver) pauseMatch();
   if (isLocked) {
     match.isPaused = false;
     if (body.dataset.screen !== "game") showScreen("game");
@@ -205,8 +240,10 @@ input.onLockChange(isLocked => {
 });
 
 canvas.addEventListener("click", () => {
-  if (match && body.dataset.screen === "game" && !input.isLocked) requestLock();
+  if (!isTouch && match && body.dataset.screen === "game" && !input.isLocked) requestLock();
 });
+
+const touch = isTouch ? createTouchControls(input, () => settings, { onPause: pauseMatch, onFirstTouch: () => audio.ensure() }) : null;
 
 function nameOf(game, id) {
   return game.players.find(p => p.id === id)?.name ?? "?";
@@ -217,10 +254,10 @@ function playerById(game, id) {
 }
 
 function handleEvents(events) {
-  const { game, local, fx, players, view } = match;
+  const { game, local, fx, players, view, localId } = match;
   const now = performance.now();
   for (const e of events) {
-    const isLocal = e.id === LOCAL_ID;
+    const isLocal = e.id === localId;
     const actor = e.id ? playerById(game, e.id) : null;
     const pos = actor?.move.pos;
     switch (e.type) {
@@ -250,11 +287,11 @@ function handleEvents(events) {
       }
       case "damage": {
         players.hitFlash(e.victim);
-        if (e.attacker === LOCAL_ID && e.victim !== LOCAL_ID) {
+        if (e.attacker === localId && e.victim !== localId) {
           hud.hit(e.isHeadshot ? "head" : "");
           audio.play("hit", { isLocal: true, intensity: e.isHeadshot ? 2 : 1 });
         }
-        if (e.victim === LOCAL_ID) {
+        if (e.victim === localId) {
           audio.play("hurt", { isLocal: true });
           view.trauma = Math.min(1, view.trauma + Math.min(0.5, e.amount / 80));
           if (e.origin) {
@@ -265,17 +302,17 @@ function handleEvents(events) {
         break;
       }
       case "kill": {
-        hud.killfeed(game, e, LOCAL_ID);
+        hud.killfeed(game, e, localId);
         const victim = playerById(game, e.victim);
-        fx.deathBurst(e.pos, victim?.id === LOCAL_ID ? 0xe0564f : 0x7ff0ff);
-        audio.play("death", { pos: e.pos, isLocal: e.victim === LOCAL_ID });
-        if (e.killer === LOCAL_ID && e.victim !== LOCAL_ID) {
+        fx.deathBurst(e.pos, victim?.id === localId ? 0xe0564f : 0x7ff0ff);
+        audio.play("death", { pos: e.pos, isLocal: e.victim === localId });
+        if (e.killer === localId && e.victim !== localId) {
           hud.hit("kill");
           audio.play("kill", { isLocal: true });
           const streak = e.streak >= 5 ? "\nNeapturams!" : e.streak >= 3 ? `\n${e.streak} pēc kārtas` : "";
           hud.message(`${e.isHeadshot ? "◎ " : ""}Izsitu: ${nameOf(game, e.victim)}${streak}`, 1.6, now);
         }
-        if (e.victim === LOCAL_ID && e.killer && e.killer !== LOCAL_ID) hud.message(`Tevi izsita ${nameOf(game, e.killer)}`, 2.4, now);
+        if (e.victim === localId && e.killer && e.killer !== localId) hud.message(`Tevi izsita ${nameOf(game, e.killer)}`, 2.4, now);
         break;
       }
       case "jump": case "slidejump": case "walljump": case "dash": case "pad":
@@ -301,7 +338,7 @@ function handleEvents(events) {
       case "spawn":
         if (isLocal) {
           input.setView(e.yaw, 0);
-          input.syncSlot(1);
+          input.syncSlot(WEAPONS[local.arsenal.current].slot);
           audio.play("spawn", { isLocal: true });
         }
         break;
@@ -318,33 +355,39 @@ function handleEvents(events) {
 function finishMatch() {
   const { game } = match;
   const winner = game.winner?.id ? nameOf(game, game.winner.id) : null;
-  $("results-title").textContent = game.winner?.id === LOCAL_ID ? "Tu uzvarēji!" : winner ? `Uzvarēja ${winner}` : "Mačs beidzies";
-  hud.renderBoard(game, LOCAL_ID, $("results-rows"));
+  $("results-title").textContent = game.winner?.id === match.localId ? "Tu uzvarēji!" : winner ? `Uzvarēja ${winner}` : "Mačs beidzies";
+  hud.renderBoard(game, match.localId, $("results-rows"));
+  body.classList.toggle("online", match.session.isOnline);
+  $("results-note").textContent = match.session.isOnline ? "Nākamais mačs sāksies pēc dažām sekundēm" : "";
   audio.setSliding(false);
   if (document.pointerLockElement) document.exitPointerLock();
   showScreen("results");
 }
 
-function stepMatch(dt) {
-  const { game, local } = match;
-  match.accumulator = Math.min(match.accumulator + dt, TICK_DT * MAX_STEPS_PER_FRAME);
-  while (match.accumulator >= TICK_DT) {
-    match.accumulator -= TICK_DT;
-    for (const p of game.players) {
-      let prev = match.prevPositions.get(p.id);
-      if (!prev) match.prevPositions.set(p.id, prev = { x: 0, y: 0, z: 0 });
-      prev.x = p.move.pos.x; prev.y = p.move.pos.y; prev.z = p.move.pos.z;
-    }
-    const ownedSlots = match.ownedSlots;
-    ownedSlots.length = 0;
-    for (const id of WEAPON_ORDER) if (local.arsenal.owned[id]) ownedSlots.push(WEAPONS[id].slot);
-    match.inputs.set(LOCAL_ID, input.sample(ownedSlots));
-    const events = stepGame(game, match.inputs);
-    input.syncSlot(WEAPONS[local.arsenal.current].slot);
-    handleEvents(events);
-    if (!match || game.isOver) return;
-    footsteps();
-  }
+function sampleInput() {
+  const { local, ownedSlots } = match;
+  ownedSlots.length = 0;
+  for (const id of WEAPON_ORDER) if (local.arsenal.owned[id]) ownedSlots.push(WEAPONS[id].slot);
+  input.syncSlot(WEAPONS[local.arsenal.current].slot);
+  const sample = input.sample(ownedSlots);
+  if (!local.isAlive) sample.weapon = 0;
+  return sample;
+}
+
+function idleInput() {
+  return { fwd: 0, side: 0, yaw: input.yaw, pitch: input.pitch, buttons: 0, weapon: 0 };
+}
+
+function onTick(events) {
+  if (!match) return;
+  input.syncSlot(WEAPONS[match.local.arsenal.current].slot);
+  handleEvents(events);
+  if (!match || match.game.isOver) return;
+  footsteps();
+}
+
+function stepMatch(dt, isRunning) {
+  match.session.step(dt, isRunning ? sampleInput : idleInput, onTick);
 }
 
 function footsteps() {
@@ -356,16 +399,17 @@ function footsteps() {
     const travelled = (stepDistances.get(p.id) || 0) + speed * TICK_DT;
     stepDistances.set(p.id, travelled >= STEP_DISTANCE ? 0 : travelled);
     if (travelled < STEP_DISTANCE) continue;
-    if (p.id === LOCAL_ID) audio.play("step", { isLocal: true, volume: 0.7 });
+    if (p.id === match.localId) audio.play("step", { isLocal: true, volume: 0.7 });
     else if (Math.hypot(p.move.pos.x - camera.position.x, p.move.pos.z - camera.position.z) < 22) audio.play("step", { pos: p.move.pos, volume: 1.4 });
   }
 }
 
 function updateCamera(dt, look) {
-  const { local, view } = match;
+  const { local, view, session } = match;
   const m = local.move;
-  const alpha = match.accumulator / TICK_DT;
-  const prev = match.prevPositions.get(LOCAL_ID) || m.pos;
+  const alpha = session.alpha;
+  const prev = session.prevPositions.get(match.localId) || m.pos;
+  const offset = session.visualOffset;
   const targetEye = eyeHeight(m);
   view.eyeOffset += (targetEye - view.eyeOffset) * Math.min(1, dt * 18);
   view.landVel += -view.landKick * 160 * dt - view.landVel * 16 * dt;
@@ -382,6 +426,7 @@ function updateCamera(dt, look) {
   const sx = (Math.sin(t * 61.3) + Math.sin(t * 37.1)) * 0.5 * shake * 0.035;
   const sy = (Math.sin(t * 53.7) + Math.sin(t * 29.3)) * 0.5 * shake * 0.035;
   camera.position.set(prev.x + (m.pos.x - prev.x) * alpha, prev.y + (m.pos.y - prev.y) * alpha + view.eyeOffset + view.landKick * 0.6, prev.z + (m.pos.z - prev.z) * alpha);
+  if (offset) camera.position.add(offset);
   camera.rotation.set(input.pitch + view.punch + sy, input.yaw + sx, -view.roll);
   const speed = Math.hypot(m.vel.x, m.vel.z);
   view.fovKick = Math.max(0, view.fovKick - dt * 30);
@@ -439,19 +484,24 @@ function frame(now) {
   renderer.info.reset();
   if (rawDt < 0.25) perf.averageFrame += (rawDt * 1000 - perf.averageFrame) * 0.05;
   adaptResolution(rawDt, now);
+  const isOnline = match.session.isOnline;
   const isRunning = !match.isPaused && body.dataset.screen === "game" && !match.game.isOver;
-  if (isRunning) stepMatch(dt);
+  if (isRunning || isOnline) stepMatch(dt, isRunning);
   if (!match) return;
+  match.local = match.session.local;
+  match.localId = match.session.localId;
+  if (!match.local) return;
+  const animDt = isRunning || isOnline ? dt : 0;
   const look = input.consumeLook();
   const motion = updateCamera(dt, look);
-  const alpha = match.accumulator / TICK_DT;
-  match.players.sync(match.game, LOCAL_ID, alpha, isRunning ? dt : 0, match.prevPositions);
+  const alpha = match.session.alpha;
+  match.players.sync(match.game, match.localId, alpha, animDt, match.session.prevPositions);
   match.pickups.update(match.game, now / 1000);
   match.world.update(now / 1000, Date.now());
-  match.fx.update(isRunning ? dt : 0);
+  match.fx.update(animDt);
   match.fx.updateRockets(match.game, alpha, dt, now / 1000);
   hud.setScoped(motion.isScoped);
-  viewmodel.update(isRunning ? dt : 0, match.game.time, match.local, motion);
+  viewmodel.update(animDt, match.local.move.time, match.local, motion);
   hud.update(match.game, match.local, { showScoreboard: input.isHeld("scoreboard") || body.dataset.screen === "pause", showSpeed: settings.showSpeed, now });
   if (match.quality !== "low" && (match.quality === "high" || ++match.shadowTick % 2 === 0 || match.shadowTick < 3)) renderer.shadowMap.needsUpdate = true;
   renderer.clear();
@@ -491,6 +541,8 @@ function renderSettings() {
   $("set-fov-out").textContent = `${settings.fov}°`;
   $("set-quality").value = settings.quality;
   $("set-volume").value = settings.volume;
+  $("set-touch").value = settings.touchSensitivity;
+  $("set-touch-out").textContent = settings.touchSensitivity.toFixed(1);
   $("set-volume-out").textContent = `${Math.round(settings.volume * 100)}%`;
   $("set-invert").checked = settings.invertY;
   $("set-speed").checked = settings.showSpeed;
@@ -523,9 +575,10 @@ addEventListener("mousedown", e => {
 }, true);
 
 document.addEventListener("click", e => {
-  const target = e.target.closest("[data-screen-target], [data-action], [data-bind]");
+  const target = e.target.closest("[data-screen-target], [data-action], [data-bind], [data-loadout]");
   if (!target) return;
   audio.ensure();
+  if (target.dataset.loadout) return chooseLoadout(target.dataset.loadout);
   if (target.dataset.bind) {
     listeningBind = target.dataset.bind;
     renderSettings();
@@ -533,10 +586,17 @@ document.addEventListener("click", e => {
   }
   if (target.dataset.screenTarget) return showScreen(target.dataset.screenTarget);
   switch (target.dataset.action) {
-    case "exit": return exitToLessonList();
+    case "exit": endMatch(); return exitToLessonList();
+    case "copy-invite":
+      if (!match?.session.isOnline) return;
+      navigator.clipboard?.writeText(inviteLink(match.session.code)).then(() => { $("copy-invite").textContent = "Saite nokopēta!"; }, () => { $("copy-invite").textContent = inviteLink(match.session.code); });
+      return;
     case "fullscreen": return toggleFullscreen();
     case "resume": return requestLock();
-    case "quit-match": endMatch(); return showScreen("menu");
+    case "quit-match":
+      endMatch();
+      try { history.replaceState(null, "", location.pathname); } catch {}
+      return showScreen("menu");
     case "rematch": return startMatch();
     case "settings-back":
       audio.setVolume(settings.volume);
@@ -556,6 +616,7 @@ const settingInputs = {
   "set-fov": v => { settings.fov = Number(v); },
   "set-quality": v => { settings.quality = v; },
   "set-volume": v => { settings.volume = Number(v); audio.setVolume(settings.volume); },
+  "set-touch": v => { settings.touchSensitivity = Number(v); },
 };
 for (const [id, apply] of Object.entries(settingInputs)) {
   $(id).addEventListener("input", e => { apply(e.target.value); saveSettings(settings); renderSettings(); });
@@ -584,8 +645,109 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) audio.suspend();
 });
 
+const ONLINE_STATUS = { connecting: "Savienojas ar serveri…", retrying: "Savienojums pārtrūka, mēģina vēlreiz…", offline: "Nav interneta savienojuma, gaida…", full: "Istaba ir pilna, mēģina vēlreiz…" };
+const ONLINE_ERRORS = { not_found: "Istaba ar šādu kodu nav atrasta vai jau aizvērta.", full: "Istaba ir pilna (6 cilvēki).", version: "Spēle ir atjaunināta – pārlādē lapu.", too_large: "Savienojuma kļūda." };
+
+function weaponStats(id) {
+  const w = WEAPONS[id];
+  const dps = (w.damage * w.pellets) / w.fireInterval;
+  const maxDps = Math.max(...LOADOUT_WEAPONS.map(k => (WEAPONS[k].damage * WEAPONS[k].pellets) / WEAPONS[k].fireInterval));
+  return { power: dps / maxDps, range: Math.min(1, w.falloffEnd / 100), ammo: Math.min(1, w.magazine / 35) };
+}
+
+function renderLoadoutPickers() {
+  const html = LOADOUT_WEAPONS.map(id => {
+    const stats = weaponStats(id);
+    const bar = (label, value) => `<span class="stat">${label}<i style="width:${Math.round(value * 100)}%"></i></span>`;
+    return `<button type="button" class="loadout-option${settings.loadout === id ? " selected" : ""}" data-loadout="${id}"><b>${WEAPONS[id].name}</b>${bar("Spēks", stats.power)}${bar("Tālums", stats.range)}${bar("Aptvere", stats.ammo)}</button>`;
+  }).join("");
+  for (const picker of document.querySelectorAll("[data-loadout-picker]")) picker.innerHTML = html;
+}
+
+function chooseLoadout(id) {
+  if (!LOADOUT_WEAPONS.includes(id)) return;
+  settings.loadout = id;
+  saveSettings(settings);
+  renderLoadoutPickers();
+  if (!match) return;
+  match.session.setLoadout(id);
+  hud.message(`Ekipējums: ${WEAPONS[id].name}<small>Stāsies spēkā pēc atdzimšanas</small>`, 2, performance.now());
+}
+
+function inviteLink(code) {
+  return `${location.origin}${location.pathname}?join=${code}`;
+}
+
+function renderRoomInfo() {
+  const isOnline = !!match?.session.isOnline;
+  $("room-info").hidden = !isOnline;
+  if (!isOnline) return;
+  $("room-code").textContent = match.session.code;
+  $("room-ping").textContent = match.session.rtt ? `ping ${Math.round(match.session.rtt)} ms` : "";
+}
+
+function showOnlineError(text) {
+  $("online-error").hidden = !text;
+  $("online-error").textContent = text || "";
+}
+
+function startOnline(mode) {
+  const name = cleanName($("online-name").value);
+  const code = $("online-code").value.trim().toUpperCase();
+  if (!name) return showOnlineError("Ieraksti vārdu, ko redzēs citi spēlētāji.");
+  if (mode === "join" && !CODE_PATTERN.test(code)) return showOnlineError("Istabas kods ir 5 zīmes, piemēram ABC23.");
+  settings.name = name;
+  saveSettings(settings);
+  showOnlineError("");
+  endMatch();
+  $("loading-text").textContent = mode === "create" ? "Veido istabu…" : `Pievienojas istabai ${code}…`;
+  showScreen("loading");
+  audio.ensure();
+  const roomSettings = { map: settings.map, bots: Math.min(settings.bots, 7), difficulty: settings.difficulty, fragLimit: Math.min(50, settings.fragLimit), timeLimit: Math.min(900, settings.timeLimit) };
+  const session = createOnlineSession({
+    mode, code, settings: roomSettings, name, loadout: settings.loadout,
+    onReady() {
+      try {
+        buildMatch(settings.quality, session);
+      } catch (error) {
+        console.error(error);
+        session.dispose();
+        showScreen("online");
+        return showOnlineError(`Neizdevās sākt maču: ${error.message}`);
+      }
+      try { history.replaceState(null, "", `?join=${session.code}`); } catch {}
+      showScreen("game");
+      requestLock();
+    },
+    onRestart() {
+      if (match?.session !== session) return;
+      hud.reset();
+      hud.message(`Jauns mačs!<small>Istaba ${session.code}</small>`, 2.5, performance.now());
+      if (body.dataset.screen === "results") {
+        showScreen("game");
+        requestLock();
+      }
+    },
+    onStatus(status) {
+      const text = ONLINE_STATUS[status.state];
+      if (!text) return;
+      if (body.dataset.screen === "loading") $("loading-text").textContent = text;
+      else if (match?.session === session && status.state !== "connecting") hud.message(text, 3, performance.now());
+    },
+    onError(code) {
+      if (match?.session === session) endMatch();
+      if (document.pointerLockElement) document.exitPointerLock();
+      showScreen("online");
+      showOnlineError(ONLINE_ERRORS[code] || `Kļūda: ${code}`);
+    },
+  });
+}
+
+$("online-create").addEventListener("click", () => startOnline("create"));
+$("online-join").addEventListener("click", () => startOnline("join"));
+$("online-code").addEventListener("keydown", e => { if (e.key === "Enter") startOnline("join"); });
+
 async function boot() {
-  if (isTouchOnly()) return showScreen("gate");
   resize();
   requestAnimationFrame(frame);
   $("loading-bar").style.width = "30%";
@@ -599,6 +761,15 @@ async function boot() {
   if (error) {
     $("asset-error").hidden = false;
     $("asset-error").textContent = `Ieroču modeļi neielādējās (${error}).`;
+  }
+  renderLoadoutPickers();
+  $("online-name").value = settings.name;
+  const joinCode = new URLSearchParams(location.search).get("join")?.toUpperCase();
+  if (joinCode && CODE_PATTERN.test(joinCode)) {
+    $("online-code").value = joinCode;
+    showScreen("online");
+    if (settings.name) startOnline("join");
+    return;
   }
   showScreen("menu");
 }

@@ -47,16 +47,26 @@ export const WEAPONS = Object.freeze({
 });
 
 export const WEAPON_ORDER = Object.freeze(["pistol", "smg", "ar", "aa12", "sniper", "rocket"]);
+export const LOADOUT_WEAPONS = Object.freeze(["smg", "ar", "aa12", "sniper"]);
 export const AUTO_RELOAD_DELAY = 0.2;
 
-export function createArsenal(time) {
-  return {
+export function createArsenal(time, loadout = null) {
+  const ars = {
     owned: { pistol: true },
     ammo: { pistol: { mag: WEAPONS.pistol.magazine, reserve: WEAPONS.pistol.reserve } },
     current: "pistol", previous: null,
     state: "raise", stateUntil: time + WEAPONS.pistol.raiseTime,
-    nextFireAt: 0, bloom: 0, wasFireHeld: false, fireBufferedUntil: -1, emptySince: -1, shotCount: 0, isScoped: false,
+    nextFireAt: 0, bloom: 0, wasFireHeld: false, fireBufferedUntil: -1, emptySince: -1, shotCount: 0, isScoped: false, reloadWasEmpty: false,
   };
+  if (LOADOUT_WEAPONS.includes(loadout)) {
+    const w = WEAPONS[loadout];
+    ars.owned[loadout] = true;
+    ars.ammo[loadout] = { mag: w.magazine, reserve: w.pickupAmmo };
+    ars.current = loadout;
+    ars.previous = "pistol";
+    ars.stateUntil = time + w.raiseTime;
+  }
+  return ars;
 }
 
 export function giveWeapon(ars, id, time) {

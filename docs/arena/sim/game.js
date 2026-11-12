@@ -3,7 +3,7 @@ import { createWorld, rayBox, traceBox, traceRay } from "./collision.js";
 import { createMoveState, playerHeight, stepMovement } from "./movement.js";
 import { buildNav } from "./nav.js";
 import { createRng } from "./random.js";
-import { WEAPONS, createArsenal, giveAmmo, giveWeapon, updateArsenal } from "./weapons.js";
+import { LOADOUT_WEAPONS, WEAPONS, createArsenal, giveAmmo, giveWeapon, updateArsenal } from "./weapons.js";
 import { eyePosition, hitboxes, viewDirection } from "./entity.js";
 import { createBrain, thinkBot } from "./bots.js";
 import { MAPS } from "./maps/index.js";
@@ -36,16 +36,16 @@ export function createGame({ mapId = "aktuzale", mode = "ffa", seed = 1, fragLim
     time: 0, tick: 0, rng: createRng(seed),
     players: [], teamScores: [0, 0],
     pickups: map.pickups.map((p, index) => ({ ...p, index, availableAt: 0 })),
-    projectiles: [], nextProjectileId: 1,
+    projectiles: [], nextProjectileId: 1, nextBotId: 1,
     events: [], isOver: false, winner: null,
   };
 }
 
-export function addPlayer(game, { id, name, isBot = false, difficulty = "normal", team = -1 }) {
+export function addPlayer(game, { id, name, isBot = false, difficulty = "normal", team = -1, loadout = null }) {
   if (game.players.some(p => p.id === id)) throw new Error(`duplicate player ${id}`);
   const assignedTeam = game.mode === "tdm" ? (team >= 0 ? team : smallerTeam(game)) : -1;
   const player = {
-    id, name, isBot, team: assignedTeam,
+    id, name, isBot, team: assignedTeam, loadout: LOADOUT_WEAPONS.includes(loadout) ? loadout : null, viewTick: -1,
     move: null, arsenal: null, health: 0, armor: 0, isAlive: false, respawnAt: game.time, protectedUntil: 0,
     kills: 0, deaths: 0, streak: 0, lastInput: IDLE_INPUT, lastHurtBy: null, lastHurtAt: -1, damageDealt: 0,
     brain: isBot ? createBrain(game, difficulty) : null,
@@ -53,6 +53,13 @@ export function addPlayer(game, { id, name, isBot = false, difficulty = "normal"
   game.players.push(player);
   spawnPlayer(game, player);
   return player;
+}
+
+export function setLoadout(game, id, loadout) {
+  const player = game.players.find(p => p.id === id);
+  if (!player || player.isBot || !(loadout === null || LOADOUT_WEAPONS.includes(loadout))) return false;
+  player.loadout = loadout;
+  return true;
 }
 
 export function removePlayer(game, id) {
@@ -64,7 +71,7 @@ export function fillWithBots(game, count, difficulty) {
   const names = BOT_NAMES.filter(n => !used.has(n));
   for (let i = 0; i < count; i++) {
     const name = names[i % names.length] + (i >= names.length ? ` ${Math.floor(i / names.length) + 1}` : "");
-    addPlayer(game, { id: `bot-${game.players.length}-${i}`, name, isBot: true, difficulty });
+    addPlayer(game, { id: `bot-${game.nextBotId++}`, name, isBot: true, difficulty });
   }
 }
 
@@ -90,7 +97,8 @@ function pickSpawn(game, player) {
 function spawnPlayer(game, player) {
   const spawn = pickSpawn(game, player);
   player.move = createMoveState(spawn.pos, spawn.yaw);
-  player.arsenal = createArsenal(game.time);
+  if (player.isBot && game.rng.chance(0.5)) player.loadout = game.rng.pick(LOADOUT_WEAPONS);
+  player.arsenal = createArsenal(0, player.loadout);
   player.health = C.MAX_HEALTH;
   player.armor = 0;
   player.isAlive = true;
@@ -301,7 +309,7 @@ function touchPickups(game, player) {
     } else if (item.kind === "ammo") {
       isTaken = giveAmmo(player.arsenal);
     } else if (item.kind === "weapon") {
-      isTaken = giveWeapon(player.arsenal, item.weapon, game.time);
+      isTaken = giveWeapon(player.arsenal, item.weapon, player.move.time);
     }
     if (!isTaken) continue;
     item.availableAt = game.time + PICKUP_RESPAWN[item.kind];
@@ -324,7 +332,7 @@ export function stepPlayer(game, player, input) {
   const moveEvents = [];
   stepMovement(game.world, player.move, input, C.TICK_DT, game.map.pads, moveEvents);
   for (const e of moveEvents) game.events.push({ ...e, id: player.id });
-  const shot = updateArsenal(player.arsenal, input, game.time, C.TICK_DT);
+  const shot = updateArsenal(player.arsenal, input, player.move.time, C.TICK_DT);
   if (shot === "dry") game.events.push({ type: "dry", id: player.id });
   else if (shot) {
     player.protectedUntil = Math.min(player.protectedUntil, game.time);

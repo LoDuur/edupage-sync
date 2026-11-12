@@ -39,8 +39,8 @@ export function openOverlayGame({ id, title, src, allow, exitMessage, onClose })
   frame.focus();
 }
 
-export function openArena(onClose) {
-  openOverlayGame({ id: "arena-frame", title: "Starpbrīdis", allow: "autoplay; fullscreen; pointer-lock; gamepad", src: "../arena/", exitMessage: "arena:exit", onClose });
+export function openArena(code, onClose) {
+  openOverlayGame({ id: "arena-frame", title: "Starpbrīdis", allow: "autoplay; fullscreen; pointer-lock; gamepad; clipboard-write", src: `../arena/${code ? `?join=${encodeURIComponent(code)}` : ""}`, exitMessage: "arena:exit", onClose });
 }
 const LANGS = ["python", "java", "c", "cpp", "csharp", "lua", "pil", "js", "bash"];
 const SESSION_STORE = "schedule-session";
@@ -499,10 +499,12 @@ export function buildCommands(io, ctx) {
       print(code ? `atver Ping Pong · istaba ${esc(code)}` : "atver Ping Pong", "ok");
       openPingPong(code);
     } },
-    arena: { g: "Jautri", d: "Starpbrīdis – ātrs arēnas šāvējs ar botiem", m: "arena – atver Starpbrīdi (arī fps, shooter). Bhop, slīde, sienu lēcieni un AA-12. Vajag tastatūru un peli. Esc – pauze, izvēlnē var atgriezties sarakstā.", f(a) {
-      if (a.length) return print("lietojums: arena", "err");
-      print("atver Starpbrīdi", "ok");
-      openArena(() => io.focus());
+    arena: { g: "Jautri", u: "[kods]", d: "Starpbrīdis – ātrs arēnas šāvējs ar botiem un draugiem", m: "arena – atver Starpbrīdi (arī fps, shooter). arena <kods> – uzreiz pievienojas tiešsaistes istabai ar 5 zīmju kodu. Darbojas ar peli un tastatūru vai skārienekrānu. Esc – pauze.", f(a) {
+      if (a.length > 1) return print("lietojums: arena [kods]", "err");
+      const code = (a[0] || "").toUpperCase();
+      if (code && !/^[A-HJKMNP-Z2-9]{5}$/.test(code)) return print("arena: kods ir 5 zīmes, piemēram ABC23", "err");
+      print(code ? `atver Starpbrīdi · istaba ${esc(code)}` : "atver Starpbrīdi", "ok");
+      openArena(code, () => io.focus());
     } },
     doom: { g: "Jautri", u: "", d: "palaiž DOOM (1993, shareware) tieši pārlūkā", m: "doom – DOS emulators (js-dos) ar DOOM shareware epizodi tieši konsolē. Vadība: bultiņas, Ctrl šauj, atstarpe atver durvis, Esc – izvēlne. Aizvērt: Ctrl+Q, poga vai clear. Pirmajā reizē lejupielādē ~2 MB.", f() { launchGame("doom"); } },
     games: { g: "Jautri", d: "spēļu saraksts", f() { print([...Object.entries(GAMES), ...Object.entries(OVERLAY_GAMES)].map(([k, g]) => `<span class="ok">${k.padEnd(8)}</span> ${g.title} <span class="dim">· ${g.note}</span>`).join("\n")); } },

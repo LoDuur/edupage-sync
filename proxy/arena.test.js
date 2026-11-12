@@ -338,3 +338,21 @@ test("bots pick up and use several different weapons", () => {
   assert.ok(used.size >= 4, `weapons used: ${[...used].join(",")}`);
   assert.ok(used.has("rocket") || used.has("sniper"), "bots never used a heavy weapon");
 });
+
+test("loadouts: players spawn holding their chosen primary; invalid choices are refused", async () => {
+  const { setLoadout } = await import("../docs/arena/sim/game.js");
+  const game = createGame({ seed: 12 });
+  const p = addPlayer(game, { id: "p", name: "P", loadout: "sniper" });
+  assert.equal(p.arsenal.current, "sniper");
+  assert.ok(p.arsenal.owned.pistol && p.arsenal.owned.sniper);
+  assert.equal(p.arsenal.ammo.sniper.reserve, WEAPONS.sniper.pickupAmmo);
+  assert.equal(setLoadout(game, "p", "rocket"), false);
+  assert.equal(setLoadout(game, "p", "smg"), true);
+  p.protectedUntil = 0;
+  applyDamage(game, p, null, 999, "fall");
+  assert.equal(p.isAlive, false);
+  for (let i = 0; i < 200 && !p.isAlive; i++) stepGame(game);
+  assert.equal(p.arsenal.current, "smg");
+  const plain = addPlayer(game, { id: "q", name: "Q", loadout: "laser" });
+  assert.equal(plain.arsenal.current, "pistol");
+});

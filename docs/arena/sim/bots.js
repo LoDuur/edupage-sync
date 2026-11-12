@@ -46,9 +46,9 @@ function enemiesOf(game, bot) {
   return game.players.filter(p => p !== bot && p.isAlive && (game.mode !== "tdm" || p.team !== bot.team));
 }
 
-function hasFiredRecently(p, time) {
+function hasFiredRecently(p) {
   const w = WEAPONS[p.arsenal.current];
-  return p.arsenal.nextFireAt - w.fireInterval > time - 0.5;
+  return p.arsenal.nextFireAt - w.fireInterval > p.move.time - 0.5;
 }
 
 function perceive(game, bot, brain) {
@@ -59,7 +59,7 @@ function perceive(game, bot, brain) {
     const dist = Math.hypot(chest.x - eye.x, chest.y - eye.y, chest.z - eye.z);
     const facing = Math.abs(angleDelta(brain.aimYaw, yawTo(eye, chest)));
     const wasHitByThem = bot.lastHurtBy === enemy.id && game.time - bot.lastHurtAt < AWARE_AFTER_HIT;
-    const isAudible = dist < brain.d.hearing && hasFiredRecently(enemy, game.time);
+    const isAudible = dist < brain.d.hearing && hasFiredRecently(enemy);
     const isNoticed = facing < brain.d.fov / 2 || dist < 4 || wasHitByThem || isAudible || enemy.id === brain.targetId;
     if (!isNoticed || !hasLineOfSight(game.world, eye, chest)) continue;
     const score = dist + (enemy.id === brain.targetId ? -6 : 0) + (wasHitByThem ? -8 : 0) + enemy.health * 0.03;
