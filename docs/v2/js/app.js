@@ -1,4 +1,4 @@
-import { fetchJSON, getPrefs, savePref, esc, fold, stateHtml, formatStamp, isOffline } from "./store.js";
+import { fetchJSON, getPrefs, savePref, esc, fold, stateHtml, formatStamp, isOffline, applyTheme } from "./store.js";
 import { createTimetable } from "./timetable.js";
 import { renderChanges, unseenCount } from "./changes.js";
 import { createConsult } from "./consult.js";
@@ -50,7 +50,7 @@ function updateNotice() {
   const notice = $("notice");
   const offline = !navigator.onLine || state.fromCache;
   notice.hidden = !offline;
-  if (offline) notice.textContent = `[!] Bezsaistē — rāda saglabātos datus${state.classData?.updated ? `, atjaunināti ${formatStamp(state.classData.updated)}` : ""}. Tie var nebūt aktuāli.`;
+  if (offline) notice.textContent = `Bezsaistē — rāda saglabātos datus${state.classData?.updated ? `, atjaunināti ${formatStamp(state.classData.updated)}` : ""}. Tie var nebūt aktuāli.`;
   const status = $("status");
   status.hidden = !state.classData;
   status.dataset.tone = offline ? "warn" : "";
@@ -164,9 +164,14 @@ async function loadIndex({ silent = false } = {}) {
   }
 }
 
+async function reloadData() {
+  const ok = await loadIndex({ silent: true });
+  if (ok) await loadClass({ silent: true });
+  return ok;
+}
+
 async function refresh() {
-  if (document.visibilityState !== "visible") return;
-  if (await loadIndex({ silent: true })) await loadClass({ silent: true });
+  if (document.visibilityState === "visible") await reloadData();
 }
 
 function tickClock() {
@@ -189,11 +194,12 @@ setInterval(refresh, POLL_MS);
 setInterval(() => { tickClock(); timetable.render(); }, 30 * 1000);
 
 createTerminal(
-  { panel: $("terminal"), output: $("terminal-out"), form: $("terminal-form"), input: $("terminal-input"), openers: [$("open-terminal"), $("open-terminal-side")] },
-  { tabs: TABS, classes: () => state.index?.classes || [], selectClass, openTab },
+  { panel: $("terminal"), output: $("terminal-out"), form: $("terminal-form"), input: $("terminal-input"), prompt: $("terminal-prompt"), hint: $("terminal-hint"), openers: [$("open-terminal"), $("open-terminal-side")] },
+  { tabs: TABS, classes: () => state.index?.classes || [], selectClass, openTab, timetable, refresh: reloadData, classData: () => state.classData, entries: () => state.entries, index: () => state.index },
 );
 setupPwa({ installButton: $("install"), iosSheet: $("ios-sheet"), updateBar: $("update-bar"), updateButton: $("update-apply") });
 
+applyTheme();
 tickClock();
 openTab(location.hash.slice(1) || getPrefs().v2.tab || "saraksts");
 if (await loadIndex()) {

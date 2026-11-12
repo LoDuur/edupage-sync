@@ -40,7 +40,7 @@ export function createConsult(root, lead) {
       .map(([key, label]) => `<button type="button" data-day="${key}" class="${key === today && key !== ALL ? "today" : ""}" aria-pressed="false">${label}</button>`).join("");
     const footnotes = Object.entries(data.footnotes || {}).map(([mark, text]) => `${esc(mark)} ${esc(text)}`).join(" · ");
     root.innerHTML = `
-      ${data.notice ? `<div class="callout">[!] ${esc(data.notice)}</div>` : ""}
+      ${data.notice ? `<div class="callout">${esc(data.notice)}</div>` : ""}
       <div class="consult-tools">
         <input class="input" type="search" data-search placeholder="Meklēt skolotāju vai kabinetu…" value="${esc(query)}" aria-label="Meklēt skolotāju vai kabinetu">
         <div class="chips" role="group" aria-label="Diena">${buttons}</div>

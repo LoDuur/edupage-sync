@@ -92,7 +92,7 @@ When changing any file in `docs/paint/`, bump the `?v=` number in `index.html` a
 
 ## Stundu saraksts v2 (`docs/v2/`)
 
-A separate student dashboard next to the current lesson list (v1 stays the default). Switch with the console command `versions 2`; the v2 terminal (`` ` `` or ⌘K) has `versions 1` to go back. `?v=1` always opens v1. Both versions share the `prefs` object in `localStorage`: v2 only adds `prefs.version` and `prefs.v2` (class, tab, consultation day, bus stop, trip, seen changes), so themes, colours and history survive switching.
+A separate student dashboard next to the current lesson list (v1 stays the default). Switch with the console command `versions 2`; the v2 terminal (`` ` `` or ⌘K) has `versions 1` to go back. The v2 terminal (`docs/v2/js/terminal.js` + `commands.js`) carries all v1 console commands (themes, colours, juarch, games, paint, PingPong, compiler, admin …) plus `class` and `open`, and shares the command history with v1. `?v=1` always opens v1. Both versions share the `prefs` object in `localStorage`: v2 only adds `prefs.version` and `prefs.v2` (class, tab, consultation day, bus stop, trip, seen changes), so themes, colours and history survive switching.
 
 Sections: timetable for any class, change log, teacher consultations, VTU Valmiera city buses and intercity journeys. No build step: plain ES modules in `docs/v2/js/`, opencode-style design in `docs/v2/app.css` (JetBrains Mono stands in for the commercial Berkeley Mono).
 

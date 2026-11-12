@@ -29,11 +29,32 @@ export function savePref(name, value) {
   } catch {}
 }
 
-export function setVersion(version) {
+export function saveRootPref(name, value) {
   const prefs = readPrefs();
+  const next = { ...prefs };
+  if (value === undefined) delete next[name];
+  else next[name] = value;
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...prefs, version }));
+    localStorage.setItem(PREFS_KEY, JSON.stringify(next));
   } catch {}
+}
+
+export const setVersion = version => saveRootPref("version", version);
+
+export const THEMES = { auto: "seko sistēmai", light: "gaišā", dark: "tumšā", nord: "Nord – arktiski zils", dracula: "Dracula – violets", forest: "Forest – gaišs, zaļš", sunset: "Sunset – gaišs, silts", rose: "Rosé Pine – tumšs, maigs" };
+export const isJuarch = () => !!readPrefs().juarch?.installed;
+export const themeList = () => Object.keys(THEMES).concat(isJuarch() ? ["juarch"] : []);
+
+export function applyTheme() {
+  const theme = readPrefs().theme;
+  if (!theme || theme === "auto" || !themeList().includes(theme)) delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+}
+
+export function subjectColor(summary) {
+  const custom = readPrefs().colors?.[summary.replace(/\s*\(.*\)\s*$/, "")];
+  if (typeof custom === "string" && CSS.supports("color", custom)) return custom;
+  return `hsl(${subjectHue(summary)} 62% 52%)`;
 }
 
 export class FetchError extends Error {

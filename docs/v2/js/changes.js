@@ -25,15 +25,15 @@ function entryTitle(entry, currentWeek) {
 }
 
 function entryBody(entry) {
-  if (entry.kind === "published") return `<ul>${item("[+]", "mark-add", `${entry.lessons} stundas, versija v${esc(entry.version)}`)}</ul>`;
+  if (entry.kind === "published") return `<ul>${item("+", "mark-add", `${entry.lessons} stundas, versija v${esc(entry.version)}`)}</ul>`;
   if (entry.kind === "substitutions") {
-    return `<ul>${entry.added.map(s => item("[!]", "mark-mod", `${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}`)).join("")}${entry.removed.map(s => item("[x]", "mark-del", `<s>${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}</s> (vairs nav spēkā)`)).join("")}</ul>`;
+    return `<ul>${entry.added.map(s => item("!", "mark-mod", `${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}`)).join("")}${entry.removed.map(s => item("×", "mark-del", `<s>${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}</s> (vairs nav spēkā)`)).join("")}</ul>`;
   }
   const rows = [
-    ...entry.added.map(e => item("[+]", "mark-add", `Pievienota: ${lessonLine(e)}`)),
-    ...entry.changed.map(c => item("[~]", "mark-mod", `Mainīta: ${changedLine(c)}`)),
-    ...entry.moved.map(m => item("[→]", "mark-mov", `Pārcelta: ${movedLine(m)}`)),
-    ...entry.removed.map(e => item("[x]", "mark-del", `Atcelta: <s>${lessonLine(e)}</s>`)),
+    ...entry.added.map(e => item("+", "mark-add", `Pievienota: ${lessonLine(e)}`)),
+    ...entry.changed.map(c => item("~", "mark-mod", `Mainīta: ${changedLine(c)}`)),
+    ...entry.moved.map(m => item("→", "mark-mov", `Pārcelta: ${movedLine(m)}`)),
+    ...entry.removed.map(e => item("×", "mark-del", `Atcelta: <s>${lessonLine(e)}</s>`)),
   ];
   return `<ul>${rows.join("")}</ul>`;
 }
@@ -52,7 +52,7 @@ export function renderChanges(root, lead, { entries, classData, index, seenId })
   const nextPublished = next && (next.status === "published" || classData?.weeks?.some(w => w.weekStart === next.weekStart));
   const nextHtml = next ? `<div class="next-week"><span class="dot ${nextPublished ? "ok" : "wait"}"></span>Nākamā nedēļa (${weekRange(next.weekStart)}): ${nextPublished ? "saraksts publicēts" : "vēl nav publicēta — rādām pēdējo zināmo informāciju"}</div>` : "";
   const subs = (classData?.substitutions || []).filter(s => s.date >= todayIso());
-  const subsHtml = subs.length ? `<article class="change"><div class="change-head"><h2>Aktuālā aizvietošana</h2><time>no EduPage</time></div><ul>${subs.map(s => item("[!]", "mark-mod", `${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}`)).join("")}</ul></article>` : "";
+  const subsHtml = subs.length ? `<article class="change"><div class="change-head"><h2>Aktuālā aizvietošana</h2><time>no EduPage</time></div><ul>${subs.map(s => item("!", "mark-mod", `${dayLabel(s.date)} ${esc(s.period)}. st. — ${esc(s.text)}`)).join("")}</ul></article>` : "";
   const unseen = unseenCount(entries, seenId);
   const list = entries.map((entry, i) => `<article class="change${i < unseen ? " is-new" : ""}">
       <div class="change-head"><h2>${esc(entryTitle(entry, currentWeek))}</h2><time datetime="${esc(entry.detectedAt)}">atklāts ${esc(formatStamp(entry.detectedAt))}</time></div>
