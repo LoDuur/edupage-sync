@@ -1,10 +1,11 @@
-const VERSION = "v2-1";
+const VERSION = "v2-2";
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = "data-v1";
 const FONT_CACHE = "fonts-v1";
+const LIB_CACHE = "libs-v1";
 const SHELL = [
-  "./", "index.html", "app.css?v=1", "manifest.webmanifest",
-  "js/app.js?v=1", "js/store.js", "js/timetable.js", "js/changes.js", "js/consult.js", "js/bus.js", "js/intercity.js", "js/route.js", "js/terminal.js", "js/pwa.js",
+  "./", "index.html", "app.css?v=2", "manifest.webmanifest",
+  "js/app.js?v=2", "js/store.js", "js/timetable.js", "js/changes.js", "js/consult.js", "js/bus.js", "js/intercity.js", "js/route.js", "js/terminal.js", "js/pwa.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
 ];
 const TRANSIT_ORIGINS = ["https://edupage-proxy.loduur.workers.dev", "http://localhost:8790"];
@@ -67,5 +68,6 @@ self.addEventListener("fetch", event => {
   if (url.origin === scope.origin && /\/(classes\/[^/]+\.json|data\/consultations\.json)$/.test(url.pathname)) return event.respondWith(networkFirst(request));
   if (TRANSIT_ORIGINS.includes(url.origin) && url.pathname.startsWith("/transit/")) return event.respondWith(networkFirst(request));
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") return event.respondWith(cacheFirst(request, FONT_CACHE));
+  if (url.hostname === "unpkg.com" && url.pathname.startsWith("/leaflet@")) return event.respondWith(cacheFirst(request, LIB_CACHE));
   if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) return event.respondWith(shell(request));
 });

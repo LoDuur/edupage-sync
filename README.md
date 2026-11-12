@@ -100,7 +100,7 @@ Sections: timetable for any class, change log, teacher consultations, VTU Valmie
 
 **Consultations.** `docs/data/consultations.json` is transcribed by hand from the school's PDF (a scanned image without a text layer). When the school publishes a new schedule, update the JSON (`approved`, `source`, `teachers[].days.mon…fri`) and push.
 
-**City buses.** Live from the Valmiera municipality ArcGIS services (stops, routes, directions); timetables are the official per-stop images attached there. No times are copied into this repo.
+**City buses.** An interactive map (Leaflet 1.9.4 from unpkg, Esri grey basemap) fed live from the Valmiera municipality ArcGIS services: route lines in the official colours read from the municipality's web map, stop markers, a searchable stop list, a route bar that highlights one route and filters its stops, and "nearest stop" via geolocation. Timetables are the official per-stop images attached there; no times are copied into this repo.
 
 **Intercity.** `transit.py` (workflow `transit.yml`, daily) builds a compact timetable and fare shards from the ATD (buses) and VIVI (trains) GTFS feeds and stores them in the `TRANSIT` KV namespace; the `edupage-proxy` Worker serves them at `/transit/*`, and `docs/v2/js/route.js` searches journeys in the browser. 1188.lv offers no API and disallows automated searches, so it is only linked.
 
