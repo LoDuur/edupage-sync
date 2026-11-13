@@ -5763,5 +5763,18 @@
   "522",
   "523"
  ],
- "substitutions": {}
+ "substitutions": {
+  "2026-11-16|10|Grupas stunda - (Bērziņa Inga), (104.), stunda nenotiek": {
+   "date": "2026-11-16",
+   "kind": "change",
+   "period": "10",
+   "text": "Grupas stunda - (Bērziņa Inga), (104.), stunda nenotiek"
+  },
+  "2026-11-20|1|Grupas stunda - Added, Skolotājs: Bērziņa Inga, Kabinets: 104.": {
+   "date": "2026-11-20",
+   "kind": "add",
+   "period": "1",
+   "text": "Grupas stunda - Added, Skolotājs: Bērziņa Inga, Kabinets: 104."
+  }
+ }
 }
