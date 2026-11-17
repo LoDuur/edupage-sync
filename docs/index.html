@@ -767,7 +767,9 @@ function render(){
       const time=`${hm(e.start)}–${hm(e.end)} · ${esc(e.periods)} st.`;
       if(e.subKind)el.classList.add("sub","sub-"+e.subKind);
       if(e.cancelled)el.classList.add("cancelled");
-      el.innerHTML=(dur<60
+      el.innerHTML=(dur<35
+        ?`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}`
+        :dur<60
         ?`<div class="t">${esc(e.summary)}</div><div class="tm">${time}${meta?" · "+esc(meta):""}</div>`
         :`<div class="t">${esc(e.summary)}</div>${meta?`<div class="m">${esc(meta)}</div>`:""}<div class="tm">${time}</div>`)+subBadge(e);
       if(e.subKind){const b=el.querySelector(".subbtn");b.onclick=ev=>{ev.stopPropagation();openSubPop(b,e)}}

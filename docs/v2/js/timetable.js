@@ -132,9 +132,8 @@ export function createTimetable(elements, { onWeekChange } = {}) {
       const events = eventsOn(iso);
       const subs = subsOn(iso);
       const cells = events.map(e => { const [a, b] = periodRange(e.periods); return lessonHtml(e, subs, now, `grid-column:${a}/${b + 1}`); }).join("");
-      const subsRow = subs.length ? `<div class="subs-row"><b>Aizvietošana:</b> ${subs.map(s => `${esc(s.period)}. st. ${esc(s.text)}`).join(" · ")}</div>` : "";
       return `<div class="grid-day${iso === todayIso() ? " is-today" : ""}"><b>${DAY_SHORT[i]}</b><small>${shortDate(iso)}</small></div>
-        <div class="grid-row${events.length ? "" : " is-empty"}">${cells || '<span class="grid-empty">Nav stundu</span>'}${subsRow}${nowLineHtml(iso, periods, now)}</div>`;
+        <div class="grid-row${events.length ? "" : " is-empty"}">${cells || '<span class="grid-empty">Nav stundu</span>'}${nowLineHtml(iso, periods, now)}</div>`;
     }).join("");
     return `<div class="grid-scroll"><div class="week-grid" style="--periods:${periods}"><div class="grid-corner">Diena</div>${head}${days}</div></div>`;
   }
@@ -146,7 +145,6 @@ export function createTimetable(elements, { onWeekChange } = {}) {
     }).join("");
     const events = eventsOn(selectedDay);
     const subs = subsOn(selectedDay);
-    const subsBox = subs.length ? `<div class="subs-box"><b>Aizvietošana</b><ul>${subs.map(s => `<li>${esc(s.period)}. st. — ${esc(s.text)}</li>`).join("")}</ul></div>` : "";
     const isToday = selectedDay === todayIso();
     const m = nowMinutes(now);
     let nowPlaced = !isToday || !events.length || m < minutesOf(events[0].start) || m >= Math.max(...events.map(e => minutesOf(e.end)));
@@ -160,7 +158,7 @@ export function createTimetable(elements, { onWeekChange } = {}) {
       if (!nowPlaced && m < minutesOf(event.end)) nowPlaced = true;
       return gapRow + marker + dayLessonHtml(event, subs, now);
     }).join("");
-    return `<div class="day-strip" role="group" aria-label="Diena">${strip}</div>${subsBox}${items ? `<div class="day-list">${items}</div>` : stateHtml("Nav stundu", "Šajā dienā stundu saraksts ir tukšs.")}`;
+    return `<div class="day-strip" role="group" aria-label="Diena">${strip}</div>${items ? `<div class="day-list">${items}</div>` : stateHtml("Nav stundu", "Šajā dienā stundu saraksts ir tukšs.")}`;
   }
 
   function renderNow(now) {
