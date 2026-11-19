@@ -1,5 +1,45 @@
 [
  {
+  "time": "2026-11-19T18:51:44+02:00",
+  "versions": [
+   "522",
+   "523",
+   "524"
+  ],
+  "added": [
+   "Pr 23.11 1.–2. Sociālās zin. un vēsture (355.)",
+   "Pr 23.11 3.–4. Datu bāzu tehnoloģijas (206.)",
+   "Pr 23.11 5. Pusdienas",
+   "Pr 23.11 6.–7. Matemātika I (356.)",
+   "Pr 23.11 8.–9. Valoda, kult.izpratne un izpausmes (1.l.) (104.)",
+   "Ot 24.11 2.–3. Programmas izstrādes process (V115.)",
+   "Ot 24.11 4. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Ot 24.11 5. Svešval.(B1)- krievu val. (310.)",
+   "Ot 24.11 6. Pusdienas",
+   "Ot 24.11 7.–8. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Ot 24.11 9. Grupas stunda (222.)",
+   "Tr 25.11 1.–2. Svešval.(B1)- krievu val. (310.)",
+   "Tr 25.11 3.–4. Literatūra I (354.)",
+   "Tr 25.11 5. Pusdienas",
+   "Tr 25.11 6.–7. Matemātika I (356.)",
+   "Tr 25.11 8. Svešval.(B1)- krievu val. (310.)",
+   "Tr 25.11 9. Datu bāzu tehnoloģijas (206.)",
+   "Ce 26.11 2.–3. Fizika I (355.)",
+   "Ce 26.11 4. Pusdienas",
+   "Ce 26.11 5. Matemātika I (356.)",
+   "Ce 26.11 6.–7. Latviešu val. I (354.)",
+   "Ce 26.11 8.–9. Iniciatīva un uzņēmējdarb. (1.l.) (104.)",
+   "Pk 27.11 1.–2. Programmas izstrādes process (V115.)",
+   "Pk 27.11 3.–4. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pk 27.11 5. Matemātikas speciālās nodaļas (223.)",
+   "Pk 27.11 6. Pusdienas",
+   "Pk 27.11 7. Literatūra I (354.)",
+   "Pk 27.11 8.–9. Svešval.(B1)- krievu val. (310.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-11-12T20:37:45+02:00",
   "versions": [
    "521",
