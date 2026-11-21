@@ -1,71 +1,5 @@
 {
  "events": {
-  "2026-09-21|3|*141": {
-   "date": "2026-09-21",
-   "dayType": "monday",
-   "description": "Skolotājs: S.Krastiņa\nStundas: 3.–4.\nStundu saraksts v509",
-   "end": "2026-09-21T11:40:00+03:00",
-   "gcal_id": "1nhnkkju15ujv8hgf8fvt4ukc0",
-   "groups": [],
-   "hash": "d686a90638cde0297ce93267d186eca13234554e",
-   "location": "213.",
-   "periods": "3.–4.",
-   "start": "2026-09-21T10:10:00+03:00",
-   "summary": "Svešval. I (B2) - angļu val.",
-   "teachers": [
-    "S.Krastiņa"
-   ],
-   "version": "509"
-  },
-  "2026-09-21|5|*14": {
-   "date": "2026-09-21",
-   "dayType": "monday",
-   "description": "Stundas: 5.\nStundu saraksts v509",
-   "end": "2026-09-21T12:30:00+03:00",
-   "gcal_id": "l3p44kfrpu1m50eqlv1r3439mo",
-   "groups": [],
-   "hash": "9425d9eac8f9c94f56a797f420d6e688b44b5279",
-   "location": "",
-   "periods": "5.",
-   "start": "2026-09-21T11:50:00+03:00",
-   "summary": "Pusdienas",
-   "teachers": [],
-   "version": "509"
-  },
-  "2026-09-21|6|*590": {
-   "date": "2026-09-21",
-   "dayType": "monday",
-   "description": "Skolotājs: A.Šamšele\nStundas: 6.–7.\nStundu saraksts v509",
-   "end": "2026-09-21T14:10:00+03:00",
-   "gcal_id": "sm3fvvqpd41da2kops34v6ks2c",
-   "groups": [],
-   "hash": "0b9b8fe8a4d2ca8a631023096b042c23536c5ede",
-   "location": "355.",
-   "periods": "6.–7.",
-   "start": "2026-09-21T12:40:00+03:00",
-   "summary": "Sociālās zin. un vēsture",
-   "teachers": [
-    "A.Šamšele"
-   ],
-   "version": "509"
-  },
-  "2026-09-21|8|*593": {
-   "date": "2026-09-21",
-   "dayType": "monday",
-   "description": "Skolotājs: L.Miķīte\nStundas: 8.–9.\nStundu saraksts v509",
-   "end": "2026-09-21T15:50:00+03:00",
-   "gcal_id": "nb25cf9e0t0t38hbdten2chgcc",
-   "groups": [],
-   "hash": "688ed30b730461afe7bc3ab9dc5a09e01d22512c",
-   "location": "410.",
-   "periods": "8.–9.",
-   "start": "2026-09-21T14:20:00+03:00",
-   "summary": "Valoda, kult.izpratne un izpausmes (1.l.)",
-   "teachers": [
-    "L.Miķīte"
-   ],
-   "version": "509"
-  },
   "2026-09-22|4|*303": {
    "date": "2026-09-22",
    "dayType": "midweek",
@@ -6077,12 +6011,5 @@
   "523",
   "524"
  ],
- "substitutions": {
-  "2026-11-20|1|Grupas stunda - Added, Skolotājs: Bērziņa Inga, Kabinets: 104.": {
-   "date": "2026-11-20",
-   "kind": "add",
-   "period": "1",
-   "text": "Grupas stunda - Added, Skolotājs: Bērziņa Inga, Kabinets: 104."
-  }
- }
+ "substitutions": {}
 }
