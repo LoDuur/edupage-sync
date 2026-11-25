@@ -5653,10 +5653,16 @@
   "524"
  ],
  "substitutions": {
-  "2026-11-25|1 - 2|(Svešval.(B1)- krievu val.) ➔ Dabaszinības - Aizvietošana: (Sorochynska Olha) ➔ Posse Inese, Mainīt kabinetu: (310.) ➔ 221., Priekšmeta maiņa": {
+  "2026-11-25|1|Svešval.(B1)- krievu val. - (Sorochynska Olha), (310.), stunda nenotiek": {
    "date": "2026-11-25",
    "kind": "change",
-   "period": "1 - 2",
+   "period": "1",
+   "text": "Svešval.(B1)- krievu val. - (Sorochynska Olha), (310.), stunda nenotiek"
+  },
+  "2026-11-25|2|(Svešval.(B1)- krievu val.) ➔ Dabaszinības - Aizvietošana: (Sorochynska Olha) ➔ Posse Inese, Mainīt kabinetu: (310.) ➔ 221., Priekšmeta maiņa": {
+   "date": "2026-11-25",
+   "kind": "change",
+   "period": "2",
    "text": "(Svešval.(B1)- krievu val.) ➔ Dabaszinības - Aizvietošana: (Sorochynska Olha) ➔ Posse Inese, Mainīt kabinetu: (310.) ➔ 221., Priekšmeta maiņa"
   },
   "2026-11-25|8|(Svešval.(B1)- krievu val.) ➔ Svešval. I (B2) - angļu val. - Aizvietošana: (Sorochynska Olha) ➔ Krastiņa Sanita, Mainīt kabinetu: (310.) ➔ 213., Priekšmeta maiņa": {
