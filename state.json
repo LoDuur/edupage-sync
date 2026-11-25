@@ -1,105 +1,5 @@
 {
  "events": {
-  "2026-09-25|1|*973": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Skolotājs: I.Posse\nStundas: 1.–2.\nStundu saraksts v509",
-   "end": "2026-09-25T09:40:00+03:00",
-   "gcal_id": "b7ja2lme4c064a0rkna0ausgu0",
-   "groups": [],
-   "hash": "bd1a7497d0d90e64c3fd1a1c7fd0c7ff354624a5",
-   "location": "221.",
-   "periods": "1.–2.",
-   "start": "2026-09-25T08:10:00+03:00",
-   "summary": "Dabaszinības",
-   "teachers": [
-    "I.Posse"
-   ],
-   "version": "509"
-  },
-  "2026-09-25|3|*595": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Skolotājs: V.Vintere\nStundas: 3.–4.\nStundu saraksts v509",
-   "end": "2026-09-25T11:10:00+03:00",
-   "gcal_id": "403p4gtb9flben40thla0k53v8",
-   "groups": [],
-   "hash": "942cbca80f2dc20b0b534361967915f692244643",
-   "location": "353.",
-   "periods": "3.–4.",
-   "start": "2026-09-25T09:45:00+03:00",
-   "summary": "Valoda, kult.izpratne un izpausmes (1.l.)",
-   "teachers": [
-    "V.Vintere"
-   ],
-   "version": "509"
-  },
-  "2026-09-25|5|*1130": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Skolotājs: A.Šamšele\nStundas: 5.\nStundu saraksts v509",
-   "end": "2026-09-25T11:55:00+03:00",
-   "gcal_id": "a5geu0qu7iu4ao2rjmtcuhc4cc",
-   "groups": [],
-   "hash": "c1dee4def5ce4a6a51577d10f64d62e751771e0c",
-   "location": "355.",
-   "periods": "5.",
-   "start": "2026-09-25T11:15:00+03:00",
-   "summary": "Sociālās zin. un vēsture",
-   "teachers": [
-    "A.Šamšele"
-   ],
-   "version": "509"
-  },
-  "2026-09-25|6|*14": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Stundas: 6.\nStundu saraksts v509",
-   "end": "2026-09-25T12:40:00+03:00",
-   "gcal_id": "lu38t97bl7989dqkkhah2e3sn4",
-   "groups": [],
-   "hash": "5ea325b43d7b719a614e27352418c507dd4b303e",
-   "location": "",
-   "periods": "6.",
-   "start": "2026-09-25T12:00:00+03:00",
-   "summary": "Pusdienas",
-   "teachers": [],
-   "version": "509"
-  },
-  "2026-09-25|7|*1130": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Skolotājs: A.Šamšele\nStundas: 7.\nStundu saraksts v509",
-   "end": "2026-09-25T13:25:00+03:00",
-   "gcal_id": "v54ogc1k3p29dpnkd5mqrbambs",
-   "groups": [],
-   "hash": "a2769c8bebf1c931de4c7d20a22b7ea2c996d29a",
-   "location": "355.",
-   "periods": "7.",
-   "start": "2026-09-25T12:45:00+03:00",
-   "summary": "Sociālās zin. un vēsture",
-   "teachers": [
-    "A.Šamšele"
-   ],
-   "version": "509"
-  },
-  "2026-09-25|8|*597": {
-   "date": "2026-09-25",
-   "dayType": "friday",
-   "description": "Skolotājs: I.Kobiaka\nStundas: 8.–9.\nStundu saraksts v509",
-   "end": "2026-09-25T14:55:00+03:00",
-   "gcal_id": "kqc73rjggn4kbbm0po8pepq5fs",
-   "groups": [],
-   "hash": "74dc2accbe28c8f10e6e3284b5416075ac44ec5a",
-   "location": "353.",
-   "periods": "8.–9.",
-   "start": "2026-09-25T13:30:00+03:00",
-   "summary": "Iniciatīva un uzņēmējdarb. (1.l.)",
-   "teachers": [
-    "I.Kobiaka"
-   ],
-   "version": "509"
-  },
   "2026-09-28|3|*596": {
    "date": "2026-09-28",
    "dayType": "monday",
@@ -5753,12 +5653,6 @@
   "524"
  ],
  "substitutions": {
-  "2026-11-24|9|Grupas stunda - Skolotājs: Bērziņa Inga, Mainīt kabinetu: (222.) ➔ 105., Kabineta maiņa": {
-   "date": "2026-11-24",
-   "kind": "change",
-   "period": "9",
-   "text": "Grupas stunda - Skolotājs: Bērziņa Inga, Mainīt kabinetu: (222.) ➔ 105., Kabineta maiņa"
-  },
   "2026-11-25|1 - 2|(Svešval.(B1)- krievu val.) ➔ Dabaszinības - Aizvietošana: (Sorochynska Olha) ➔ Posse Inese, Mainīt kabinetu: (310.) ➔ 221., Priekšmeta maiņa": {
    "date": "2026-11-25",
    "kind": "change",
