@@ -1,5 +1,44 @@
 [
  {
+  "time": "2026-11-26T16:56:46+02:00",
+  "versions": [
+   "523",
+   "524",
+   "525"
+  ],
+  "added": [
+   "Pr 30.11 1.–2. Sociālās zin. un vēsture (355.)",
+   "Pr 30.11 3. Programmas koda rakstīšana(Kodēšana) (202.)",
+   "Pr 30.11 4. Pusdienas",
+   "Pr 30.11 5. Latviešu val. I (354.)",
+   "Pr 30.11 6. Sociālās zin. un vēsture (355.)",
+   "Pr 30.11 7.–8. Datu bāzu tehnoloģijas (206.)",
+   "Pr 30.11 9. Datu bāzu tehnoloģijas (206.)",
+   "Ot 01.12 1.–8. Valsts aizsardzības mācība (1.grupa) (104.)",
+   "Ot 01.12 1.–8. Valsts aizsardzības mācība (2.grupa) (119.)",
+   "Tr 02.12 1.–2. Programmas izstrādes process (V115.)",
+   "Tr 02.12 3. Svešval.(B1)- krievu val. (310.)",
+   "Tr 02.12 4. Pusdienas",
+   "Tr 02.12 5. Latviešu val. I (354.)",
+   "Tr 02.12 6.–7. Datu bāzu tehnoloģijas (206.)",
+   "Tr 02.12 8.–9. Sociālās zin. un vēsture (355.)",
+   "Ce 03.12 1. Grupas stunda (104.)",
+   "Ce 03.12 2.–3. Fizika I (355.)",
+   "Ce 03.12 4. Svešval. I (B2) - angļu val. (213.)",
+   "Ce 03.12 5. Pusdienas",
+   "Ce 03.12 6.–7. Matemātikas speciālās nodaļas (223.)",
+   "Ce 03.12 8.–9. Svešval.(B1)- krievu val. (310.)",
+   "Pk 04.12 1.–2. Programmas izstrādes process (V115.)",
+   "Pk 04.12 3.–4. Programmas izstrādes process (V115.)",
+   "Pk 04.12 5. Matemātika I (356.)",
+   "Pk 04.12 6. Pusdienas",
+   "Pk 04.12 7.–8. Svešval. I (B2) - angļu val. (213.)",
+   "Pk 04.12 9. Svešval. I (B2) - angļu val. (213.)"
+  ],
+  "changed": [],
+  "removed": []
+ },
+ {
   "time": "2026-11-19T18:51:44+02:00",
   "versions": [
    "522",
